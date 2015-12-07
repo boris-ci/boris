@@ -1,0 +1,9 @@
+[master]
+  runner = "s3://ambiata-dist/master-ambiata/master-haskell-library-0.0.1-20151013064111-d6a3241"
+  version = 1
+
+[build.dist]
+#  Uncomment these to publish binaries.
+#  PUBLISH = "project"
+
+[build.branches]
