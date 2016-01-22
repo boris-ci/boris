@@ -36,7 +36,16 @@ import           X.Text.Toml (_NTable, _NTValue, _VArray, _VString, _VInteger, k
 
 [build.hack]
   refs = "refs/heads/topic/hack"
-  command = ["./mafia", "test"]
+  command = [["./mafia", "test"]]
+
+[build.success]
+  refs = "refs/heads/topic/hack"
+  success = [["hipchat", "yo"]]
+
+[build.validate]
+  refs = "refs/heads/topic/hack"
+  pre = [["validate-respect"], ["rebased"]]
+
 --}
 
 
