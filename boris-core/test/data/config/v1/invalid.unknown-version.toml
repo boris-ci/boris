@@ -1,0 +1,5 @@
+[boris]
+  version = 2
+
+[build.basic]
+  git = "invalid"

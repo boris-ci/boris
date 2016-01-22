@@ -1,0 +1,12 @@
+[boris]
+  version = 1
+
+[build.basic]
+  git = "refs/heads/basic"
+
+[build.second]
+  git = "refs/heads/second"
+
+[build.command]
+  git = "refs/heads/command"
+  command = [[]]

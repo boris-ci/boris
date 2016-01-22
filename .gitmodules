@@ -7,3 +7,48 @@
 [submodule "lib/x"]
 	path = lib/x
 	url = git@github.com:ambiata/x
+[submodule "lib/mismi"]
+	path = lib/mismi
+	url = git@github.com:ambiata/mismi
+[submodule "lib/jebediah"]
+	path = lib/jebediah
+	url = git@github.com:ambiata/jebediah
+[submodule "lib/twine"]
+	path = lib/twine
+	url = git@github.com:ambiata/twine
+[submodule "lib/tine"]
+	path = lib/tine
+	url = git@github.com:ambiata/tine
+[submodule "lib/agriculture"]
+	path = lib/agriculture
+	url = git@github.com:ambiata/agriculture
+[submodule "lib/agriculture-postgresql"]
+	path = lib/agriculture-postgresql
+	url = git@github.com:ambiata/agriculture-postgresql
+[submodule "lib/bones"]
+	path = lib/bones
+	url = git@github.com:ambiata/bones
+[submodule "lib/bones-cloudwatch"]
+	path = lib/bones-cloudwatch
+	url = git@github.com:ambiata/bones-cloudwatch
+[submodule "lib/bones-postgresql"]
+	path = lib/bones-postgresql
+	url = git@github.com:ambiata/bones-postgresql
+[submodule "lib/bones-snooze"]
+	path = lib/bones-snooze
+	url = git@github.com:ambiata/bones-snooze
+[submodule "lib/charlotte"]
+	path = lib/charlotte
+	url = git@github.com:ambiata/charlotte
+[submodule "lib/passport"]
+	path = lib/passport
+	url = git@github.com:ambiata/passport
+[submodule "lib/snooze"]
+	path = lib/snooze
+	url = git@github.com:ambiata/snooze
+[submodule "lib/snooze-baton"]
+	path = lib/snooze-baton
+	url = git@github.com:ambiata/snooze-baton
+[submodule "lib/boom"]
+	path = lib/boom
+	url = git@github.com:ambiata/boom
