@@ -1,4 +1,4 @@
-name:                  ambiata-boris
+name:                  ambiata-boris-queue
 version:               0.0.1
 license:               AllRightsReserved
 author:                Ambiata <info@ambiata.com>
@@ -7,14 +7,23 @@ copyright:             (c) 2015 Ambiata.
 synopsis:              project
 category:              System
 cabal-version:         >= 1.8
-build-type:            Custom
-description:           project
+build-type:            Simple
+description:           boris-queue
 
 library
   build-depends:
                       base                            >= 3          && < 5
+                    , aeson                           == 0.8.*
+                    , ambiata-boris-core
+                    , ambiata-mismi-core
+                    , ambiata-mismi-sqs
                     , ambiata-p
+                    , ambiata-x-aeson
+                    , ambiata-x-eithert
+                    , lens                            >= 4.6        && < 4.9
                     , text                            == 1.2.*
+                    , transformers                    == 0.4.*
+                    , ini                             == 0.3.3
 
   ghc-options:
                     -Wall
@@ -23,26 +32,7 @@ library
                     src
 
   exposed-modules:
-                    Boris
-
-executable boris
-  ghc-options:
-                    -Wall -threaded -O2
-
-  hs-source-dirs:
-                    gen
-
-  main-is:
-                    ../main/boris.hs
-
-  build-depends:
-                      base
-                    , ambiata-boris
-                    , ambiata-p
-                    , ambiata-x-optparse
-                    , optparse-applicative            == 0.11.*
-                    , text
-
+                    Boris.Queue
 
 test-suite test
   type:
@@ -59,7 +49,8 @@ test-suite test
 
   build-depends:
                       base                            >= 3          && < 5
-                    , ambiata-boris
+                    , ambiata-boris-core
+                    , ambiata-boris-queue
                     , ambiata-disorder-core
                     , ambiata-disorder-corpus
                     , ambiata-p
@@ -81,10 +72,17 @@ test-suite test-io
 
   build-depends:
                       base                            >= 3          && < 5
-                    , ambiata-boris
+                    , ambiata-boris-core
+                    , ambiata-boris-core-test
+                    , ambiata-boris-queue
                     , ambiata-disorder-core
                     , ambiata-disorder-corpus
+                    , ambiata-mismi-core
+                    , ambiata-mismi-core-test
+                    , ambiata-mismi-sqs
+                    , ambiata-mismi-sqs-test
                     , ambiata-p
+                    , ambiata-x-eithert
                     , text
                     , QuickCheck                      == 2.7.*
                     , quickcheck-instances            == 0.3.*
