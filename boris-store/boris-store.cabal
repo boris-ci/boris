@@ -88,6 +88,7 @@ test-suite test-io
                     , ambiata-boris-store
                     , ambiata-disorder-core
                     , ambiata-disorder-corpus
+                    , ambiata-jebediah
                     , ambiata-mismi-core
                     , ambiata-mismi-core-test
                     , ambiata-p
