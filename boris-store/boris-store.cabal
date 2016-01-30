@@ -15,6 +15,7 @@ library
                       base                            >= 3          && < 5
                     , aeson                           == 0.8.*
                     , ambiata-boris-core
+                    , ambiata-jebediah
                     , ambiata-mismi-core
                     , ambiata-p
                     , ambiata-x-eithert
@@ -40,8 +41,9 @@ library
   exposed-modules:
                     Boris.Store.Build
                     Boris.Store.Lifecycle
-                    Boris.Store.Meta
+                    Boris.Store.Index
                     Boris.Store.Schema
+                    Boris.Store.Tick
 
 test-suite test
   type:
