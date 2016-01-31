@@ -6,6 +6,8 @@ module Test.IO.Boris.Store.Index where
 
 import qualified Boris.Store.Index as SI
 
+import qualified Data.List as L
+
 import           P
 
 import           Test.Boris.Core.Arbitrary ()
@@ -37,7 +39,7 @@ prop_queued p b i1 i2 = once . testAWS . withClean environment (SI.deleteQueued 
   res3 <- SI.getQueued environment p b
   SI.clearQueued environment p b i1
   res4 <- SI.getQueued environment p b
-  pure $ [res1, res2, res3, res4] === [[i1], [i1, i2], [i1], []]
+  pure $ [res1, L.sort res2, res3, res4] === [[i1], L.sort [i1, i2], [i1], []]
 
 prop_buildRef p b r = once . testAWS . withClean environment (SI.deleteBuildRefs environment p b) $ do
   SI.addBuildRef environment p b r
