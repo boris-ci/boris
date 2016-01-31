@@ -11,3 +11,4 @@ cabal.sandbox.config
 /tmp
 /gen
 */gen
+*/tmp

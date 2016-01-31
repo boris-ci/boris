@@ -29,3 +29,7 @@ instance Arbitrary BuildId where
 instance Arbitrary BuildResult where
   arbitrary =
     elements [BuildOk, BuildKo]
+
+instance Arbitrary Ref where
+  arbitrary =
+    Ref <$> elements cooking
