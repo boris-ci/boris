@@ -31,7 +31,8 @@ library
 
   exposed-modules:
                     Boris.Core.Data
-                    Boris.Core.Serial.Toml
+                    Boris.Core.Serial.Ref
+                    Boris.Core.Serial.Command
 
 test-suite test
   type:

@@ -1,0 +1,7 @@
+[boris]
+  version = 1
+
+[build.basic]
+  command = [["./mafia", "build"]]
+
+[build.inferred]
