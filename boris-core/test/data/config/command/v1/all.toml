@@ -1,0 +1,9 @@
+[boris]
+  version = 1
+
+[build.all]
+  pre = [["before"]]
+  command = [["master", "build", "dist"]]
+  post = [["after"]]
+  success = [["after-on-success"]]
+  failure = [["after-on-failure"]]

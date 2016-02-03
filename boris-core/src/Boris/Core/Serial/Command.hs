@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Boris.Core.Serial.Toml (
+module Boris.Core.Serial.Command (
     BorisConfigError (..)
   , parseConfig
   , renderBorisConfigError
@@ -53,7 +53,6 @@ data BorisConfigError =
     ConfigTomlParseError ParseError
   | ConfigMissingVersionError
   | ConfigUnknownVersionError Int64
-  | ConfigNoReference Build
   | ConfigInvalidCommand Build
   | ConfigBuildsTypeError
     deriving (Eq, Show)
@@ -80,8 +79,7 @@ parseTomlConfigV1 t =
         build = Build k
       in
         Specification build
-          <$> parseGit builds build
-          <*> parseCommands builds build "pre"
+          <$> parseCommands builds build "pre"
           <*> parseCommands' builds build "command" [Command "master" ["build", k]]
           <*> parseCommands builds build "post"
           <*> parseCommands builds build "success"
@@ -95,11 +93,6 @@ parseBuilds doc =
     Just tt ->
       maybeToRight ConfigBuildsTypeError $
         tt ^? _NTable
-
-parseGit :: Table -> Build -> Either BorisConfigError Query
-parseGit builds build =
-  fmap Query . maybeToRight (ConfigNoReference build) $
-    builds ^? key (renderBuild build) . _NTable . key "git" . _NTValue . _VString
 
 parseCommands :: Table -> Build -> Text -> Either BorisConfigError [Command]
 parseCommands builds build t =
@@ -140,8 +133,6 @@ renderBorisConfigError err =
       "Boris configuration does not contain a version field."
     ConfigUnknownVersionError n ->
       mconcat ["Boris configuration contains an unkown version: ", T.pack . show $ n]
-    ConfigNoReference b ->
-      mconcat ["Boris configuration does not contain a mandatory 'refs' for build: ", renderBuild b]
     ConfigInvalidCommand b ->
       mconcat ["Boris configuration contains an invalid 'command' for build: ", renderBuild b]
     ConfigBuildsTypeError ->

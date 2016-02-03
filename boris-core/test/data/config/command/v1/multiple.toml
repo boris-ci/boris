@@ -1,0 +1,10 @@
+[boris]
+  version = 1
+
+[build.basic]
+  command = [["master", "build", "dist"]]
+
+[build.second]
+  command = [["master", "build", "second"]]
+
+[build.third]

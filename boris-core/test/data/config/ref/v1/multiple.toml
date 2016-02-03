@@ -6,4 +6,3 @@
 
 [build.second]
   git = "refs/heads/*"
-  command = [["master", "build", "second"]]

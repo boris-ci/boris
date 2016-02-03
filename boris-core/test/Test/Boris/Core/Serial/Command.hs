@@ -2,10 +2,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
-module Test.Boris.Core.Serial.Toml where
+module Test.Boris.Core.Serial.Command where
 
 import           Boris.Core.Data
-import           Boris.Core.Serial.Toml
+import           Boris.Core.Serial.Command
 
 import qualified Data.Text.IO as T
 
@@ -19,74 +19,75 @@ import           Test.QuickCheck
 
 prop_parse_ok =
   conjoin [
-      check "test/data/config/v1/empty.toml" . Right $ [
+      check "test/data/config/command/v1/empty.toml" . Right $ [
         ]
-    , check "test/data/config/v1/basic.toml" . Right $ [
+    , check "test/data/config/command/v1/basic.toml" . Right $ [
           Specification
             (Build "basic")
-            (Query "refs/heads/basic")
             []
-            [Command "master" ["build", "basic"]]
+            [Command "./mafia" ["build"]]
             []
             []
             []
         ]
-    , check "test/data/config/v1/multiple.toml" . Right $ [
+    , check "test/data/config/command/v1/inferred.toml" . Right $ [
           Specification
             (Build "basic")
-            (Query "refs/heads/basic")
             []
-            [Command "master" ["build", "basic"]]
+            [Command "./mafia" ["build"]]
+            []
+            []
+            []
+        , Specification
+            (Build "inferred")
+            []
+            [Command "master" ["build", "inferred"]]
+            []
+            []
+            []
+        ]
+    , check "test/data/config/command/v1/multiple.toml" . Right $ [
+          Specification
+            (Build "basic")
+            []
+            [Command "master" ["build", "dist"]]
             []
             []
             []
         , Specification
             (Build "second")
-            (Query "refs/heads/*")
-            []
-            [Command "master" ["build", "second"]]
-            []
-            []
-            []
-        ]
-    , check "test/data/config/v1/command.toml" . Right $ [
-          Specification
-            (Build "basic")
-            (Query "refs/heads/basic")
-            []
-            [Command "master" ["build", "basic"]]
-            []
-            []
-            []
-        , Specification
-            (Build "second")
-            (Query "refs/heads/second")
             []
             [Command "master" ["build", "second"]]
             []
             []
             []
         , Specification
-            (Build "command")
-            (Query "refs/heads/command")
+            (Build "third")
             []
-            [Command "./mafia" ["test"]]
-            []
+            [Command "master" ["build", "third"]]
             []
             []
+            []
+        ]
+    , check "test/data/config/command/v1/all.toml" . Right $ [
+          Specification
+            (Build "all")
+            [Command "before" []]
+            [Command "master" ["build", "dist"]]
+            [Command "after" []]
+            [Command "after-on-success" []]
+            [Command "after-on-failure" []]
         ]
     ]
 
 prop_parse_error =
   conjoin [
-      check "test/data/config/v1/invalid.no-version.toml" . Left $
+      check "test/data/config/command/v1/invalid.no-version.toml" . Left $
         ConfigMissingVersionError
-    , check "test/data/config/v1/invalid.unknown-version.toml" . Left $
+    , check "test/data/config/command/v1/invalid.unknown-version.toml" . Left $
         ConfigUnknownVersionError 2
-    , check "test/data/config/v1/invalid.no-reference.toml" . Left $
-        ConfigNoReference (Build "basic")
-    , check "test/data/config/v1/invalid.empty-command.toml" . Left $
-        ConfigInvalidCommand (Build "command")
+    , check "test/data/config/command/v1/invalid.empty-command.toml" . Left $
+        ConfigInvalidCommand (Build "invalid")
     ]
 
 check path expected =

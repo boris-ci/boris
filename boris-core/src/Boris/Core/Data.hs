@@ -10,9 +10,9 @@ module Boris.Core.Data (
   , LocalRepository (..)
   , Ref (..)
   , Query (..)
-  , Symbol (..)
   , Executor (..)
   , Command (..)
+  , BuildQuery (..)
   , Specification (..)
   , Registration (..)
   , BuildResult (..)
@@ -68,11 +68,6 @@ newtype Query =
       renderQuery :: Text
     } deriving (Eq, Show, Ord)
 
-newtype Symbol =
-  Symbol {
-      renderSymbol :: Text
-    } deriving (Eq, Show, Ord)
-
 newtype Executor =
   Executor {
       projects :: M.Map Project Repository
@@ -84,10 +79,15 @@ data Command =
     , commandArgs :: [Text]
     } deriving (Eq, Show)
 
+data BuildQuery =
+  BuildQuery {
+      buildName :: Build
+    , buildQuery :: Query
+    } deriving (Eq, Show)
+
 data Specification =
   Specification {
       specificationBuild :: Build
-    , specificationQuery :: Query
     , specificationPre :: [Command]
     , specificationCommand :: [Command]
     , specificationPost :: [Command]
