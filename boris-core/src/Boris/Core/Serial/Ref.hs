@@ -16,11 +16,11 @@ import qualified Data.HashMap.Strict as M
 
 import           Text.Parsec.Error (ParseError)
 import           Text.Toml (parseTomlDoc)
-import           Text.Toml.Types (Table, TValue)
+import           Text.Toml.Types (Table)
 
 import           P
 
-import           X.Text.Toml (_NTable, _NTValue, _VArray, _VString, _VInteger, key)
+import           X.Text.Toml (_NTable, _NTValue, _VString, _VInteger, key)
 
 {--
 # example config file
