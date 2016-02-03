@@ -8,6 +8,7 @@ module Boris.X (
   , raw
   , xproc
   , xprocAt
+  , inDirectory
   , hoistExit
   , hoistExitM
   ) where
@@ -66,7 +67,11 @@ xproc out cmd args = do
 
 xprocAt :: Out -> FilePath -> Text -> [Text] -> IO CreateProcess
 xprocAt out dir cmd args =
-  (\p -> p { cwd = Just dir }) <$> xproc out cmd args
+  inDirectory dir <$> xproc out cmd args
+
+inDirectory :: FilePath -> CreateProcess -> CreateProcess
+inDirectory dir p =
+  p { cwd = Just dir }
 
 hoistExit :: (Applicative f, Monad f) => ExitCode -> EitherT ExitCode f ()
 hoistExit c =
