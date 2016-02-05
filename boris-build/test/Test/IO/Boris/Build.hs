@@ -137,9 +137,12 @@ prop_runBuild_multi_fail_post  b =
         [touch "failure", bad]
 
 prop_runBuild_multi b =
-  testIO . withSystemTempDirectory "build"  $ \t -> do
+  testIO . withSystemTempDirectory "build"  $ \x -> do
     let
-      local = LocalRepository . T.pack $ t
+      local = Workspace (WorkspacePath . T.pack $ x) (BuildId "1")
+      t = pathOfWorkingCopy local
+
+    D.createDirectoryIfMissing True t
 
     r <- runEitherT . runBuild o e local $
       Specification b
@@ -166,9 +169,13 @@ prop_runBuild_multi b =
         (Right (), True, True, True, True, False, True, True, True, True, False)
 
 check :: FilePath -> (Either BuildError (), Bool, Bool, Bool, Bool, Bool) -> Specification -> IO Property
-check t expected specification = do
-  let local = LocalRepository . T.pack $ t
+check x expected specification = do
+  let
+    local = Workspace (WorkspacePath . T.pack $ x) (BuildId "1")
+    t = pathOfWorkingCopy local
 
+
+  D.createDirectoryIfMissing True t
   r <- runEitherT $ runBuild o e local specification
 
   pre <- D.doesFileExist (t </> "pre")
