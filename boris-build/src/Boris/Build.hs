@@ -67,11 +67,11 @@ data BuildError =
 --
 --  * For a success, (somewhat obviously) _everything_ must succeed.
 --
-runBuild :: Out -> Out -> LocalRepository -> Specification -> EitherT BuildError IO ()
+runBuild :: Out -> Out -> Workspace -> Specification -> EitherT BuildError IO ()
 runBuild sout serr workspace specification = do
   let
     path =
-      T.unpack . renderLocalRepository $ workspace
+      pathOfWorkingCopy workspace
 
     gos cmds =
       forM_ cmds $ go

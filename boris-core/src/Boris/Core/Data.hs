@@ -8,17 +8,26 @@ module Boris.Core.Data (
   , BuildId (..)
   , Repository (..)
   , LocalRepository (..)
+  , Commit (..)
   , Ref (..)
-  , Query (..)
+  , Pattern (..)
   , Executor (..)
   , Command (..)
-  , BuildQuery (..)
+  , BuildPattern (..)
   , Specification (..)
   , Registration (..)
   , BuildResult (..)
+  , BuildInstance (..)
   , Acknowledge (..)
+  , WorkspacePath (..)
+  , Workspace (..)
   , renderRegistration
   , parseRegistration
+  , pathOf
+  , pathOfMirror
+  , pathOfWorkingCopy
+  , repositoryOfMirror
+  , repositoryOfWorkingCopy
   ) where
 
 import           Data.Text (Text)
@@ -27,6 +36,8 @@ import qualified Data.Text as T
 import qualified Data.Map.Strict as M
 
 import           P
+
+import           System.FilePath (FilePath, (</>))
 
 newtype Environment =
   Environment {
@@ -63,10 +74,26 @@ newtype Ref =
       renderRef :: Text
     } deriving (Eq, Show, Ord)
 
-newtype Query =
-  Query {
-      renderQuery :: Text
+newtype Pattern =
+  Pattern {
+      renderPattern :: Text
     } deriving (Eq, Show, Ord)
+
+newtype Commit =
+  Commit {
+      renderCommit :: Text
+    } deriving (Eq, Show, Ord)
+
+newtype WorkspacePath =
+  WorkspacePath {
+      renderWorkspacePath :: Text
+    } deriving (Eq, Show)
+
+data Workspace =
+  Workspace {
+      workspacePath :: WorkspacePath
+    , workspaceId :: BuildId
+    } deriving (Eq, Show)
 
 newtype Executor =
   Executor {
@@ -79,10 +106,17 @@ data Command =
     , commandArgs :: [Text]
     } deriving (Eq, Show)
 
-data BuildQuery =
-  BuildQuery {
+data BuildPattern =
+  BuildPattern {
       buildName :: Build
-    , buildQuery :: Query
+    , buildPattern :: Pattern
+    } deriving (Eq, Show)
+
+data BuildInstance =
+  BuildInstance {
+      buildSpecification :: Specification
+    , buildRef :: Ref
+    , buildCommit :: Commit
     } deriving (Eq, Show)
 
 data Specification =
@@ -122,3 +156,23 @@ parseRegistration t =
       Just $ Registration (Project p) (Repository r)
     _ ->
       Nothing
+
+pathOfMirror :: Workspace -> FilePath
+pathOfMirror =
+  (</> "mirror") . pathOf
+
+repositoryOfMirror :: Workspace -> LocalRepository
+repositoryOfMirror =
+  LocalRepository . T.pack . pathOfMirror
+
+pathOfWorkingCopy :: Workspace -> FilePath
+pathOfWorkingCopy =
+  (</> "work") . pathOf
+
+repositoryOfWorkingCopy :: Workspace -> LocalRepository
+repositoryOfWorkingCopy =
+  LocalRepository . T.pack . pathOfWorkingCopy
+
+pathOf :: Workspace -> FilePath
+pathOf w =
+  (T.unpack . renderWorkspacePath . workspacePath $ w) </> (T.unpack . renderBuildId . workspaceId $ w)

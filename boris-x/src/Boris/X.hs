@@ -62,7 +62,7 @@ raw cout cerr cp = do
 
 xproc :: Out -> Text -> [Text] -> IO CreateProcess
 xproc out cmd args = do
-  xPutStrLn out $ T.intercalate " " $ mconcat [[cmd], fmap (\arg -> mconcat ["\"", arg, "\""]) args]
+  xPutStrLn out $ T.intercalate " " $ mconcat [[">", cmd], fmap (\arg -> mconcat ["\"", arg, "\""]) args]
   pure $ proc (T.unpack cmd) (fmap T.unpack args)
 
 xprocAt :: Out -> FilePath -> Text -> [Text] -> IO CreateProcess

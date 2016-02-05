@@ -111,23 +111,26 @@ register e p b i = do
     & D.piConditionExpression .~ (Just . mconcat $ ["attribute_not_exists(", kProjectBuild, ") AND attribute_not_exists(", kBuildId, ")"])
   lift $ addQueued e p b i
 
-index :: Environment -> Project -> Build -> Ref -> BuildId -> AWS ()
-index e p b r i = do
+index :: Environment -> Project -> Build -> BuildId -> Ref -> Commit -> AWS ()
+index e p b i r c = do
   -- NOTE: We don't want to index these before acknowledge because we wouldn't of validated
   --       the project against a refs-config, which means indexing it earlier could result
   --       in rubish builds being reported that should never of been allowed through.
+  clearQueued e p b i
   addProject e p b
   addProjectRef e p r b
   addBuildId e p b r i
   addBuildRef e p b r
-  clearQueued e p b i
+  addProjectCommit e p c
+  addProjectCommitBuildId e p c i
   void . A.send $ D.updateItem (tBuild e)
     & D.uiKey .~ H.fromList [
         vBuildId i
       ]
-    & D.uiUpdateExpression .~ Just (mconcat ["SET ", kRef, " = ", kVal "s"])
+    & D.uiUpdateExpression .~ Just (mconcat ["SET ", kRef, " = ", kVal "r", ", ", kCommit, " = ", kVal "c"])
     & D.uiExpressionAttributeValues .~ H.fromList [
-        vRef r
+        vRefOf (kVal "r") r
+      , vCommitOf (kVal "c") c
       ]
 
 deindex :: Environment -> Project -> Build -> BuildId -> AWS ()

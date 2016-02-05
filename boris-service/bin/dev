@@ -1,0 +1,11 @@
+#!/bin/sh -eux
+
+export AWS_DEFAULT_REGION=ap-southeast-2
+export BORIS_ENVIRONMENT=local
+export BORIS_BUILD_QUEUE=boris-${BORIS_ENVIRONMENT}
+export BORIS_WORK_DIR=$(dirname $0)/../tmp/work
+export BORIS_WORK_THREADS=1
+
+mkdir -p ${BORIS_WORK_DIR}
+
+$(dirname $0)/../dist/build/boris-service/boris-service
