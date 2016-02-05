@@ -3,7 +3,6 @@
 
 import           Boris.Core.Data
 import           Boris.Queue (BuildQueue (..))
-import           Boris.Service.Data
 import           Boris.Service.Daemon
 
 import           Control.Concurrent.Async (async, waitCatch)
@@ -35,7 +34,7 @@ main = do
   env <- orDie renderRegionError discoverAWSEnv
   environment <- Environment <$> text "BORIS_ENVIRONMENT"
   queue <- BuildQueue <$> text "BORIS_BUILD_QUEUE"
-  work <- WorkDir <$> text "BORIS_WORK_DIR"
+  work <- WorkspacePath <$> text "BORIS_WORKSPACE_PATH"
   n <- intOr "BORIS_WORK_THREADS" 1
   asyncs <- mapM async $ L.replicate n (run env environment queue work pin)
   results <- forM asyncs $ waitCatch
