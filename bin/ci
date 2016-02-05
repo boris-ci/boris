@@ -39,6 +39,6 @@ if "${PUBLISH:-false}"; then
         NAME="$(basename $BINARY)"
         VERSION="$(cat $VERSION_FILE)"
 
-        s3 upload "$BINARY" "$PUBLISH_ROOT/$NAME/$PROJECT/linux/x86_64/$VERSION/$PROJECT-$VERSION"
+        s3 upload "$BINARY" "$PUBLISH_ROOT/$NAME/linux/x86_64/$VERSION/$NAME-$VERSION"
     done
 fi
