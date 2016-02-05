@@ -1,9 +1,9 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Boris.Core.Serial.Ref (
-    BorisQueryConfigError (..)
-  , parseQueryConfig
-  , renderBorisQueryConfigError
+    BorisPatternConfigError (..)
+  , parsePatternConfig
+  , renderBorisPatternConfigError
   ) where
 
 import           Boris.Core.Data
@@ -29,85 +29,82 @@ import           X.Text.Toml (_NTable, _NTValue, _VString, _VInteger, key)
   version = 1
 
 [build.dist]
-  refs = "refs/heads/master"
+  git = "refs/heads/master"
 
 [build.branches]
-  refs = "refs/heads/topic/*"
+  git = "refs/heads/topic/*"
 
 [build.hack]
-  refs = "refs/heads/topic/hack"
-  command = [["./mafia", "test"]]
+  git = "refs/heads/topic/hack"
 
 [build.success]
-  refs = "refs/heads/topic/hack"
-  success = [["hipchat", "yo"]]
+  git = "refs/heads/topic/hack"
 
 [build.validate]
-  refs = "refs/heads/topic/hack"
-  pre = [["validate-respect"], ["rebased"]]
+  git = "refs/heads/topic/hack"
 
 --}
 
 
-data BorisQueryConfigError =
-    QueryConfigTomlParseError ParseError
-  | QueryConfigMissingVersionError
-  | QueryConfigUnknownVersionError Int64
-  | QueryConfigNoReference Build
-  | QueryConfigInvalidCommand Build
-  | QueryConfigBuildsTypeError
+data BorisPatternConfigError =
+    PatternConfigTomlParseError ParseError
+  | PatternConfigMissingVersionError
+  | PatternConfigUnknownVersionError Int64
+  | PatternConfigNoReference Build
+  | PatternConfigInvalidCommand Build
+  | PatternConfigBuildsTypeError
     deriving (Eq, Show)
 
-parseQueryConfig :: Text -> Either BorisQueryConfigError [BuildQuery]
-parseQueryConfig t =
-  first QueryConfigTomlParseError (parseTomlDoc "boris-query.toml" t) >>= parseTomlConfig
+parsePatternConfig :: Text -> Either BorisPatternConfigError [BuildPattern]
+parsePatternConfig t =
+  first PatternConfigTomlParseError (parseTomlDoc "boris-git.toml" t) >>= parseTomlConfig
 
-parseTomlConfig :: Table -> Either BorisQueryConfigError [BuildQuery]
+parseTomlConfig :: Table -> Either BorisPatternConfigError [BuildPattern]
 parseTomlConfig t =
   case t ^? key "boris" . _NTable . key "version" . _NTValue . _VInteger of
     Nothing ->
-      Left QueryConfigMissingVersionError
+      Left PatternConfigMissingVersionError
     Just 1 ->
       parseTomlConfigV1 t
     Just n ->
-      Left $ QueryConfigUnknownVersionError n
+      Left $ PatternConfigUnknownVersionError n
 
-parseTomlConfigV1 :: Table -> Either BorisQueryConfigError [BuildQuery]
+parseTomlConfigV1 :: Table -> Either BorisPatternConfigError [BuildPattern]
 parseTomlConfigV1 t =
   parseBuilds t >>= \builds ->
     forM (M.keys builds) $ \k ->
       let
         build = Build k
       in
-        BuildQuery build
+        BuildPattern build
           <$> parseGit builds build
 
-parseBuilds :: Table -> Either BorisQueryConfigError Table
+parseBuilds :: Table -> Either BorisPatternConfigError Table
 parseBuilds doc =
   case doc ^? key "build" of
     Nothing ->
       pure M.empty
     Just tt ->
-      maybeToRight QueryConfigBuildsTypeError $
+      maybeToRight PatternConfigBuildsTypeError $
         tt ^? _NTable
 
-parseGit :: Table -> Build -> Either BorisQueryConfigError Query
+parseGit :: Table -> Build -> Either BorisPatternConfigError Pattern
 parseGit builds build =
-  fmap Query . maybeToRight (QueryConfigNoReference build) $
+  fmap Pattern . maybeToRight (PatternConfigNoReference build) $
     builds ^? key (renderBuild build) . _NTable . key "git" . _NTValue . _VString
 
-renderBorisQueryConfigError :: BorisQueryConfigError -> Text
-renderBorisQueryConfigError err =
+renderBorisPatternConfigError :: BorisPatternConfigError -> Text
+renderBorisPatternConfigError err =
   case err of
-    QueryConfigTomlParseError p ->
+    PatternConfigTomlParseError p ->
       mconcat ["Boris configuration could not be parsed, toml parse error: ", T.pack . show $ p]
-    QueryConfigMissingVersionError ->
+    PatternConfigMissingVersionError ->
       "Boris configuration does not contain a version field."
-    QueryConfigUnknownVersionError n ->
+    PatternConfigUnknownVersionError n ->
       mconcat ["Boris configuration contains an unkown version: ", T.pack . show $ n]
-    QueryConfigNoReference b ->
+    PatternConfigNoReference b ->
       mconcat ["Boris configuration does not contain a mandatory 'refs' for build: ", renderBuild b]
-    QueryConfigInvalidCommand b ->
+    PatternConfigInvalidCommand b ->
       mconcat ["Boris configuration contains an invalid 'command' for build: ", renderBuild b]
-    QueryConfigBuildsTypeError ->
+    PatternConfigBuildsTypeError ->
       mconcat ["Boris configuration should contain a top level table 'build'."]

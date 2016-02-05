@@ -106,13 +106,13 @@ prop_refs v0 v1 = v0 /= v1 ==>
       X.exec o e $ (proc "git" ["checkout", "-b", "dev/branch"]) { cwd = Just repository }
 
     topics <- flailx $
-      Git.refs o e local  (Query "refs/heads/topic/*")
+      Git.refs o e local  (Pattern "refs/heads/topic/*")
 
     branches <- flailx $
-      Git.refs o e local (Query "refs/heads/*/branch")
+      Git.refs o e local (Pattern "refs/heads/*/branch")
 
     star <- flailx $
-      Git.refs o e local (Query "refs/heads/*")
+      Git.refs o e local (Pattern "refs/heads/*")
 
     pure $
       [topics, L.sort branches, star] === [

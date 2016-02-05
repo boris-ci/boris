@@ -33,3 +33,15 @@ instance Arbitrary BuildResult where
 instance Arbitrary Ref where
   arbitrary =
     Ref <$> elements cooking
+
+instance Arbitrary Commit where
+  arbitrary =
+    Commit <$> elements cooking
+
+instance Arbitrary Pattern where
+  arbitrary =
+    Pattern <$> elements cooking
+
+instance Arbitrary BuildPattern where
+  arbitrary =
+    BuildPattern <$> arbitrary <*> arbitrary

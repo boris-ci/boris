@@ -22,34 +22,34 @@ prop_parse_ok =
       check "test/data/config/ref/v1/empty.toml" . Right $ [
         ]
     , check "test/data/config/ref/v1/basic.toml" . Right $ [
-          BuildQuery
+          BuildPattern
             (Build "basic")
-            (Query "refs/heads/basic")
+            (Pattern "refs/heads/basic")
         ]
     , check "test/data/config/ref/v1/multiple.toml" . Right $ [
-          BuildQuery
+          BuildPattern
             (Build "basic")
-            (Query "refs/heads/basic")
-        , BuildQuery
+            (Pattern "refs/heads/basic")
+        , BuildPattern
             (Build "second")
-            (Query "refs/heads/*")
+            (Pattern "refs/heads/*")
         ]
     ]
 
 prop_parse_error =
   conjoin [
       check "test/data/config/ref/v1/invalid.no-version.toml" . Left $
-        QueryConfigMissingVersionError
+        PatternConfigMissingVersionError
     , check "test/data/config/ref/v1/invalid.unknown-version.toml" . Left $
-        QueryConfigUnknownVersionError 2
+        PatternConfigUnknownVersionError 2
     , check "test/data/config/ref/v1/invalid.no-reference.toml" . Left $
-        QueryConfigNoReference (Build "basic")
+        PatternConfigNoReference (Build "basic")
     ]
 
 check path expected =
   testIO $ do
     f <- T.readFile path
-    pure $ (fmap (sortOn buildName) $ parseQueryConfig f) === fmap (sortOn buildName) expected
+    pure $ (fmap (sortOn buildName) $ parsePatternConfig f) === fmap (sortOn buildName) expected
 
 
 return []

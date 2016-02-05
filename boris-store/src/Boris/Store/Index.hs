@@ -6,9 +6,13 @@ module Boris.Store.Index (
   , addBuildId
   , addQueued
   , addBuildRef
+  , addProjectCommit
+  , addProjectCommitBuildId
   , clearQueued
   , getProjects
   , getProjectRefs
+  , getProjectCommits
+  , getProjectCommitBuildIds
   , getBuildIds
   , getQueued
   , getBuildRefs
@@ -17,6 +21,7 @@ module Boris.Store.Index (
   , deleteBuildIds
   , deleteQueued
   , deleteBuildRefs
+  , deleteProjectCommit
   ) where
 
 import           Boris.Core.Data
@@ -100,6 +105,31 @@ addBuildRef e p b r = do
         vStrings (kVal "v") [renderRef r]
       ]
 
+addProjectCommit :: Environment -> Project -> Commit -> AWS ()
+addProjectCommit e p c = do
+  void . A.send $ D.updateItem (tProject e)
+    & D.uiKey .~ H.fromList [
+        vProject p
+      ]
+    & D.uiUpdateExpression .~
+      Just (mconcat ["ADD ", kCommits, " ", kVal "v"])
+    & D.uiExpressionAttributeValues .~ H.fromList [
+        vStrings (kVal "v") [renderCommit c]
+      ]
+
+addProjectCommitBuildId :: Environment -> Project -> Commit -> BuildId -> AWS ()
+addProjectCommitBuildId e p c i = do
+  void . A.send $ D.updateItem (tProjectCommits e)
+    & D.uiKey .~ H.fromList [
+        vProject p
+      , vCommit c
+      ]
+    & D.uiUpdateExpression .~
+      Just (mconcat ["ADD ", kBuilds, " ", kVal "v"])
+    & D.uiExpressionAttributeValues .~ H.fromList [
+        vStrings (kVal "v") [renderBuildId i]
+      ]
+
 clearQueued :: Environment -> Project -> Build -> BuildId -> AWS ()
 clearQueued e p b i = do
   void . A.send $ D.updateItem (tBuilds e)
@@ -123,6 +153,15 @@ getProjects e p = do
       Just False
   pure . fmap Build . fromMaybe [] $ res ^? D.girsItem . ix kBuilds . D.avSS
 
+getProjectCommits :: Environment -> Project -> AWS [Commit]
+getProjectCommits e p = do
+  res <- A.send $ D.getItem (tProject e)
+    & D.giKey .~ H.fromList [
+        vProject p
+      ]
+    & D.giConsistentRead .~
+      Just False
+  pure . fmap Commit . fromMaybe [] $ res ^? D.girsItem . ix kCommits . D.avSS
 
 getProjectRefs :: Environment -> Project -> Ref -> AWS [Build]
 getProjectRefs e p r = do
@@ -134,6 +173,17 @@ getProjectRefs e p r = do
     & D.giConsistentRead .~
       Just False
   pure . fmap Build . fromMaybe [] $ res ^? D.girsItem . ix kBuilds . D.avSS
+
+getProjectCommitBuildIds :: Environment -> Project -> Commit -> AWS [BuildId]
+getProjectCommitBuildIds e p c = do
+  res <- A.send $ D.getItem (tProjectCommits e)
+    & D.giKey .~ H.fromList [
+        vProject p
+      , vCommit c
+      ]
+    & D.giConsistentRead .~
+      Just False
+  pure . fmap BuildId . fromMaybe [] $ res ^? D.girsItem . ix kBuilds . D.avSS
 
 getBuildIds :: Environment -> Project -> Build -> Ref -> AWS [BuildId]
 getBuildIds e p b r = do
@@ -206,4 +256,12 @@ deleteBuildRefs e p b =
     & D.diKey .~ H.fromList [
         vProject p
       , vBuild b
+      ]
+
+deleteProjectCommit :: Environment -> Project -> Commit -> AWS ()
+deleteProjectCommit e p c =
+  void . A.send $ D.deleteItem (tProjectCommits e)
+    & D.diKey .~ H.fromList [
+        vProject p
+      , vCommit c
       ]

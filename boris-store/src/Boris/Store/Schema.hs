@@ -8,6 +8,7 @@ module Boris.Store.Schema (
   , tRefs
   , tProjectRefs
   , tProject
+  , tProjectCommits
   , kTick
   , kContext
   , kProject
@@ -20,6 +21,8 @@ module Boris.Store.Schema (
   , kBuildIdState
   , kRef
   , kRefs
+  , kCommit
+  , kCommits
   , kQueued
   , kStartTime
   , kEndTime
@@ -34,6 +37,9 @@ module Boris.Store.Schema (
   , vBuildId
   , vBuildResult
   , vRef
+  , vCommit
+  , vRefOf
+  , vCommitOf
   , vLogGroup
   , vLogStream
   , vTime
@@ -86,6 +92,7 @@ tTick e =
 --  kProject :: String
 --  kBuild :: String
 --  kRef :: String
+--  kCommit :: String
 --  kQueueTime :: String
 --  kStartTime :: String
 --  kEndTime :: String
@@ -144,17 +151,32 @@ tProjectRefs e =
   table e "project.refs"
 
 -- |
--- An index mapping projects to builds.
+-- An index mapping projects to builds and commits.
 --
 -- Key:
 --  kProject :: String
 --
 -- Attributes:
 --  kBuilds :: [String]
+--  kCommits :: [String]
 --
 tProject :: Environment -> Text
 tProject e =
   table e "project"
+
+-- |
+-- An index mapping project commits to build ids.
+--
+-- Key:
+--  kProject :: String
+--  kCommit :: String
+--
+-- Attributes:
+--  kBuilds :: [String]
+--
+tProjectCommits :: Environment -> Text
+tProjectCommits e =
+  table e "project.commit"
 
 kContext :: Text
 kContext =
@@ -216,6 +238,14 @@ kRefs :: Text
 kRefs =
   "refs"
 
+kCommit :: Text
+kCommit =
+  "commit"
+
+kCommits :: Text
+kCommits =
+  "commits"
+
 kQueued :: Text
 kQueued =
   "queued"
@@ -257,8 +287,20 @@ vBuildResult k v =
   (k, D.attributeValue & D.avBOOL .~ Just (case v of BuildOk -> True; BuildKo -> False))
 
 vRef :: Ref -> (Text, D.AttributeValue)
-vRef r =
-  (kRef, D.attributeValue & D.avS .~ Just (renderRef r))
+vRef =
+  vRefOf kRef
+
+vCommit :: Commit -> (Text, D.AttributeValue)
+vCommit =
+  vCommitOf kCommit
+
+vRefOf :: Text -> Ref -> (Text, D.AttributeValue)
+vRefOf k r =
+  (k, D.attributeValue & D.avS .~ Just (renderRef r))
+
+vCommitOf :: Text -> Commit -> (Text, D.AttributeValue)
+vCommitOf k c =
+  (k, D.attributeValue & D.avS .~ Just (renderCommit c))
 
 vLogGroup :: Text -> GroupName -> (Text, D.AttributeValue)
 vLogGroup k r =
@@ -282,31 +324,36 @@ vStrings k v =
 
 schema ::  Environment -> [D.CreateTable]
 schema e = [
-    D.createTable (tTick e) (D.keySchemaElement kContext D.Hash :| []) (D.provisionedThroughput 10 50)
+    D.createTable (tTick e) (D.keySchemaElement kContext D.Hash :| []) (D.provisionedThroughput 5 20)
       & D.ctAttributeDefinitions .~ [
           D.attributeDefinition kContext D.S
         ]
-  , D.createTable (tBuild e) (D.keySchemaElement kBuildId D.Hash :| []) (D.provisionedThroughput 10 50)
+  , D.createTable (tBuild e) (D.keySchemaElement kBuildId D.Hash :| []) (D.provisionedThroughput 5 20)
       & D.ctAttributeDefinitions .~ [
           D.attributeDefinition kBuildId D.S
         ]
-  , D.createTable (tBuilds e) (D.keySchemaElement kProject D.Hash :| [D.keySchemaElement kBuild D.Range]) (D.provisionedThroughput 10 50)
+  , D.createTable (tBuilds e) (D.keySchemaElement kProject D.Hash :| [D.keySchemaElement kBuild D.Range]) (D.provisionedThroughput 5 20)
       & D.ctAttributeDefinitions .~ [
           D.attributeDefinition kProject D.S
         , D.attributeDefinition kBuild D.S
         ]
-  , D.createTable (tRefs e) (D.keySchemaElement kProjectBuild D.Hash :| [D.keySchemaElement kRef D.Range]) (D.provisionedThroughput 10 50)
+  , D.createTable (tRefs e) (D.keySchemaElement kProjectBuild D.Hash :| [D.keySchemaElement kRef D.Range]) (D.provisionedThroughput 5 20)
       & D.ctAttributeDefinitions .~ [
           D.attributeDefinition kProjectBuild D.S
         , D.attributeDefinition kRef D.S
         ]
-  , D.createTable (tProject e) (D.keySchemaElement kProject D.Hash :| []) (D.provisionedThroughput 10 50)
+  , D.createTable (tProject e) (D.keySchemaElement kProject D.Hash :| []) (D.provisionedThroughput 5 20)
       & D.ctAttributeDefinitions .~ [
           D.attributeDefinition kProject D.S
         ]
-  , D.createTable (tProjectRefs e) (D.keySchemaElement kProject D.Hash :| [D.keySchemaElement kRef D.Range]) (D.provisionedThroughput 10 50)
+  , D.createTable (tProjectRefs e) (D.keySchemaElement kProject D.Hash :| [D.keySchemaElement kRef D.Range]) (D.provisionedThroughput 5 20)
       & D.ctAttributeDefinitions .~ [
           D.attributeDefinition kProject D.S
         , D.attributeDefinition kRef D.S
+        ]
+  , D.createTable (tProjectCommits e) (D.keySchemaElement kProject D.Hash :| [D.keySchemaElement kCommit D.Range]) (D.provisionedThroughput 5 20)
+      & D.ctAttributeDefinitions .~ [
+          D.attributeDefinition kProject D.S
+        , D.attributeDefinition kCommit D.S
         ]
   ]

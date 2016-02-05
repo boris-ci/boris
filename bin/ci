@@ -1,0 +1,44 @@
+#!/bin/sh -exu
+
+export LC_COLLATE=en_US.UTF-8
+export LANG=en_US.UTF-8
+
+git submodule init
+git submodule sync
+git submodule update
+
+MODULES=$(ls */*.cabal)
+
+fail () {
+    echo "$*" >2
+    exit 1
+}
+
+for x in $MODULES; do
+    (
+        cd $(dirname $x)
+        ./mafia update || exit $?
+        ./mafia build || exit $?
+        ./mafia testci || exit $?
+    ) || exit $?
+done
+
+
+if "${PUBLISH:-false}"; then
+    [ ! -z "${BINARIES:-}" ] || fail 'Publish error: $BINARIES is a required environment variable.'
+    [ ! -z "${PUBLISH_LOCATION:-}" ] || fail 'Publish error: $PUBLISH_LOCATION is a required environment variable.'
+
+    PUBLISH_ROOT=$(eval "echo $PUBLISH_LOCATION")
+
+    for BINARY in $BINARIES; do
+        VERSION_FILE="$(echo $BINARY | xargs dirname | xargs dirname | xargs dirname | xargs dirname)/gen/version.txt"
+
+        [ -f "$BINARY" ] || fail "Publish error: $BINARY could not be found."
+        [ -f "$VERSION_FILE" ] || fail 'Publish error: $VERSION_FILE could not be found. Check you are using a Custom build with our Setup.hs in place.'
+
+        NAME="$(basename $BINARY)"
+        VERSION="$(cat $VERSION_FILE)"
+
+        s3 upload "$BINARY" "$PUBLISH_ROOT/$NAME/linux/x86_64/$VERSION/$NAME-$VERSION"
+    done
+fi
