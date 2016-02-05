@@ -134,12 +134,20 @@ test-suite test-io
                     , ambiata-boris-service
                     , ambiata-boris-store
                     , ambiata-boris-queue
+                    , ambiata-boris-x
                     , ambiata-disorder-core
                     , ambiata-disorder-corpus
                     , ambiata-mismi-core
                     , ambiata-mismi-core-test
                     , ambiata-p
+                    , ambiata-x-eithert
+                    , conduit
+                    , conduit-extra
+                    , directory
+                    , filepath
+                    , process
                     , text
                     , temporary
+                    , transformers
                     , QuickCheck                      == 2.7.*
                     , quickcheck-instances            == 0.3.*

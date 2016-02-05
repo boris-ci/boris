@@ -1,8 +1,18 @@
 [master]
-  runner = "s3://ambiata-dispensary-v2/dist/master/master-ambiata/master-haskell-multi-library-0.0.1-20160120051654-1d685b5"
-  sha1 = "9268b44228d8ec534f70150cf194689a84e05fa7"
   version = 1
 
 [build.dist]
+  PUBLISH = "true"
+  BINARIES = "boris-service/dist/build/boris-service/boris-service"
+  PUBLISH_LOCATION = "$AMBIATA_ARTEFACTS_MASTER"
+
+  [build.dist.master]
+    runner = "bin/ci"
 
 [build.branches]
+  PUBLISH = "true"
+  BINARIES = "boris-service/dist/build/boris-service/boris-service"
+  PUBLISH_LOCATION = "$AMBIATA_ARTEFACTS_BRANCHES"
+
+  [build.branches.master]
+    runner = "bin/ci"
