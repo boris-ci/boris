@@ -56,7 +56,7 @@ get :: FromJSON a => BalanceConfig -> [Text] -> EitherT BorisHttpClientError IO 
 get b url = do
   res <- bimapEitherT BorisHttpClientBalanceError id . newEitherT . runBalanceT b . httpBalanced $ \r -> r {
       H.path = encodePathSegmentsBS url
-    , H.requestHeaders = [(HTTP.hContentType, borisVersion)]
+    , H.requestHeaders = [(HTTP.hAccept, borisVersion)]
     , H.method = HTTP.methodGet
     }
   case H.responseStatus res of
