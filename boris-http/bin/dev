@@ -1,0 +1,43 @@
+#!/bin/sh -eux
+
+export AWS_DEFAULT_REGION=ap-southeast-2
+export BORIS_ENVIRONMENT=local
+export BORIS_BUILD_QUEUE=boris-${BORIS_ENVIRONMENT}
+export BORIS_CONFIG_LOCATION=s3://ambiata-dev-view/boris/$(date '+%Y%m%d%H%M%S')-$$
+export PORT=10080
+export BONES_PORT=10081
+
+LOCAL_TMP="$(dirname $0)/../tmp"
+LOCAL_GIT="$(dirname $0)/../tmp/git"
+
+rm -rf "$LOCAL_GIT"
+
+mkdir -p "$LOCAL_TMP" "$LOCAL_GIT"
+
+
+cat > "$LOCAL_GIT/boris.toml" <<EOF
+[boris]
+  version = 1
+
+[build.dist]
+  git = "refs/heads/master"
+EOF
+
+cat > "$LOCAL_GIT/master.toml" <<EOF
+[master]
+  runner = "/bin/echo"
+  version = 1
+
+[build.dist]
+EOF
+
+(cd "$LOCAL_GIT" && git init && git add -A . && git commit -m "first") || exit $?
+
+LOCAL_BORIS_CONFIG="$LOCAL_TMP/conf"
+cat > "$LOCAL_BORIS_CONFIG" <<EOF
+demo=$(cd "$LOCAL_GIT" >/dev/null 2>&1 && pwd)
+EOF
+
+aws s3 cp "$LOCAL_BORIS_CONFIG" "$BORIS_CONFIG_LOCATION"
+
+$(dirname $0)/../dist/build/boris-http/boris-http
