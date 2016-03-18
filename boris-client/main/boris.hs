@@ -19,7 +19,7 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
-import           Mismi (renderRegionError, discoverAWSEnv, runAWS, runAWST, renderError)
+import           Mismi (renderRegionError, discoverAWSEnv, runAWS, renderError)
 
 import           Network.HTTP.Client (newManager, defaultManagerSettings)
 
@@ -29,17 +29,12 @@ import           P
 
 import           Snooze.Balance.Data (BalanceTable (..), BalanceEntry (..), Host (..), Port (..), balanceTableStatic)
 import           Snooze.Balance.Control (BalanceConfig (..))
-import           Snooze.Baton.Data (Constraints (..), ServiceName (..), renderSnoozeBError, batonResultTable)
-import qualified Snooze.Baton.Data as S (Environment (Ci))
-
-import           Snooze.Baton.Discovery (siesta)
 
 import           System.IO
 import           System.Exit (exitSuccess, exitFailure)
 import           System.Environment (lookupEnv)
 
 import           X.Options.Applicative
-import           X.Control.Monad.Trans.Either (bimapEitherT)
 import           X.Control.Monad.Trans.Either.Exit (orDie)
 
 data Tail =
@@ -171,15 +166,7 @@ bomb msg =
 mkBalanceConfig :: IO BalanceConfig
 mkBalanceConfig = do
   mgr <- newManager defaultManagerSettings
-  (fmap (flip elem ["true", "1"]) $ text "LOCAL_MODE") >>= \m -> case m of
-    True -> do
-      p <- fmap Port $ intOr "PORT" 11111
-      t <- balanceTableStatic . BalanceTable (BalanceEntry (Host "localhost") p) $ []
-      pure $ BalanceConfig t mempty mgr
-    False -> do
-      env <- orDie renderRegionError discoverAWSEnv
-      t <- (=<<) balanceTableStatic . fmap batonResultTable . orDie id $
-       runAWST env renderError $
-        bimapEitherT renderSnoozeBError id $
-          siesta (Constraints S.Ci (ServiceName "boris"))
-      pure $ BalanceConfig t mempty mgr
+  h <- Host <$> text "HOST"
+  p <- Port <$> intOr "PORT" 11111
+  t <- balanceTableStatic . BalanceTable (BalanceEntry h p) $ []
+  pure $ BalanceConfig t mempty mgr

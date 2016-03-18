@@ -14,6 +14,7 @@ import           Boom.Airship (boom, notfound)
 import           Boris.Core.Data
 import           Boris.Http.Data
 import           Boris.Http.Repository
+import           Boris.Http.Representation.Build
 import           Boris.Http.Version
 import           Boris.Store.Build (BuildData (..))
 import qualified Boris.Store.Build as SB
@@ -78,15 +79,15 @@ item env e =
     }
 
 getBuild :: Webmachine IO Build
-getBuild = do
+getBuild =
   Build <$> lookupParam "build-name"
 
 getProject :: Webmachine IO Project
-getProject = do
+getProject =
   Project <$> lookupParam "project-name"
 
 getBuildId :: Webmachine IO BuildId
-getBuildId = do
+getBuildId =
   BuildId <$> lookupParam "build-id"
 
 webT :: (e -> Text) -> EitherT e IO a -> Webmachine IO a
@@ -96,23 +97,6 @@ webT render t =
       boom . BoomApplicationInvariant . render $ e
     Right a ->
       pure a
-
-newtype GetBuild =
-  GetBuild BuildData
-
-instance ToJSON GetBuild where
-  toJSON (GetBuild b) =
-    object [
-        "build_id" .= (renderBuildId . buildDataId) b
-      , "project" .= (renderProject . buildDataProject) b
-      , "build" .= (renderBuild . buildDataBuild) b
-      , "ref" .= (fmap renderRef . buildDataRef) b
-      , "queued" .= buildDataQueueTime b
-      , "started" .= buildDataStartTime b
-      , "completed" .= buildDataEndTime b
-      , "result" .= (flip fmap (buildDataResult b) $ \bb -> case bb of BuildOk -> True; BuildKo -> False)
-      , "log" .= (flip fmap (buildDataLog b) $ \l -> object ["group" .= (unGroupName . SB.logGroup) l, "stream" .= (unStreamName . SB.logStream) l])
-      ]
 
 setLocation :: [Text] -> Webmachine IO ()
 setLocation p =
