@@ -45,10 +45,11 @@ library
                     src
 
   exposed-modules:
-                    Boris.Http
                     Boris.Http.Data
                     Boris.Http.Repository
                     Boris.Http.Resource.Build
+                    Boris.Http.Route
+                    Boris.Http.Representation.Build
                     Boris.Http.Version
 
 executable boris-http

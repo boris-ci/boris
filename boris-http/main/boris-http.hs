@@ -6,7 +6,7 @@ import           Agriculture (agriculture)
 
 import           Boris.Core.Data
 import           Boris.Http.Data
-import           Boris.Http (boris)
+import           Boris.Http.Route (boris)
 import qualified Boris.Store.Lifecycle as SL
 import           Boris.Queue (BuildQueue (..))
 
