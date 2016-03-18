@@ -27,10 +27,7 @@ import           Charlotte.Airship (processPostMedia, jsonResponse, setResponseH
 
 import           Control.Monad.IO.Class (liftIO)
 
-import           Data.Aeson (ToJSON (..), object, (.=))
 import           Data.Text (Text)
-
-import           Jebediah.Data (GroupName (..), StreamName (..))
 
 import           Mismi (runAWS, runAWST, renderError)
 import           Mismi.Amazonka (Env)
