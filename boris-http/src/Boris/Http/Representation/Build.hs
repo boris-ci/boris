@@ -5,13 +5,10 @@ module Boris.Http.Representation.Build (
   ) where
 
 import           Boris.Core.Data
-import           Boris.Http.Data
 import           Boris.Store.Build (BuildData (..))
 import qualified Boris.Store.Build as SB
-import           Boris.Queue (BuildQueue (..), Request (..))
 
 import           Data.Aeson (ToJSON (..), object, (.=))
-import           Data.Text (Text)
 
 import           Jebediah.Data (GroupName (..), StreamName (..))
 
