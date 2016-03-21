@@ -59,6 +59,7 @@ library
                     Boris.Client.Data
                     Boris.Client.Http
                     Boris.Client.Log
+                    Boris.Client.Project
 
 executable boris
   ghc-options:
