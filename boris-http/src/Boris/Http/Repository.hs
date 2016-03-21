@@ -3,6 +3,7 @@
 module Boris.Http.Repository (
     ConfigError (..)
   , pick
+  , list
   , renderConfigError
   ) where
 
@@ -50,6 +51,19 @@ pick env location project = do
 
   pure $ registrationRepository <$> registration
 
+
+list :: Env -> ConfigLocation -> EitherT ConfigError IO [Project]
+list env location =
+  runAWST env ConfigAwsError $ do
+    attempt <- lift $ S3.read' (configLocation location)
+    source <- fromMaybeM (left $ ConfigFileNotFoundError location) $
+      attempt
+    mapEitherT (liftIO . runResourceT) $ (hoist lift $ source)
+      $=+ CT.decodeUtf8
+      $=+ CT.lines
+      $=+ CL.mapM (\t -> fromMaybeM (left $ ConfigParseError t) $ parseRegistration t)
+      $=+ CL.map registrationProject
+      $$+- CL.consume
 
 renderConfigError :: ConfigError -> Text
 renderConfigError err =

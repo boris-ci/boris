@@ -48,8 +48,10 @@ library
                     Boris.Http.Data
                     Boris.Http.Repository
                     Boris.Http.Resource.Build
+                    Boris.Http.Resource.Project
                     Boris.Http.Route
                     Boris.Http.Representation.Build
+                    Boris.Http.Representation.Project
                     Boris.Http.Version
 
 executable boris-http
