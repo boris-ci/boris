@@ -1,7 +1,9 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Boris.Http.Representation.Build (
-    GetBuild (..)
+    GetBuilds (..)
+  , GetBuildsDetail (..)
+  , GetBuild (..)
   ) where
 
 import           Boris.Core.Data
@@ -14,6 +16,26 @@ import           Jebediah.Data (GroupName (..), StreamName (..))
 
 import           P
 
+data GetBuilds =
+  GetBuilds Project Build [GetBuildsDetail]
+
+data GetBuildsDetail =
+  GetBuildsDetail Ref [BuildId]
+
+instance ToJSON GetBuilds where
+  toJSON (GetBuilds p b ds) =
+    object [
+        "project" .= renderProject p
+      , "build" .= renderBuild b
+      , "details" .= ds
+      ]
+
+instance ToJSON GetBuildsDetail where
+  toJSON (GetBuildsDetail r is) =
+    object [
+        "ref" .= renderRef r
+      , "build_ids" .= fmap renderBuildId is
+      ]
 
 newtype GetBuild =
   GetBuild BuildData
