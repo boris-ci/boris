@@ -10,6 +10,7 @@ import qualified Boris.Client.Build as B
 import qualified Boris.Client.Project as P
 import qualified Boris.Client.Log as L
 
+import           Control.Concurrent.Async (async, waitEitherCancel)
 import           Control.Concurrent (threadDelay)
 import           Control.Monad.IO.Class (liftIO)
 
@@ -38,6 +39,7 @@ import           System.IO
 import           System.Locale (defaultTimeLocale)
 
 import           X.Options.Applicative
+import           X.Control.Monad.Trans.Either (newEitherT, runEitherT)
 import           X.Control.Monad.Trans.Either.Exit (orDie)
 
 data Tail =
@@ -96,6 +98,7 @@ run e c = case c of
     when (t == Tail) $ do
       let
         i = buildDataId d
+
         waitForLog = do
           liftIO . T.putStrLn $ "Waiting for build to start..."
           liftIO $ threadDelay 1000000
@@ -107,10 +110,40 @@ run e c = case c of
               waitForLog
             Just (Just l) ->
               pure l
+
+        waitForStatus = runEitherT $ do
+          liftIO $ threadDelay 1000000
+          r <- B.fetch bc i
+          case fmap buildDataResult r of
+            Nothing ->
+              newEitherT waitForStatus
+            Just Nothing ->
+              newEitherT waitForStatus
+            Just (Just x) ->
+              pure x
+
+        taillog env l =
+          runEitherT . runAWS env $ L.source' (logGroup l) (logStream l) $$
+            CL.mapM_ (liftIO . T.putStrLn)
+
       l <- orDie renderBorisHttpClientError waitForLog
       env <- orDie renderRegionError discoverAWSEnv
-      orDie renderError . runAWS env $ L.source' (logGroup l) (logStream l) $$
-        CL.mapM_ (liftIO . T.putStrLn)
+      as <- async waitForStatus
+      at <- async $ taillog env l
+      f <- waitEitherCancel as at
+
+      case f of
+        Left (Left err) ->
+          bomb $ renderBorisHttpClientError err
+        Left (Right BuildOk) ->
+          exitSuccess
+        Left (Right BuildKo) ->
+          exitFailure
+        Right (Right _) ->
+          exitSuccess
+        Right (Left err) ->
+          bomb $ renderError err
+
   List pp bb -> do
     bc <- mkBalanceConfig
     case (pp, bb) of
