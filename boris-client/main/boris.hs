@@ -7,6 +7,7 @@ import           Boris.Core.Data
 import           Boris.Store.Build (BuildData (..), LogData (..))
 import           Boris.Client.Http (renderBorisHttpClientError)
 import qualified Boris.Client.Build as B
+import qualified Boris.Client.Project as P
 import qualified Boris.Client.Log as L
 
 import           Control.Concurrent (threadDelay)
@@ -44,7 +45,7 @@ data Tail =
 
 data Cli =
     Trigger Tail Project Build (Maybe Ref)
-  | Status Project (Maybe Build)
+  | Status (Maybe Project) (Maybe Build)
   | Log BuildId
     deriving (Eq, Show)
 
@@ -73,7 +74,7 @@ parser =
           <*> optional refP
     , command' "status" "Status of a project / build" $
         Status
-          <$> projectP
+          <$> optional projectP
           <*> optional buildP
     , command' "log" "Log of a build" $
         Log
@@ -104,9 +105,25 @@ run e c = case c of
       env <- orDie renderRegionError discoverAWSEnv
       orDie renderError . runAWS env $ L.source' (logGroup l) (logStream l) $$
         CL.mapM_ (liftIO . T.putStrLn)
-
-  Status _p _b ->
-    putStrLn "*implement me*" >> exitFailure
+  -- FIX rename to list, make status [build-id] for determining success etc...
+  Status pp bb -> do
+    bc <- mkBalanceConfig
+    case (pp, bb) of
+      (Nothing, Nothing) ->
+        orDie renderBorisHttpClientError $
+          P.list bc >>= mapM_ (liftIO . T.putStrLn . renderProject)
+      (Just p, Nothing) ->
+        orDie renderBorisHttpClientError $
+          P.fetch bc p >>= mapM_ (liftIO . T.putStrLn . renderBuild)
+      (Just p, Just b) ->
+        orDie renderBorisHttpClientError $
+          B.list bc p b >>= mapM_ (\(r, is) -> liftIO $ do
+            T.putStrLn . renderRef $ r
+            forM_ is $ \i -> do
+              T.putStr "\t"
+              T.putStrLn . renderBuildId $ i)
+      (Nothing, Just _) ->
+        bomb "Can not specify build without project."
   Log i -> do
     env <- orDie renderRegionError discoverAWSEnv
     orDie renderError . runAWS env $ L.source e i $$ CL.mapM_ (liftIO . T.putStrLn)

@@ -3,6 +3,7 @@
 module Boris.Client.Build (
     trigger
   , fetch
+  , list
   ) where
 
 import           Boris.Core.Data
@@ -31,6 +32,11 @@ fetch :: BalanceConfig -> BuildId -> EitherT BorisHttpClientError IO (Maybe Buil
 fetch c i =
   (fmap . fmap) getBuild $
     H.get c ["build", renderBuildId i]
+
+list :: BalanceConfig -> Project -> Build -> EitherT BorisHttpClientError IO [(Ref, [BuildId])]
+list c p b =
+  fmap (maybe [] (fmap (\r -> (getBuildsDetailRef r, getBuildsDetailIds r))) . fmap getBuildsDetail) $
+    H.get c ["project", renderProject p , "build", renderBuild b]
 
 data PostBuildRequest =
   PostBuildRequest
@@ -61,3 +67,27 @@ instance FromJSON GetBuild where
                   forM ll $ \l ->
                     flip (withObject "LogData") l $ \ld ->
                       LogData <$> (fmap GroupName $ ld .: "group") <*> (fmap StreamName $ ld .: "stream"))
+
+newtype GetBuilds =
+  GetBuilds {
+      getBuildsDetail :: [GetBuildsDetail]
+    } deriving (Eq, Show)
+
+data GetBuildsDetail =
+  GetBuildsDetail {
+      getBuildsDetailRef :: Ref
+    , getBuildsDetailIds :: [BuildId]
+    } deriving (Eq, Show)
+
+instance FromJSON GetBuilds where
+  parseJSON =
+    withObject "GetBuilds" $ \o ->
+      fmap GetBuilds $
+        o .: "details"
+
+instance FromJSON GetBuildsDetail where
+  parseJSON =
+    withObject "GetBuildsDetail" $ \o ->
+      GetBuildsDetail
+        <$> fmap Ref (o .: "ref")
+        <*> (fmap . fmap) BuildId (o .: "build_ids")
