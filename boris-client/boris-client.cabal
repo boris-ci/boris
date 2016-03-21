@@ -87,7 +87,9 @@ executable boris
                     , http-client
                     , optparse-applicative            == 0.11.*
                     , text
+                    , time
                     , transformers
+                    , old-locale
 
 test-suite test-io
   type:

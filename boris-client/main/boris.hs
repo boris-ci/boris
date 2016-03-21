@@ -19,6 +19,7 @@ import           Data.String (String)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import           Data.Time (UTCTime, diffUTCTime, formatTime)
 
 import           Mismi (renderRegionError, discoverAWSEnv, runAWS, renderError)
 
@@ -31,9 +32,10 @@ import           P
 import           Snooze.Balance.Data (BalanceTable (..), BalanceEntry (..), Host (..), Port (..), balanceTableStatic)
 import           Snooze.Balance.Control (BalanceConfig (..))
 
-import           System.IO
 import           System.Exit (exitSuccess, exitFailure)
 import           System.Environment (lookupEnv)
+import           System.IO
+import           System.Locale (defaultTimeLocale)
 
 import           X.Options.Applicative
 import           X.Control.Monad.Trans.Either.Exit (orDie)
@@ -45,7 +47,8 @@ data Tail =
 
 data Cli =
     Trigger Tail Project Build (Maybe Ref)
-  | Status (Maybe Project) (Maybe Build)
+  | List (Maybe Project) (Maybe Build)
+  | Status BuildId
   | Log BuildId
     deriving (Eq, Show)
 
@@ -72,10 +75,13 @@ parser =
           <*> projectP
           <*> buildP
           <*> optional refP
-    , command' "status" "Status of a project / build" $
-        Status
+    , command' "list" "list of projects / builds" $
+        List
           <$> optional projectP
           <*> optional buildP
+    , command' "status" "status of build" $
+        Status
+          <$> buildIdP
     , command' "log" "Log of a build" $
         Log
           <$> buildIdP
@@ -105,8 +111,7 @@ run e c = case c of
       env <- orDie renderRegionError discoverAWSEnv
       orDie renderError . runAWS env $ L.source' (logGroup l) (logStream l) $$
         CL.mapM_ (liftIO . T.putStrLn)
-  -- FIX rename to list, make status [build-id] for determining success etc...
-  Status pp bb -> do
+  List pp bb -> do
     bc <- mkBalanceConfig
     case (pp, bb) of
       (Nothing, Nothing) ->
@@ -124,6 +129,27 @@ run e c = case c of
               T.putStrLn . renderBuildId $ i)
       (Nothing, Just _) ->
         bomb "Can not specify build without project."
+  Status i -> do
+    bc <- mkBalanceConfig
+    rr <- orDie renderBorisHttpClientError $ B.fetch bc i
+    case rr of
+      Nothing -> do
+        T.putStrLn . mconcat $ ["No build [", renderBuildId i, "] found."]
+        exitFailure
+      Just r -> do
+        T.putStrLn . T.unlines $ [
+            mconcat ["id: ", renderBuildId . buildDataId $ r]
+          , mconcat ["project: ", renderProject . buildDataProject $ r]
+          , mconcat ["build: ", renderBuild . buildDataBuild $ r]
+          , mconcat ["ref: ", maybe "n/a" renderRef . buildDataRef $ r]
+          , mconcat ["queued-at: ", maybe "n/a" renderTime . buildDataQueueTime $ r]
+          , mconcat ["started-at: ", maybe "n/a" renderTime . buildDataStartTime $ r]
+          , mconcat ["end-at: ", maybe "n/a" renderTime . buildDataEndTime $ r]
+          , mconcat ["duration: ", maybe "n/a" (uncurry renderDuration) $ (,) <$> buildDataStartTime r <*> buildDataEndTime r]
+          , mconcat ["log: ", maybe "n/a" (const $ "boris log " <> renderBuildId i) . buildDataLog $ r]
+          , mconcat ["result: ", maybe "n/a" (\br -> case br of BuildOk -> "successful"; BuildKo -> "failure") . buildDataResult $ r]
+          ]
+        exitSuccess
   Log i -> do
     env <- orDie renderRegionError discoverAWSEnv
     orDie renderError . runAWS env $ L.source e i $$ CL.mapM_ (liftIO . T.putStrLn)
@@ -187,3 +213,11 @@ mkBalanceConfig = do
   p <- Port <$> intOr "PORT" 11111
   t <- balanceTableStatic . BalanceTable (BalanceEntry h p) $ []
   pure $ BalanceConfig t mempty mgr
+
+renderTime :: UTCTime -> Text
+renderTime =
+  T.pack . formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S"
+
+renderDuration :: UTCTime -> UTCTime -> Text
+renderDuration s e =
+  mconcat [T.pack . show $ ((round (diffUTCTime e s)) :: Integer), "s"]
