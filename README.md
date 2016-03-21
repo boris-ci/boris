@@ -3,7 +3,7 @@ boris
 
 ```
 Boris is a retired russian cosmonaut who is saddened by the state of
-bloated, not-working, and quite frankly - ridculous - programs which
+bloated, not-working, and quite frankly - ridiculous - programs which
 have incorrectly assumed they were up to the task of running so called
 "build" processes. So in his ample lesiure time, boris has taken to
 running your builds for you.
