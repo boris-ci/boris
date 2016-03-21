@@ -220,4 +220,4 @@ renderTime =
 
 renderDuration :: UTCTime -> UTCTime -> Text
 renderDuration s e =
-  T.pack . show $ ((round (diffUTCTime e s)) :: Integer)
+  mconcat [T.pack . show $ ((round (diffUTCTime e s)) :: Integer), "s"]
