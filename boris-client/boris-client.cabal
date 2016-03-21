@@ -82,6 +82,7 @@ executable boris
                     , ambiata-snooze-baton
                     , ambiata-x-optparse
                     , ambiata-x-eithert
+                    , async
                     , conduit
                     , conduit-extra
                     , http-client
