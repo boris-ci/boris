@@ -119,7 +119,8 @@ run e c = case c of
               newEitherT waitForStatus
             Just Nothing ->
               newEitherT waitForStatus
-            Just (Just x) ->
+            Just (Just x) -> do
+              liftIO $ threadDelay 5000000
               pure x
 
         taillog env l =
