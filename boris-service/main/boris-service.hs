@@ -33,6 +33,7 @@ main = do
   pin <- newPin
   env <- orDie renderRegionError discoverAWSEnv
   environment <- Environment <$> text "BORIS_ENVIRONMENT"
+  T.putStrLn $ "boris-environment: " <> (T.pack . show) environment
   queue <- BuildQueue <$> text "BORIS_BUILD_QUEUE"
   work <- WorkspacePath <$> text "BORIS_WORKSPACE_PATH"
   n <- intOr "BORIS_WORK_THREADS" 1

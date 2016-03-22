@@ -15,12 +15,19 @@ rm -rf "$LOCAL_GIT"
 mkdir -p "$LOCAL_TMP" "$LOCAL_GIT"
 
 
-cat > "$LOCAL_GIT/boris.toml" <<EOF
+cat > "$LOCAL_GIT/boris-git.toml" <<EOF
 [boris]
   version = 1
 
 [build.dist]
   git = "refs/heads/master"
+EOF
+
+cat > "$LOCAL_GIT/boris.toml" <<EOF
+[boris]
+  version = 1
+
+[build.dist]
 EOF
 
 cat > "$LOCAL_GIT/master.toml" <<EOF
