@@ -15,7 +15,7 @@ import           P
 --       want me to take it out of your pay.....
 environment :: Environment
 environment =
-  Environment "testing"
+  Environment "local"
 
 withClean :: Environment -> AWS () -> AWS a -> AWS a
 withClean e clean f =

@@ -76,6 +76,7 @@ newSink g s = do
   pure $ CT.decodeUtf8
     =$= CT.lines
     =$= joinempty
+    =$= CL.filter (not . T.null)
     =$= CL.mapM (\l -> getCurrentTime >>= pure . Log l)
     =$= buffer 10
     =$= CL.mapM_ (writeLogNel env g s tok)

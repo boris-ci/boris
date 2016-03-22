@@ -20,6 +20,7 @@ import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Trans.Class (lift)
 
 import           Data.Text (Text)
+import qualified Data.Text.IO as T
 
 import           Jebediah.Data (GroupName (..), StreamName (..))
 
@@ -83,6 +84,7 @@ listen env e q w = do
     out <- runAWST env ListenerAwsError . lift $
       newLogger gname sname
 
+    liftIO . T.putStrLn $ "acknowledge: " <> renderBuildId buildId
     ack <- runAWST env ListenerAwsError . lift $
       SB.acknowledge e buildId gname sname
 
@@ -97,7 +99,9 @@ listen env e q w = do
               X.xPutStrLn out $ mconcat ["| boris:ko | ", renderInitialiseError err]
 
               runAWST env ListenerAwsError . lift $ do
+                liftIO . T.putStrLn $ "deindex: " <> renderBuildId buildId
                 SB.deindex e project build buildId
+                liftIO . T.putStrLn $ "complete: " <> renderBuildId buildId
                 SB.complete e buildId BuildKo
 
             Right instant -> do
@@ -106,7 +110,8 @@ listen env e q w = do
                 commit = buildCommit instant
                 specification = buildSpecification instant
 
-              runAWST env ListenerAwsError . lift $
+              runAWST env ListenerAwsError . lift $ do
+                liftIO . T.putStrLn $ "index: " <> renderBuildId buildId
                 SB.index e project build buildId ref commit
 
               result <- liftIO . runEitherT $
@@ -119,6 +124,7 @@ listen env e q w = do
                   X.xPutStrLn out $ "| boris:ok |"
 
               runAWST env ListenerAwsError . lift $ do
+                liftIO . T.putStrLn $ "complete: " <> renderBuildId buildId
                 SB.complete e buildId (bool BuildKo BuildOk $ isRight result)
 
       AlreadyRunning ->

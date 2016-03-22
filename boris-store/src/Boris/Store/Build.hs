@@ -27,6 +27,7 @@ import           Control.Monad.Trans.Class (lift)
 
 import           Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 
 import           Data.Time (UTCTime, getCurrentTime, parseTime)
 import qualified Data.HashMap.Strict as H
@@ -116,13 +117,21 @@ index e p b i r c = do
   -- NOTE: We don't want to index these before acknowledge because we wouldn't of validated
   --       the project against a refs-config, which means indexing it earlier could result
   --       in rubish builds being reported that should never of been allowed through.
+  liftIO . T.putStrLn $ "clear-queue"
   clearQueued e p b i
+  liftIO . T.putStrLn $ "add-project"
   addProject e p b
+  liftIO . T.putStrLn $ "add-project-ref"
   addProjectRef e p r b
+  liftIO . T.putStrLn $ "add-build-id"
   addBuildId e p b r i
+  liftIO . T.putStrLn $ "add-build-ref"
   addBuildRef e p b r
+  liftIO . T.putStrLn $ "add-project-commit"
   addProjectCommit e p c
+  liftIO . T.putStrLn $ "add-project-commit-build-id"
   addProjectCommitBuildId e p c i
+  liftIO . T.putStrLn $ "add-set-ref"
   void . A.send $ D.updateItem (tBuild e)
     & D.uiKey .~ H.fromList [
         vBuildId i

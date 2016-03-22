@@ -232,7 +232,7 @@ kBuilds =
 
 kRef :: Text
 kRef =
-  "ref"
+  "refx" -- ref is now a reserved keyword
 
 kRefs :: Text
 kRefs =
@@ -240,7 +240,7 @@ kRefs =
 
 kCommit :: Text
 kCommit =
-  "commit"
+  "commitx"
 
 kCommits :: Text
 kCommits =
@@ -324,34 +324,34 @@ vStrings k v =
 
 schema ::  Environment -> [D.CreateTable]
 schema e = [
-    D.createTable (tTick e) (D.keySchemaElement kContext D.Hash :| []) (D.provisionedThroughput 5 20)
+    D.createTable (tTick e) (D.keySchemaElement kContext D.Hash :| []) (D.provisionedThroughput 2 5)
       & D.ctAttributeDefinitions .~ [
           D.attributeDefinition kContext D.S
         ]
-  , D.createTable (tBuild e) (D.keySchemaElement kBuildId D.Hash :| []) (D.provisionedThroughput 5 20)
+  , D.createTable (tBuild e) (D.keySchemaElement kBuildId D.Hash :| []) (D.provisionedThroughput 2 5)
       & D.ctAttributeDefinitions .~ [
           D.attributeDefinition kBuildId D.S
         ]
-  , D.createTable (tBuilds e) (D.keySchemaElement kProject D.Hash :| [D.keySchemaElement kBuild D.Range]) (D.provisionedThroughput 5 20)
+  , D.createTable (tBuilds e) (D.keySchemaElement kProject D.Hash :| [D.keySchemaElement kBuild D.Range]) (D.provisionedThroughput 2 5)
       & D.ctAttributeDefinitions .~ [
           D.attributeDefinition kProject D.S
         , D.attributeDefinition kBuild D.S
         ]
-  , D.createTable (tRefs e) (D.keySchemaElement kProjectBuild D.Hash :| [D.keySchemaElement kRef D.Range]) (D.provisionedThroughput 5 20)
+  , D.createTable (tRefs e) (D.keySchemaElement kProjectBuild D.Hash :| [D.keySchemaElement kRef D.Range]) (D.provisionedThroughput 2 5)
       & D.ctAttributeDefinitions .~ [
           D.attributeDefinition kProjectBuild D.S
         , D.attributeDefinition kRef D.S
         ]
-  , D.createTable (tProject e) (D.keySchemaElement kProject D.Hash :| []) (D.provisionedThroughput 5 20)
+  , D.createTable (tProject e) (D.keySchemaElement kProject D.Hash :| []) (D.provisionedThroughput 2 5)
       & D.ctAttributeDefinitions .~ [
           D.attributeDefinition kProject D.S
         ]
-  , D.createTable (tProjectRefs e) (D.keySchemaElement kProject D.Hash :| [D.keySchemaElement kRef D.Range]) (D.provisionedThroughput 5 20)
+  , D.createTable (tProjectRefs e) (D.keySchemaElement kProject D.Hash :| [D.keySchemaElement kRef D.Range]) (D.provisionedThroughput 2 5)
       & D.ctAttributeDefinitions .~ [
           D.attributeDefinition kProject D.S
         , D.attributeDefinition kRef D.S
         ]
-  , D.createTable (tProjectCommits e) (D.keySchemaElement kProject D.Hash :| [D.keySchemaElement kCommit D.Range]) (D.provisionedThroughput 5 20)
+  , D.createTable (tProjectCommits e) (D.keySchemaElement kProject D.Hash :| [D.keySchemaElement kCommit D.Range]) (D.provisionedThroughput 2 5)
       & D.ctAttributeDefinitions .~ [
           D.attributeDefinition kProject D.S
         , D.attributeDefinition kCommit D.S
