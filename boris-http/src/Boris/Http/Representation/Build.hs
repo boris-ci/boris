@@ -11,6 +11,7 @@ import           Boris.Store.Build (BuildData (..))
 import qualified Boris.Store.Build as SB
 
 import           Data.Aeson (ToJSON (..), object, (.=))
+import qualified Data.List as L
 
 import           Jebediah.Data (GroupName (..), StreamName (..))
 
@@ -34,7 +35,7 @@ instance ToJSON GetBuildsDetail where
   toJSON (GetBuildsDetail r is) =
     object [
         "ref" .= renderRef r
-      , "build_ids" .= fmap renderBuildId is
+      , "build_ids" .= (L.reverse . L.sort . fmap renderBuildId) is
       ]
 
 newtype GetBuild =
