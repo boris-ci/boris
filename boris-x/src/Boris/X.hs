@@ -56,10 +56,10 @@ capture sout serr =
 
 withEnv :: [WithEnv] -> CreateProcess -> IO CreateProcess
 withEnv es cp = do
-  env <- getEnvironment
+  envs <- getEnvironment
   pure $ cp { env = Just $ catMaybes . flip fmap es $ \e -> case e of
     InheritEnv k ->
-      find ((==) (T.unpack k) . fst) env
+      find ((==) (T.unpack k) . fst) envs
     SetEnv k v ->
       Just (T.unpack k, T.unpack v) }
 
