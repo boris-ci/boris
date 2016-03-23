@@ -14,6 +14,7 @@ import           Boris.Service.Workspace
 import qualified Boris.Store.Build as SB
 import           Boris.Queue (BuildQueue (..), Request (..))
 import qualified Boris.Queue as Q
+import           Boris.X (WithEnv (..))
 import qualified Boris.X as X
 
 import           Control.Monad.IO.Class (liftIO)
@@ -110,12 +111,30 @@ listen env e q w = do
                 commit = buildCommit instant
                 specification = buildSpecification instant
 
+                -- FIX inherit list should be defined externally
+                context = [
+                    InheritEnv "AWS_DEFAULT_REGION"
+                  , InheritEnv "AMBIATA_ARTEFACTS_MASTER"
+                  , InheritEnv "AMBIATA_HADDOCK"
+                  , InheritEnv "AMBIATA_DOWNLOAD"
+                  , InheritEnv "AMBIATA_MAFIA_CACHE"
+                  , InheritEnv "AMBIATA_ARTEFACTS_BRANCHES"
+                  , InheritEnv "AMBIATA_BENCHMARK_RESULTS"
+                  , InheritEnv "AMBIATA_TEST_BUCKET"
+                  , InheritEnv "AMBIATA_IVY_PAY"
+                  , SetEnv "BORIS_BUILD_ID" (renderBuildId buildId)
+                  , SetEnv "BORIS_PROJECT" (renderProject project)
+                  , SetEnv "BORIS_BUILD" (renderBuild build)
+                  , SetEnv "BORIS_REF" (renderRef ref)
+                  , SetEnv "BORIS_COMMIT" (renderCommit commit)
+                  ]
+
               runAWST env ListenerAwsError . lift $ do
                 liftIO . T.putStrLn $ "index: " <> renderBuildId buildId
                 SB.index e project build buildId ref commit
 
               result <- liftIO . runEitherT $
-                runBuild out out workspace specification
+                runBuild out out workspace specification context
 
               case result of
                 Left err ->

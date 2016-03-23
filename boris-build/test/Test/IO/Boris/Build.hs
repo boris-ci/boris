@@ -144,13 +144,13 @@ prop_runBuild_multi b =
 
     D.createDirectoryIfMissing True t
 
-    r <- runEitherT . runBuild o e local $
-      Specification b
+    r <- runEitherT . runBuild o e local
+      (Specification b
         [touch "pre.1", touch "pre.2"]
         [touch "command.1", touch "command.2"]
         [touch "post.1", touch "post.2"]
         [touch "success.1", touch "success.2"]
-        [touch "failure.1", touch "failure.2"]
+        [touch "failure.1", touch "failure.2"]) $ []
 
     pre1 <- D.doesFileExist (t </> "pre.1")
     command1 <- D.doesFileExist (t </> "command.1")
@@ -176,7 +176,7 @@ check x expected specification = do
 
 
   D.createDirectoryIfMissing True t
-  r <- runEitherT $ runBuild o e local specification
+  r <- runEitherT $ runBuild o e local specification []
 
   pre <- D.doesFileExist (t </> "pre")
   command <- D.doesFileExist (t </> "command")

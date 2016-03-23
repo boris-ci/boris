@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Boris.X (
     Out
+  , WithEnv (..)
   , xPutStrLn
   , capture
   , exec
@@ -11,6 +12,7 @@ module Boris.X (
   , inDirectory
   , hoistExit
   , hoistExitM
+  , withEnv
   ) where
 
 import           Control.Concurrent.Async (Concurrently (..))
@@ -28,12 +30,17 @@ import qualified Data.Text.Encoding as T
 
 import           P
 
+import           System.Environment (getEnvironment)
 import           System.Exit (ExitCode (..))
 import           System.IO (IO, FilePath)
 import           System.Process (CreateProcess (..), proc)
 
 import           X.Control.Monad.Trans.Either (EitherT, left)
 
+data WithEnv =
+    InheritEnv Text
+  | SetEnv Text Text
+    deriving (Eq, Show)
 
 type Out =
   Sink ByteString IO ()
@@ -46,6 +53,15 @@ capture :: Sink ByteString IO a -> Sink ByteString IO b -> CreateProcess -> IO (
 capture sout serr =
   let cap x = C.passthroughSink x (const . pure $ ()) =$= CL.foldMap id
    in raw (cap sout) (cap serr)
+
+withEnv :: [WithEnv] -> CreateProcess -> IO CreateProcess
+withEnv es cp = do
+  envs <- getEnvironment
+  pure $ cp { env = Just $ catMaybes . flip fmap es $ \e -> case e of
+    InheritEnv k ->
+      find ((==) (T.unpack k) . fst) envs
+    SetEnv k v ->
+      Just (T.unpack k, T.unpack v) }
 
 exec :: Sink ByteString IO a -> Sink ByteString IO b -> CreateProcess -> IO ExitCode
 exec cout cerr cp =
