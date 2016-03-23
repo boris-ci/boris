@@ -7,7 +7,7 @@ module Boris.Build (
   ) where
 
 import           Boris.Core.Data
-import           Boris.X (Out)
+import           Boris.X (Out, WithEnv (..))
 import qualified Boris.X as X
 
 import           Control.Monad.IO.Class (liftIO)
@@ -67,8 +67,8 @@ data BuildError =
 --
 --  * For a success, (somewhat obviously) _everything_ must succeed.
 --
-runBuild :: Out -> Out -> Workspace -> Specification -> EitherT BuildError IO ()
-runBuild sout serr workspace specification = do
+runBuild :: Out -> Out -> Workspace -> Specification -> [WithEnv] -> EitherT BuildError IO ()
+runBuild sout serr workspace specification env = do
   let
     path =
       pathOfWorkingCopy workspace
@@ -78,7 +78,9 @@ runBuild sout serr workspace specification = do
 
     go cmd =
       X.hoistExitM $
-        X.exec sout serr =<< X.xprocAt serr path (commandName cmd) (commandArgs cmd)
+        X.exec sout serr =<<
+          X.withEnv env =<<
+            X.xprocAt serr path (commandName cmd) (commandArgs cmd)
 
   -- We run all the pre-commands, followed by all the commands in order, until one fails.
   -- Note that we unwrap the EitherT at this point because while we want to early terminate
