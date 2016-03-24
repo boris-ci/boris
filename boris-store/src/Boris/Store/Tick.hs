@@ -9,10 +9,9 @@ module Boris.Store.Tick (
 import           Boris.Core.Data
 import           Boris.Store.Schema
 
-import           Control.Lens ((&), (.~), (^?), ix, to, _Just)
+import           Control.Lens ((.~), (^?), ix, to, _Just)
 import           Control.Monad.Trans.Class (lift)
 
-import           Data.Text (Text)
 import qualified Data.HashMap.Strict as H
 
 

@@ -53,21 +53,17 @@ module Boris.Store.Schema (
 
 import           Boris.Core.Data
 
-import           Control.Lens ((&), (.~))
+import           Control.Lens ((.~))
 
 import           Data.List.NonEmpty (NonEmpty (..))
-import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Time (UTCTime, formatTime)
-
 import           Jebediah.Data (GroupName (..), StreamName (..))
+import           Data.Time.Locale.Compat (defaultTimeLocale)
 
 import qualified Network.AWS.DynamoDB as D
 
 import           P
-
-import           System.Locale (defaultTimeLocale)
-
 
 table :: Environment -> Text -> Text
 table e n =

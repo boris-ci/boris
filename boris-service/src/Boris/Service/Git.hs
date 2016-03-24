@@ -14,7 +14,6 @@ import           Boris.Core.Serial.Command
 import qualified Boris.Git as Git
 import           Boris.X (Out)
 
-import           Data.Text (Text)
 import qualified Data.Text as T
 
 import           P

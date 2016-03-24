@@ -27,6 +27,7 @@ library
                     , ambiata-x-aeson
                     , ambiata-x-eithert
                     , blaze-html                      == 0.8.*
+                    , amazonka-ec2                    >= 1.3.6     && < 1.5
                     , bytestring                      == 0.10.*
                     , conduit                         == 1.2.*
                     , conduit-extra                   == 1.1.*
@@ -35,7 +36,8 @@ library
                     , mmorph                          == 1.0.*
                     , resourcet                       == 1.1.*
                     , text                            == 1.2.*
-                    , time                            == 1.4.*
+                    , time                            >=1.2         && < 1.6
+                    , old-locale                      == 1.0.*
                     , transformers                    == 0.4.*
                     , ini                             == 0.3.3
 
@@ -76,10 +78,12 @@ executable boris-http
                     , ambiata-boris-http
                     , ambiata-boris-store
                     , ambiata-boris-queue
+                    , ambiata-clerk
                     , ambiata-charlotte
                     , ambiata-mismi-core
                     , ambiata-mismi-s3
                     , ambiata-p
+                    , ambiata-twine
                     , ambiata-x-eithert
                     , airship
                     , text
@@ -102,6 +106,7 @@ executable boris-http-readonly
                     , ambiata-boris-http
                     , ambiata-boris-store
                     , ambiata-boris-queue
+                    , ambiata-clerk
                     , ambiata-charlotte
                     , ambiata-mismi-core
                     , ambiata-mismi-s3
@@ -133,7 +138,7 @@ test-suite test
                     , ambiata-disorder-core
                     , ambiata-disorder-corpus
                     , ambiata-p
-                    , QuickCheck                      == 2.7.*
+                    , QuickCheck                      >= 2.7        && < 2.9
                     , quickcheck-instances            == 0.3.*
 
 test-suite test-io
@@ -162,5 +167,5 @@ test-suite test-io
                     , ambiata-mismi-core-test
                     , ambiata-p
                     , text
-                    , QuickCheck                      == 2.7.*
+                    , QuickCheck                      >= 2.7         && < 2.9
                     , quickcheck-instances            == 0.3.*

@@ -24,7 +24,6 @@ import           Data.Conduit (Sink, (=$=), ($$))
 import qualified Data.Conduit as C
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Process as CP
-import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 

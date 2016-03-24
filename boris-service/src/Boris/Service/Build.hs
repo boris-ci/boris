@@ -21,7 +21,6 @@ import           Control.Concurrent.Async (async, waitEitherCancel)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Trans.Class (lift)
 
-import           Data.Text (Text)
 import qualified Data.Text.IO as T
 
 import           Jebediah.Data (GroupName (..), StreamName (..))

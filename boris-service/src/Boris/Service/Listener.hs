@@ -12,8 +12,6 @@ import           Boris.Service.Discover
 import           Boris.Queue (BuildQueue (..), Request (..))
 import qualified Boris.Queue as Q
 
-import           Data.Text (Text)
-
 import           Mismi (Error, runAWST, renderError)
 import           Mismi.Amazonka (Env)
 

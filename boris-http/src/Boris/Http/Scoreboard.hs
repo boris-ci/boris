@@ -15,8 +15,6 @@ import qualified Boris.Store.Index as SI
 
 import           Control.Monad.Trans.Class (lift)
 
-import           Data.Text (Text)
-
 import           Mismi (Error, runAWST, renderError)
 import           Mismi.Amazonka (Env)
 

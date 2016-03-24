@@ -33,7 +33,6 @@ module Boris.Core.Data (
   ) where
 
 import qualified Data.List as L
-import           Data.Text (Text)
 import qualified Data.Text as T
 
 import qualified Data.Map.Strict as M

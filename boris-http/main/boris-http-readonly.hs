@@ -12,9 +12,9 @@ import qualified Boris.Store.Lifecycle as SL
 import           BuildInfo_ambiata_boris_http (buildInfoVersion)
 
 import           Charlotte.Airship (resource404)
+import           Clerk.QuickStop (runStopFile)
 
 import           Data.String (String)
-import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
@@ -36,8 +36,10 @@ main = do
   c <- ConfigLocation <$> addr "BORIS_CONFIG_LOCATION"
   env <- orDie renderRegionError discoverAWSEnv
   orDie renderError $ runAWS env $ SL.initialise e
-  agriculture "boris-http-readonly" buildInfoVersion $ do
-    pure $ resourceToWai defaultAirshipConfig (borisReadonly env e c) (resource404 ())
+
+  runStopFile (lookupEnv "BORIS_HTTP_STOP") $ \pin -> do
+    agriculture pin "boris-http-readonly" buildInfoVersion $ do
+      return $ resourceToWai defaultAirshipConfig (borisReadonly env e c) (resource404 ())
 
 text :: String -> IO Text
 text e =
