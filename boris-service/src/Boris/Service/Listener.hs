@@ -122,6 +122,11 @@ listen env e q w = do
                   , InheritEnv "AMBIATA_BENCHMARK_RESULTS"
                   , InheritEnv "AMBIATA_TEST_BUCKET"
                   , InheritEnv "AMBIATA_IVY_PAY"
+                  , InheritEnv "AMBIATA_IVY_OSS"
+                  , InheritEnv "AMBIATA_DOC"
+                  , InheritEnv "AMBIATA_DISPENSARY"
+                  , InheritEnv "HOME"
+                  , InheritEnv "TMPDIR"
                   , SetEnv "BORIS_BUILD_ID" (renderBuildId buildId)
                   , SetEnv "BORIS_PROJECT" (renderProject project)
                   , SetEnv "BORIS_BUILD" (renderBuild build)
