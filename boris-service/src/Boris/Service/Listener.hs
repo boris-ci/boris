@@ -127,6 +127,17 @@ listen env e q w = do
                   , InheritEnv "AMBIATA_DISPENSARY"
                   , InheritEnv "HOME"
                   , InheritEnv "TMPDIR"
+                  , InheritEnv "PATH"
+                  , InheritEnv "LOCALE"
+                  , InheritEnv "LC_COLLATE"
+                  , InheritEnv "LANG"
+                  , InheritEnv "HOSTNAME"
+                  , InheritEnv "SHELL"
+                  , InheritEnv "TERM"
+                  , InheritEnv "USER"
+                  , InheritEnv "RBENV_ROOT"
+                  , InheritEnv "HADOOP_USER_NAME"
+                  , InheritEnv "HADOOP_CONF_BASE"
                   , SetEnv "BORIS_BUILD_ID" (renderBuildId buildId)
                   , SetEnv "BORIS_PROJECT" (renderProject project)
                   , SetEnv "BORIS_BUILD" (renderBuild build)
