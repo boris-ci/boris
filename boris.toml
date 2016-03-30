@@ -1,0 +1,14 @@
+[boris]
+  version = 1
+
+[build.dist]
+  pre = [["tsar", "pre"]]
+  post = []
+  success = [["tsar", "success"]]
+  failure = [["tsar", "failure"]]
+
+[build.branches]
+  pre = [["tsar", "pre"]]
+  post = []
+  success = [["tsar", "success"]]
+  failure = [["tsar", "failure"]]
