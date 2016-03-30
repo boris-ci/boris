@@ -35,4 +35,7 @@ scoreboardHtml bs = let
     False -> "red"
     True -> "green"
   in
-    H.html $ H.body ! HA.style ("background-color: " <> colour <> ";") $ ""
+    H.html $ do
+      H.head $
+        H.meta ! HA.httpEquiv "refresh" ! HA.content "60"
+      H.body ! HA.style ("background-color: " <> colour <> ";") $ ""
