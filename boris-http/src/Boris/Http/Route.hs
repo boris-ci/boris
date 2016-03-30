@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Boris.Http.Route (
     boris
+  , borisReadonly
   ) where
 
 import           Airship (RoutingSpec, var, (#>), (</>))
@@ -25,4 +26,8 @@ boris env e q c = do
   "project" </> var "project-name" </> "build" </> var "build-name" #> Build.collection env e q c
 --  "project" </> var "project-name" </> "commit" </> var "commit-hash" #> TODO
   "build" </> var "build-id" #> Build.item env e
+  "scoreboard" #> Scoreboard.scoreboard env e c
+
+borisReadonly :: Env -> Environment -> ConfigLocation -> RoutingSpec IO ()
+borisReadonly env e c = do
   "scoreboard" #> Scoreboard.scoreboard env e c

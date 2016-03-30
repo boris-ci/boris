@@ -85,6 +85,31 @@ executable boris-http
                     , text
                     , transformers
 
+executable boris-http-readonly
+  ghc-options:
+                    -Wall -threaded -O2
+
+  hs-source-dirs:
+                    gen
+
+  main-is:
+                    ../main/boris-http-readonly.hs
+
+  build-depends:
+                      base
+                    , ambiata-agriculture
+                    , ambiata-boris-core
+                    , ambiata-boris-http
+                    , ambiata-boris-store
+                    , ambiata-boris-queue
+                    , ambiata-charlotte
+                    , ambiata-mismi-core
+                    , ambiata-mismi-s3
+                    , ambiata-p
+                    , ambiata-x-eithert
+                    , airship
+                    , text
+                    , transformers
 
 test-suite test
   type:
