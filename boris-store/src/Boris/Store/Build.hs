@@ -4,6 +4,7 @@ module Boris.Store.Build (
     RegisterError (..)
   , FetchError (..)
   , LogData (..)
+  , BuildCancelled (..)
   , BuildData (..)
   , renderRegisterError
   , renderFetchError
@@ -64,6 +65,11 @@ data LogData =
       logGroup :: GroupName
     , logStream :: StreamName
     } deriving (Eq, Show)
+
+data BuildCancelled =
+    BuildCancelled
+  | BuildNotCancelled
+    deriving (Eq, Show)
 
 data BuildData =
   BuildData {
@@ -180,8 +186,8 @@ complete e i r = do
       , vBuildResult (kVal "r") r
       ]
 
-heartbeat :: Environment -> BuildId -> AWS ()
-heartbeat e i r = do
+heartbeat :: Environment -> BuildId -> AWS BuildCancelled
+heartbeat e i = do
   now <- liftIO getCurrentTime
   void . A.send $ D.updateItem (tBuild e)
     & D.uiKey .~ H.fromList [
@@ -191,6 +197,14 @@ heartbeat e i r = do
     & D.uiExpressionAttributeValues .~ H.fromList [
         vTime (kVal "t") now
       ]
+  res <- A.send $ D.getItem (tBuild e)
+    & D.giKey .~ H.fromList [
+        vBuildId i
+      ]
+    & D.giConsistentRead .~
+      Just False
+  pure . maybe BuildNotCancelled (bool BuildNotCancelled BuildCancelled) . join $ res ^? D.girsItem . ix kCancelled . D.avBOOL
+
 
 delete :: Environment -> BuildId -> AWS ()
 delete e i =
