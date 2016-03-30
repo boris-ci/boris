@@ -26,6 +26,7 @@ library
                     , ambiata-p
                     , ambiata-x-aeson
                     , ambiata-x-eithert
+                    , blaze-html                      == 0.8.*
                     , bytestring                      == 0.10.*
                     , conduit                         == 1.2.*
                     , conduit-extra                   == 1.1.*
@@ -45,6 +46,7 @@ library
                     src
 
   exposed-modules:
+                    Boris.Http.Airship
                     Boris.Http.Data
                     Boris.Http.Repository
                     Boris.Http.Resource.Build
