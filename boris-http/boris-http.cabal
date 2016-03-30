@@ -51,9 +51,12 @@ library
                     Boris.Http.Repository
                     Boris.Http.Resource.Build
                     Boris.Http.Resource.Project
+                    Boris.Http.Resource.Scoreboard
                     Boris.Http.Route
                     Boris.Http.Representation.Build
                     Boris.Http.Representation.Project
+                    Boris.Http.Representation.Scoreboard
+                    Boris.Http.Scoreboard
                     Boris.Http.Version
 
 executable boris-http
