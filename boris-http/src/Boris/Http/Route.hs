@@ -10,6 +10,7 @@ import           Boris.Core.Data
 import           Boris.Http.Data
 import qualified Boris.Http.Resource.Build as Build
 import qualified Boris.Http.Resource.Project as Project
+import qualified Boris.Http.Resource.Scoreboard as Scoreboard
 import           Boris.Queue (BuildQueue (..))
 
 import           Mismi.Amazonka (Env)
@@ -24,3 +25,4 @@ boris env e q c = do
   "project" </> var "project-name" </> "build" </> var "build-name" #> Build.collection env e q c
 --  "project" </> var "project-name" </> "commit" </> var "commit-hash" #> TODO
   "build" </> var "build-id" #> Build.item env e
+  "scoreboard" #> Scoreboard.scoreboard env e c

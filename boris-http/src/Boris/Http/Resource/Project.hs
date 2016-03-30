@@ -8,10 +8,8 @@ module Boris.Http.Resource.Project (
 
 import           Airship (Resource (..), Webmachine, defaultResource, lookupParam)
 
-import           Boom.Data (Boom (..))
-import           Boom.Airship (boom)
-
 import           Boris.Core.Data
+import           Boris.Http.Airship
 import           Boris.Http.Data
 import           Boris.Http.Repository (list, renderConfigError)
 import           Boris.Http.Representation.Project
@@ -21,10 +19,6 @@ import qualified Boris.Store.Index as SI
 import           Charlotte.Airship (withVersionJson)
 import           Charlotte.Airship (jsonResponse)
 
-import           Control.Monad.IO.Class (liftIO)
-
-import           Data.Text (Text)
-
 import           Mismi (runAWS, renderError)
 import           Mismi.Amazonka (Env)
 
@@ -33,8 +27,6 @@ import qualified Network.HTTP.Types as HTTP
 import           P
 
 import           System.IO (IO)
-
-import           X.Control.Monad.Trans.Either (EitherT, runEitherT)
 
 collection :: Env -> ConfigLocation -> Resource IO
 collection env c =
@@ -64,11 +56,3 @@ item env e =
 getProject :: Webmachine IO Project
 getProject =
   Project <$> lookupParam "project-name"
-
-webT :: (e -> Text) -> EitherT e IO a -> Webmachine IO a
-webT render t =
-  liftIO (runEitherT t) >>= \tt -> case tt of
-    Left e ->
-      boom . BoomApplicationInvariant . render $ e
-    Right a ->
-      pure a

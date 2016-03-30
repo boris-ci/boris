@@ -28,8 +28,10 @@ module Boris.Core.Data (
   , pathOfWorkingCopy
   , repositoryOfMirror
   , repositoryOfWorkingCopy
+  , sortBuildIds
   ) where
 
+import qualified Data.List as L
 import           Data.Text (Text)
 import qualified Data.Text as T
 
@@ -176,3 +178,7 @@ repositoryOfWorkingCopy =
 pathOf :: Workspace -> FilePath
 pathOf w =
   (T.unpack . renderWorkspacePath . workspacePath $ w) </> (T.unpack . renderBuildId . workspaceId $ w)
+
+sortBuildIds :: [BuildId] -> [BuildId]
+sortBuildIds =
+  fmap (BuildId . T.pack . show) . L.reverse . L.sort . catMaybes . fmap ((readMaybe :: [Char] -> Maybe Int) . T.unpack . renderBuildId)
