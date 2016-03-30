@@ -4,10 +4,10 @@
 
 [build.dist]
   PUBLISH = "true"
-  BINARIES = "boris-service/dist/build/boris-service/boris-service boris-http/dist/build/boris-http/boris-http boris-client/dist/build/boris/boris"
+  BINARIES = "boris-service/dist/build/boris-service/boris-service boris-http/dist/build/boris-http/boris-http boris-http/dist/build/boris-http-readonly/boris-http-readonly boris-client/dist/build/boris/boris"
   PUBLISH_LOCATION = "$AMBIATA_ARTEFACTS_MASTER"
 
 [build.branches]
   PUBLISH = "true"
-  BINARIES = "boris-service/dist/build/boris-service/boris-service boris-http/dist/build/boris-http/boris-http boris-client/dist/build/boris/boris"
+  BINARIES = "boris-service/dist/build/boris-service/boris-service boris-http/dist/build/boris-http/boris-http boris-http/dist/build/boris-http-readonly/boris-http-readonly boris-client/dist/build/boris/boris"
   PUBLISH_LOCATION = "$AMBIATA_ARTEFACTS_BRANCHES"
