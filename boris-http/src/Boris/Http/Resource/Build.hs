@@ -8,10 +8,10 @@ module Boris.Http.Resource.Build (
 
 import           Airship (Resource (..), Webmachine, defaultResource, lookupParam, putResponseBody, appendRequestPath)
 
-import           Boom.Data (Boom (..))
-import           Boom.Airship (boom, notfound)
+import           Boom.Airship (notfound)
 
 import           Boris.Core.Data
+import           Boris.Http.Airship
 import           Boris.Http.Data
 import           Boris.Http.Repository
 import           Boris.Http.Representation.Build
@@ -26,8 +26,6 @@ import qualified Boris.Queue as Q
 import           Charlotte.Airship (PostHandler (..), withVersionJson)
 import           Charlotte.Airship (processPostMedia, jsonResponse, setResponseHeader)
 
-import           Control.Monad.IO.Class (liftIO)
-
 import           Data.Text (Text)
 
 import           Mismi (runAWS, runAWST, renderError)
@@ -39,7 +37,7 @@ import           P
 
 import           System.IO (IO)
 
-import           X.Control.Monad.Trans.Either (EitherT, runEitherT, bimapEitherT)
+import           X.Control.Monad.Trans.Either (bimapEitherT)
 
 collection :: Env -> Environment -> BuildQueue -> ConfigLocation -> Resource IO
 collection env e q c =
@@ -93,14 +91,6 @@ getProject =
 getBuildId :: Webmachine IO BuildId
 getBuildId =
   BuildId <$> lookupParam "build-id"
-
-webT :: (e -> Text) -> EitherT e IO a -> Webmachine IO a
-webT render t =
-  liftIO (runEitherT t) >>= \tt -> case tt of
-    Left e ->
-      boom . BoomApplicationInvariant . render $ e
-    Right a ->
-      pure a
 
 setLocation :: [Text] -> Webmachine IO ()
 setLocation p =
