@@ -11,6 +11,7 @@ module Boris.Store.Build (
   , register
   , acknowledge
   , complete
+  , heartbeat
   , index
   , deindex
   , fetch
@@ -177,6 +178,18 @@ complete e i r = do
     & D.uiExpressionAttributeValues .~ H.fromList [
         vTime (kVal "t") now
       , vBuildResult (kVal "r") r
+      ]
+
+heartbeat :: Environment -> BuildId -> AWS ()
+heartbeat e i r = do
+  now <- liftIO getCurrentTime
+  void . A.send $ D.updateItem (tBuild e)
+    & D.uiKey .~ H.fromList [
+        vBuildId i
+      ]
+    & D.uiUpdateExpression .~ Just (mconcat ["SET ", kHeartbeatTime, " = ", kVal "t"])
+    & D.uiExpressionAttributeValues .~ H.fromList [
+        vTime (kVal "t") now
       ]
 
 delete :: Environment -> BuildId -> AWS ()

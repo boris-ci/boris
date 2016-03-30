@@ -26,6 +26,7 @@ module Boris.Store.Schema (
   , kQueued
   , kStartTime
   , kEndTime
+  , kHeartbeatTime
   , kQueueTime
   , kLogGroup
   , kLogStream
@@ -96,6 +97,7 @@ tTick e =
 --  kQueueTime :: String
 --  kStartTime :: String
 --  kEndTime :: String
+--  kHeartbeatTime :: String
 --  kBuildResult :: Boolean
 --  kLogGroup :: String
 --  kLogStream :: String
@@ -221,6 +223,10 @@ kQueueTime =
 kEndTime :: Text
 kEndTime =
   "end_time"
+
+kHeartbeatTime :: Text
+kHeartbeatTime =
+  "heartbeat_time"
 
 kBuildResult :: Text
 kBuildResult =
