@@ -24,7 +24,7 @@ import           Boris.Queue (BuildQueue (..), Request (..))
 import qualified Boris.Queue as Q
 
 import           Charlotte.Airship (PostHandler (..), withVersionJson)
-import           Charlotte.Airship (processPostMedia, jsonResponse, setResponseHeader)
+import           Charlotte.Airship (processPostMedia, jsonResponse, setResponseHeader, decodeJsonBody)
 
 import           Control.Monad.IO.Class (liftIO)
 
@@ -64,7 +64,8 @@ collection env e q c =
           repository <- webT renderConfigError (pick env c p) >>= notfound
           i <- webT id . runAWST env renderError . bimapEitherT ST.renderTickError id $ ST.next e p b
           webT id . runAWST env renderError . bimapEitherT SB.renderRegisterError id $ SB.register e p b i
-          let req = Request i p repository b Nothing -- FIX COMPLETE ref needs to be parsed from body
+          r <- getPostBuildsRef <$> decodeJsonBody
+          let req = Request i p repository b r
           webT renderError . runAWS env $ Q.put q req
           putResponseBody . jsonResponse $ GetBuild (BuildData i p b Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
           setLocation ["builds"]

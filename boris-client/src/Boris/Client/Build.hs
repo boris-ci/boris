@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Boris.Client.Build (
     trigger
+  , cancel
   , fetch
   , list
   ) where
@@ -11,7 +12,7 @@ import           Boris.Store.Build (BuildData (..), LogData (..))
 import           Boris.Client.Http (BorisHttpClientError (..))
 import qualified Boris.Client.Http as H
 
-import           Data.Aeson (FromJSON (..), ToJSON (..), object, withObject, (.:), (.:?))
+import           Data.Aeson (FromJSON (..), ToJSON (..), object, withObject, (.:), (.:?), (.=))
 
 import           Jebediah.Data (GroupName (..), StreamName (..))
 
@@ -23,27 +24,33 @@ import           System.IO (IO)
 
 import           X.Control.Monad.Trans.Either (EitherT)
 
-trigger :: BalanceConfig -> Project -> Build -> EitherT BorisHttpClientError IO BuildData
-trigger c p b =
+trigger :: BalanceConfig -> Project -> Build -> Maybe Ref -> EitherT BorisHttpClientError IO BuildData
+trigger c p b r =
   fmap getBuild $
-    H.post c ["project", renderProject p , "build", renderBuild b] PostBuildRequest
+    H.post c ["project", renderProject p , "build", renderBuild b] (PostBuildRequest r)
 
 fetch :: BalanceConfig -> BuildId -> EitherT BorisHttpClientError IO (Maybe BuildData)
 fetch c i =
   (fmap . fmap) getBuild $
     H.get c ["build", renderBuildId i]
 
+cancel :: BalanceConfig -> BuildId -> EitherT BorisHttpClientError IO ()
+cancel c i =
+  H.delete c ["build", renderBuildId i]
+
 list :: BalanceConfig -> Project -> Build -> EitherT BorisHttpClientError IO [(Ref, [BuildId])]
 list c p b =
   fmap (maybe [] (fmap (\r -> (getBuildsDetailRef r, getBuildsDetailIds r))) . fmap getBuildsDetail) $
     H.get c ["project", renderProject p , "build", renderBuild b]
 
-data PostBuildRequest =
-  PostBuildRequest
+newtype PostBuildRequest =
+  PostBuildRequest (Maybe Ref)
 
 instance ToJSON PostBuildRequest where
-  toJSON _ =
-    object []
+  toJSON (PostBuildRequest r) =
+    object [
+        "ref" .= fmap renderRef r
+      ]
 
 newtype GetBuild =
   GetBuild {

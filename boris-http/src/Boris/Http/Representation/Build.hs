@@ -4,17 +4,29 @@ module Boris.Http.Representation.Build (
     GetBuilds (..)
   , GetBuildsDetail (..)
   , GetBuild (..)
+  , PostBuilds (..)
   ) where
 
 import           Boris.Core.Data
 import           Boris.Store.Build (BuildData (..))
 import qualified Boris.Store.Build as SB
 
-import           Data.Aeson (ToJSON (..), object, (.=))
+import           Data.Aeson (FromJSON (..), ToJSON (..), object, (.=), (.:?), withObject)
 
 import           Jebediah.Data (GroupName (..), StreamName (..))
 
 import           P
+
+newtype PostBuilds =
+  PostBuilds {
+      getPostBuildsRef :: Maybe Ref
+    }
+
+instance FromJSON PostBuilds where
+  parseJSON =
+    withObject "PostBuilds" $ \o ->
+      PostBuilds
+        <$> (fmap . fmap) Ref (o .:? "ref")
 
 data GetBuilds =
   GetBuilds Project Build [GetBuildsDetail]
