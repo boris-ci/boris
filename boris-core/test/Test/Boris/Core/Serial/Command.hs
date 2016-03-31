@@ -24,50 +24,50 @@ prop_parse_ok =
     , check "test/data/config/command/v1/basic.toml" . Right $ [
           Specification
             (Build "basic")
-            []
+            [Command "tsar" ["pre"]]
             [Command "./mafia" ["build"]]
             []
-            []
-            []
+            [Command "tsar" ["success"]]
+            [Command "tsar" ["failure"]]
         ]
     , check "test/data/config/command/v1/inferred.toml" . Right $ [
           Specification
             (Build "basic")
-            []
+            [Command "tsar" ["pre"]]
             [Command "./mafia" ["build"]]
             []
-            []
-            []
+            [Command "tsar" ["success"]]
+            [Command "tsar" ["failure"]]
         , Specification
             (Build "inferred")
-            []
+            [Command "tsar" ["pre"]]
             [Command "master" ["build", "inferred"]]
             []
-            []
-            []
+            [Command "tsar" ["success"]]
+            [Command "tsar" ["failure"]]
         ]
     , check "test/data/config/command/v1/multiple.toml" . Right $ [
           Specification
             (Build "basic")
-            []
+            [Command "tsar" ["pre"]]
             [Command "master" ["build", "dist"]]
             []
-            []
-            []
+            [Command "tsar" ["success"]]
+            [Command "tsar" ["failure"]]
         , Specification
             (Build "second")
-            []
+            [Command "tsar" ["pre"]]
             [Command "master" ["build", "second"]]
             []
-            []
-            []
+            [Command "tsar" ["success"]]
+            [Command "tsar" ["failure"]]
         , Specification
             (Build "third")
-            []
+            [Command "tsar" ["pre"]]
             [Command "master" ["build", "third"]]
             []
-            []
-            []
+            [Command "tsar" ["success"]]
+            [Command "tsar" ["failure"]]
         ]
     , check "test/data/config/command/v1/all.toml" . Right $ [
           Specification

@@ -89,7 +89,7 @@ prop_initialise i =
     result <- runEitherT . withWorkspace path i $ \w -> do
       Git.initialise o e w build (Repository . T.pack $ repository) Nothing
 
-    pure $ result === (Right $ BuildInstance (Specification build [] [Command "echo" ["test"]] [] [] []) (Ref "refs/heads/test") (Commit "7d4324a0cb9bb7bd0e627d6ea86dbe02aa31be62"))
+    pure $ result === (Right $ BuildInstance (Specification build [Command "tsar" ["pre"]] [Command "echo" ["test"]] [] [Command "tsar" ["success"]] [Command "tsar" ["failure"]]) (Ref "refs/heads/test") (Commit "7d4324a0cb9bb7bd0e627d6ea86dbe02aa31be62"))
 
 flail :: IO ExitCode -> IO ()
 flail cc =
