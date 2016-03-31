@@ -49,6 +49,7 @@ data Tail =
 
 data Cli =
     Trigger Tail Project Build (Maybe Ref)
+  | Cancel BuildId
   | List (Maybe Project) (Maybe Build)
   | Status BuildId
   | Log BuildId
@@ -77,6 +78,9 @@ parser =
           <*> projectP
           <*> buildP
           <*> optional refP
+    , command' "cancel" "Cancel a build" $
+        Cancel
+          <$> buildIdP
     , command' "list" "list of projects / builds" $
         List
           <$> optional projectP
@@ -91,9 +95,9 @@ parser =
 
 run :: Environment -> Cli -> IO ()
 run e c = case c of
-  Trigger t p b _r -> do
+  Trigger t p b r -> do
     bc <- mkBalanceConfig
-    d <- orDie renderBorisHttpClientError $ B.trigger bc p b
+    d <- orDie renderBorisHttpClientError $ B.trigger bc p b r
     T.hPutStrLn stderr $ mconcat ["boris submitted [", renderBuildId . buildDataId $ d, "]"]
     when (t == Tail) $ do
       let
@@ -144,6 +148,11 @@ run e c = case c of
           exitSuccess
         Right (Left err) ->
           bomb $ renderError err
+  Cancel i -> do
+    bc <- mkBalanceConfig
+    void . orDie renderBorisHttpClientError $ B.cancel bc i
+    T.putStrLn . mconcat $ ["Cancelled build #", renderBuildId i]
+    exitSuccess
 
   List pp bb -> do
     bc <- mkBalanceConfig

@@ -5,6 +5,7 @@ module Boris.Client.Http (
   , renderBorisHttpClientError
   , get
   , post
+  , delete
   ) where
 
 
@@ -37,6 +38,19 @@ data BorisHttpClientError =
 borisVersion :: ByteString
 borisVersion =
   "application/vnd.ambiata.boris.v1+json"
+
+delete :: BalanceConfig -> [Text] -> EitherT BorisHttpClientError IO ()
+delete b url = do
+  res <- bimapEitherT BorisHttpClientBalanceError id . newEitherT . runBalanceT b . httpBalanced $ \r -> r {
+      H.path = encodePathSegmentsBS url
+    , H.requestHeaders = [(HTTP.hContentType, borisVersion)]
+    , H.method = HTTP.methodDelete
+    }
+  case H.responseStatus res of
+    Status 202 _ ->
+      pure ()
+    _ ->
+      left $ BorisHttpClientUnhandledResponseError res
 
 post :: (ToJSON a, FromJSON b) => BalanceConfig -> [Text] -> a -> EitherT BorisHttpClientError IO b
 post b url a = do
