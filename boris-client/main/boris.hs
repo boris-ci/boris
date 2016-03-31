@@ -95,9 +95,9 @@ parser =
 
 run :: Environment -> Cli -> IO ()
 run e c = case c of
-  Trigger t p b r -> do
+  Trigger t p b ref -> do
     bc <- mkBalanceConfig
-    d <- orDie renderBorisHttpClientError $ B.trigger bc p b r
+    d <- orDie renderBorisHttpClientError $ B.trigger bc p b ref
     T.hPutStrLn stderr $ mconcat ["boris submitted [", renderBuildId . buildDataId $ d, "]"]
     when (t == Tail) $ do
       let
@@ -148,6 +148,7 @@ run e c = case c of
           exitSuccess
         Right (Left err) ->
           bomb $ renderError err
+
   Cancel i -> do
     bc <- mkBalanceConfig
     void . orDie renderBorisHttpClientError $ B.cancel bc i
