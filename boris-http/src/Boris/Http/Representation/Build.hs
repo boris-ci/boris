@@ -34,7 +34,7 @@ instance ToJSON GetBuildsDetail where
   toJSON (GetBuildsDetail r is) =
     object [
         "ref" .= renderRef r
-      , "build_ids" .= sortBuildIds is
+      , "build_ids" .= fmap renderBuildId (sortBuildIds is)
       ]
 
 newtype GetBuild =
@@ -50,6 +50,7 @@ instance ToJSON GetBuild where
       , "queued" .= buildDataQueueTime b
       , "started" .= buildDataStartTime b
       , "completed" .= buildDataEndTime b
+      , "heartbeat" .= buildDataHeartbeatTime b
       , "result" .= (flip fmap (buildDataResult b) $ \bb -> case bb of BuildOk -> True; BuildKo -> False)
       , "log" .= (flip fmap (buildDataLog b) $ \l -> object ["group" .= (unGroupName . SB.logGroup) l, "stream" .= (unStreamName . SB.logStream) l])
       ]

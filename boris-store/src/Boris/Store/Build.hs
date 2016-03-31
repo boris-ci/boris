@@ -8,6 +8,7 @@ module Boris.Store.Build (
   , BuildData (..)
   , renderRegisterError
   , renderFetchError
+  , cancel
   , delete
   , register
   , acknowledge
@@ -58,6 +59,7 @@ data FetchError =
   | InvalidQueueTime BuildId
   | InvalidStartTime BuildId
   | InvalidEndTime BuildId
+  | InvalidHeartbeatTime BuildId
     deriving (Eq, Show)
 
 data LogData =
@@ -80,6 +82,7 @@ data BuildData =
     , buildDataQueueTime :: Maybe UTCTime
     , buildDataStartTime :: Maybe UTCTime
     , buildDataEndTime :: Maybe UTCTime
+    , buildDataHeartbeatTime :: Maybe UTCTime
     , buildDataResult :: Maybe BuildResult
     , buildDataLog :: Maybe LogData
     } deriving (Eq, Show)
@@ -99,6 +102,7 @@ fetch e i = newEitherT $ do
     <*> (forM (res ^? D.girsItem . ix kQueueTime . D.avS . _Just) $ fromMaybeM (Left $ InvalidQueueTime i) . blat)
     <*> (forM (res ^? D.girsItem . ix kStartTime . D.avS . _Just) $ fromMaybeM (Left $ InvalidStartTime i) . blat)
     <*> (forM (res ^? D.girsItem . ix kEndTime . D.avS . _Just) $ fromMaybeM (Left $ InvalidEndTime i) . blat)
+    <*> (forM (res ^? D.girsItem . ix kHeartbeatTime . D.avS . _Just) $ fromMaybeM (Left $ InvalidHeartbeatTime i) . blat)
     <*> (Right . fmap (bool BuildKo BuildOk) $ res ^? D.girsItem . ix kBuildResult . D.avBOOL . _Just)
     <*> (Right $ LogData <$> res ^? D.girsItem . ix kLogGroup . D.avS . _Just . to GroupName <*> res ^? D.girsItem . ix kLogStream . D.avS . _Just . to StreamName)
 
@@ -205,6 +209,18 @@ heartbeat e i = do
       Just False
   pure . maybe BuildNotCancelled (bool BuildNotCancelled BuildCancelled) . join $ res ^? D.girsItem . ix kCancelled . D.avBOOL
 
+cancel :: Environment -> BuildId -> AWS Bool
+cancel e i = do
+  handling D._ConditionalCheckFailedException (const . pure $ False) . fmap (const True) $
+    A.send $ D.updateItem (tBuild e)
+      & D.uiKey .~ H.fromList [
+          vBuildId i
+        ]
+      & D.uiUpdateExpression .~ Just (mconcat ["SET ", kCancelled, " = ", kVal "c"])
+      & D.uiExpressionAttributeValues .~ H.fromList [
+          vBool (kVal "c") True
+        ]
+      & D.uiConditionExpression .~ (Just . mconcat $ ["attribute_exists(", kBuildId, ")"])
 
 delete :: Environment -> BuildId -> AWS ()
 delete e i =
@@ -238,3 +254,5 @@ renderFetchError err =
       mconcat ["Invalid item (invalid start-time) on fetch of build-id: ", renderBuildId i]
     InvalidEndTime i ->
       mconcat ["Invalid item (invalid end-time) on fetch of build-id: ", renderBuildId i]
+    InvalidHeartbeatTime i ->
+      mconcat ["Invalid item (invalid heartbeat-time) on fetch of build-id: ", renderBuildId i]

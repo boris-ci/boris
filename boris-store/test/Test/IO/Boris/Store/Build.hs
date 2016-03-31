@@ -6,6 +6,7 @@ module Test.IO.Boris.Store.Build where
 
 import           Boris.Core.Data
 import qualified Boris.Store.Lifecycle as SL
+import           Boris.Store.Build (BuildCancelled (..))
 import qualified Boris.Store.Build as SB
 
 import           Disorder.Corpus
@@ -27,7 +28,17 @@ prop_store i p b r =
       void . runEitherT $ SB.register environment p b i
       a <- SB.acknowledge environment i (GroupName l) (StreamName l)
       SB.complete environment i r
-      pure $ a == Accept
+      pure $ a === Accept
+
+prop_store_heartbeat i p b =
+  forAll (elements cooking) $ \l ->
+    once . testAWS . withClean environment (SB.delete environment i >> SB.deindex environment p b i) $ do
+      void . runEitherT $ SB.register environment p b i
+      x0 <- SB.acknowledge environment i (GroupName l) (StreamName l)
+      x1 <- SB.heartbeat environment i
+      x2 <- SB.cancel environment i
+      x3 <- SB.heartbeat environment i
+      pure $ (x0, x1, x2, x3) === (Accept, BuildNotCancelled, True, BuildCancelled)
 
 ignore_prop_delete_all_the_things_use_only_if_non_migratable_change_happens_in_dev = once .  testAWS $ do
   SL.destroy environment

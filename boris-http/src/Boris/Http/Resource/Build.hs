@@ -26,7 +26,10 @@ import qualified Boris.Queue as Q
 import           Charlotte.Airship (PostHandler (..), withVersionJson)
 import           Charlotte.Airship (processPostMedia, jsonResponse, setResponseHeader)
 
+import           Control.Monad.IO.Class (liftIO)
+
 import           Data.Text (Text)
+import           Data.Time (getCurrentTime, diffUTCTime)
 
 import           Mismi (runAWS, runAWST, renderError)
 import           Mismi.Amazonka (Env)
@@ -42,7 +45,7 @@ import           X.Control.Monad.Trans.Either (bimapEitherT)
 collection :: Env -> Environment -> BuildQueue -> ConfigLocation -> Resource IO
 collection env e q c =
   defaultResource {
-      allowedMethods = pure [HTTP.methodGet, HTTP.methodPost]
+      allowedMethods = pure [HTTP.methodGet, HTTP.methodPost, HTTP.methodDelete]
 
     , contentTypesProvided = return . withVersionJson $ \v -> case v of
         V1 -> do
@@ -63,9 +66,10 @@ collection env e q c =
           webT id . runAWST env renderError . bimapEitherT SB.renderRegisterError id $ SB.register e p b i
           let req = Request i p repository b Nothing -- FIX COMPLETE ref needs to be parsed from body
           webT renderError . runAWS env $ Q.put q req
-          putResponseBody . jsonResponse $ GetBuild (BuildData i p b Nothing Nothing Nothing Nothing Nothing Nothing)
+          putResponseBody . jsonResponse $ GetBuild (BuildData i p b Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
           setLocation ["builds"]
           pure $ PostResponseLocation [renderBuildId i]
+
     }
 
 item :: Env -> Environment -> Resource IO
@@ -75,9 +79,27 @@ item env e =
 
     , contentTypesProvided = pure . withVersionJson $ \v -> case v of
         V1 -> do
+          now <- liftIO getCurrentTime
           i <- getBuildId
           b <- webT id . runAWST env renderError . bimapEitherT SB.renderFetchError id $ SB.fetch e i
-          pure . jsonResponse $ GetBuild b
+          case buildDataHeartbeatTime b of
+            Nothing ->
+              pure . jsonResponse $ GetBuild b
+            Just h ->
+              if diffUTCTime now h > 120
+                 then do
+                    void . webT id . bimapEitherT renderError id . runAWS env $ SB.cancel e i
+                    pure . jsonResponse . GetBuild $ b { buildDataResult = Just . fromMaybe BuildKo . buildDataResult $ b }
+                 else
+                    pure . jsonResponse $ GetBuild b
+
+
+    , deleteCompleted =
+        pure False
+
+    , deleteResource = do
+        i <- getBuildId
+        webT id . bimapEitherT renderError id . runAWS env $ SB.cancel e i
     }
 
 getBuild :: Webmachine IO Build
