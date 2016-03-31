@@ -11,12 +11,14 @@ import           Boris.Core.Data
 import           Boris.Service.Git
 import           Boris.Service.Log
 import           Boris.Service.Workspace
+import           Boris.Store.Build (BuildCancelled (..))
 import qualified Boris.Store.Build as SB
 import           Boris.Queue (BuildQueue (..), Request (..))
 import qualified Boris.Queue as Q
 import           Boris.X (WithEnv (..))
 import qualified Boris.X as X
 
+import           Control.Concurrent.Async (async, waitEitherCancel)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Trans.Class (lift)
 
@@ -25,14 +27,16 @@ import qualified Data.Text.IO as T
 
 import           Jebediah.Data (GroupName (..), StreamName (..))
 
-import           Mismi (Error, runAWST, renderError)
+import           Mismi (Error, runAWS, runAWST, renderError)
 import           Mismi.Amazonka (Env)
 
 import           P
 
 import           System.IO (IO)
 
-import           X.Control.Monad.Trans.Either (EitherT, bimapEitherT, runEitherT)
+import           Twine.Snooze (snooze, seconds)
+
+import           X.Control.Monad.Trans.Either (EitherT, newEitherT, bimapEitherT, runEitherT)
 
 data ListenerError =
     ListenerQueueError Q.QueueError
@@ -149,18 +153,43 @@ listen env e q w = do
                 liftIO . T.putStrLn $ "index: " <> renderBuildId buildId
                 SB.index e project build buildId ref commit
 
-              result <- liftIO . runEitherT $
-                runBuild out out workspace specification context
 
-              case result of
-                Left err ->
+              let
+                runner =
+                  runEitherT $
+                    runBuild out out workspace specification context
+
+                heartbeater =  runEitherT $ do
+                  heart <- runAWS env $ do
+                    SB.heartbeat e buildId
+                  case heart of
+                    BuildCancelled ->
+                      pure ()
+                    BuildNotCancelled -> do
+                      liftIO . snooze . seconds $ 30
+                      newEitherT heartbeater
+
+              runner' <- liftIO . async $ runner
+              heartbeater' <- liftIO . async $ heartbeater
+              state <- liftIO $ waitEitherCancel heartbeater' runner'
+
+              result <- case state of
+                Right (Left err) -> do
                   X.xPutStrLn out $ mconcat ["| boris:ko | ", renderBuildError err]
-                Right _ ->
+                  pure $ BuildKo
+                Right (Right _) -> do
                   X.xPutStrLn out $ "| boris:ok |"
+                  pure $ BuildOk
+                Left (Left err) -> do
+                  X.xPutStrLn out $ mconcat ["| boris:ko:heartbeat-error | ", renderError err]
+                  pure $ BuildKo
+                Left (Right _) -> do
+                  X.xPutStrLn out $ mconcat ["| boris:ko:cancelled | "]
+                  pure $ BuildKo
 
               runAWST env ListenerAwsError . lift $ do
                 liftIO . T.putStrLn $ "complete: " <> renderBuildId buildId
-                SB.complete e buildId (bool BuildKo BuildOk $ isRight result)
+                SB.complete e buildId result
 
       AlreadyRunning ->
         pure ()

@@ -62,6 +62,7 @@ instance FromJSON GetBuild where
           <*> (o .:? "queued")
           <*> (o .:? "started")
           <*> (o .:? "completed")
+          <*> (o .:? "heartbeat")
           <*> ((fmap . fmap) (bool BuildKo BuildOk) $ o .:? "result")
           <*> (do ll <- o .:? "log"
                   forM ll $ \l ->

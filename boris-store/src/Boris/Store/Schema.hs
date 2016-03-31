@@ -26,6 +26,8 @@ module Boris.Store.Schema (
   , kQueued
   , kStartTime
   , kEndTime
+  , kHeartbeatTime
+  , kCancelled
   , kQueueTime
   , kLogGroup
   , kLogStream
@@ -43,6 +45,7 @@ module Boris.Store.Schema (
   , vLogGroup
   , vLogStream
   , vTime
+  , vBool
   , vInt
   , vStrings
   ) where
@@ -96,6 +99,8 @@ tTick e =
 --  kQueueTime :: String
 --  kStartTime :: String
 --  kEndTime :: String
+--  kHeartbeatTime :: String
+--  kCancelled :: Boolean
 --  kBuildResult :: Boolean
 --  kLogGroup :: String
 --  kLogStream :: String
@@ -222,6 +227,14 @@ kEndTime :: Text
 kEndTime =
   "end_time"
 
+kHeartbeatTime :: Text
+kHeartbeatTime =
+  "heartbeat_time"
+
+kCancelled :: Text
+kCancelled =
+  "cancelled"
+
 kBuildResult :: Text
 kBuildResult =
   "build_result"
@@ -313,6 +326,10 @@ vLogStream k r =
 vTime :: Text -> UTCTime -> (Text, D.AttributeValue)
 vTime k v =
   (k, D.attributeValue & D.avS .~ Just (T.pack $ formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S" v))
+
+vBool :: Text -> Bool -> (Text, D.AttributeValue)
+vBool k v =
+  (k, D.attributeValue & D.avBOOL .~ Just v)
 
 vInt :: Text -> Int -> (Text, D.AttributeValue)
 vInt k v =

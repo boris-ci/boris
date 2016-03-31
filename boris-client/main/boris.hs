@@ -179,6 +179,7 @@ run e c = case c of
           , mconcat ["queued-at: ", maybe "n/a" renderTime . buildDataQueueTime $ r]
           , mconcat ["started-at: ", maybe "n/a" renderTime . buildDataStartTime $ r]
           , mconcat ["end-at: ", maybe "n/a" renderTime . buildDataEndTime $ r]
+          , mconcat ["heartbeat-at: ", maybe "n/a" renderTime . buildDataHeartbeatTime $ r]
           , mconcat ["duration: ", maybe "n/a" (uncurry renderDuration) $ (,) <$> buildDataStartTime r <*> buildDataEndTime r]
           , mconcat ["log: ", maybe "n/a" (const $ "boris log " <> renderBuildId i) . buildDataLog $ r]
           , mconcat ["result: ", maybe "n/a" (\br -> case br of BuildOk -> "successful"; BuildKo -> "failure") . buildDataResult $ r]
