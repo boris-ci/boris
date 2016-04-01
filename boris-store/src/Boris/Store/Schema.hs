@@ -15,6 +15,7 @@ module Boris.Store.Schema (
   , kProjectBuild
   , kBuild
   , kBuilds
+  , kSeen
   , kBuildId
   , kBuildIds
   , kBuildResult
@@ -177,7 +178,8 @@ tProject e =
 --  kCommit :: String
 --
 -- Attributes:
---  kBuilds :: [String]
+--  kBuilds :: [String] -- NOTE: this is build-ids not build names...
+--  kSeen :: [String] -- Build names that have been triggered against this commit
 --
 tProjectCommits :: Environment -> Text
 tProjectCommits e =
@@ -242,6 +244,10 @@ kBuildResult =
 kBuilds :: Text
 kBuilds =
   "builds"
+
+kSeen :: Text
+kSeen =
+  "seen"
 
 kRef :: Text
 kRef =

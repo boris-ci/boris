@@ -3,6 +3,7 @@
 module Boris.Service.Git (
     InitialiseError (..)
   , initialise
+  , discovering
   , findRef
   , renderInitialiseError
   ) where
@@ -77,7 +78,7 @@ data InitialiseError =
 --  * We are ready to go then.
 --
 initialise :: Out -> Out -> Workspace -> Build -> Repository -> Maybe Ref -> EitherT InitialiseError IO BuildInstance
-initialise sout serr workspace build repository  mref = do
+initialise sout serr workspace build repository mref = do
   mirror <- bimapEitherT MirrorError id $
     Git.bare sout serr repository $ pathOfMirror workspace
   patterntext <- bimapEitherT MissingConfigError id $
@@ -103,6 +104,44 @@ initialise sout serr workspace build repository  mref = do
   bimapEitherT CheckoutError id $
     Git.checkout sout serr work (Ref . renderCommit $ commit)
   pure $ BuildInstance specification ref commit
+
+-- |
+-- Discovery initialisation:
+--
+--  * Take a mirror of the target repository.
+--
+--   The fact that it is a mirror is of critical importance to pattern
+--   resolution.  if we were to take a normal clone or bare repo, we
+--   would have significant trouble and haxs to handle the difference
+--   between a local ref and a remote ref.
+--
+--  * Load boris-git.toml off of the master branch.
+--
+--    In a future world this is perhaps configurable per build, but for
+--    now this is an explicit convention. This file contains git patterns
+--    which we use to resolve the ref we need to build.
+--
+--  * Parse boris-git.toml and determine the pattern for the specified build.
+--
+--  * Resolve the pattern against the repository refs.
+--
+--  * Determine the commit for all resolved refs.
+--
+discovering :: Out -> Out -> Workspace -> Repository -> EitherT InitialiseError IO [DiscoverInstance]
+discovering sout serr workspace repository  = do
+  mirror <- bimapEitherT MirrorError id $
+    Git.bare sout serr repository $ pathOfMirror workspace
+  patterntext <- bimapEitherT MissingConfigError id $
+    Git.cat sout serr mirror (Ref "refs/heads/master") ("boris-git.toml")
+  patterns <- bimapEitherT PatternConfigParseError id . hoistEither $
+    parsePatternConfig patterntext
+  fmap join . forM patterns $ \pattern -> do
+    refs <- bimapEitherT ListingRefsError id $
+      Git.refs sout serr mirror . buildPattern $ pattern
+    forM refs $ \ref -> do
+      commit <- bimapEitherT (InitialiseCommitError (buildName pattern) ref) id $
+        Git.commitAt sout serr mirror ref
+      pure $ DiscoverInstance pattern ref commit
 
 -- |
 -- Resolving a pattern to a ref.

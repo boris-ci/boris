@@ -50,10 +50,12 @@ test-suite test
   build-depends:
                       base                            >= 3          && < 5
                     , ambiata-boris-core
+                    , ambiata-boris-core-test
                     , ambiata-boris-queue
                     , ambiata-disorder-core
                     , ambiata-disorder-corpus
                     , ambiata-p
+                    , ambiata-x-aeson
                     , QuickCheck                      == 2.7.*
                     , quickcheck-instances            == 0.3.*
 

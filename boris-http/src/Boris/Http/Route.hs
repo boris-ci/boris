@@ -22,7 +22,7 @@ boris :: Env -> Environment -> BuildQueue -> ConfigLocation -> RoutingSpec IO ()
 boris env e q c = do
 --  root #> TODO
   "project" #> Project.collection env c
-  "project" </> var "project-name" #> Project.item env e
+  "project" </> var "project-name" #> Project.item env e q c
   "project" </> var "project-name" </> "build" </> var "build-name" #> Build.collection env e q c
 --  "project" </> var "project-name" </> "commit" </> var "commit-hash" #> TODO
   "build" </> var "build-id" #> Build.item env e

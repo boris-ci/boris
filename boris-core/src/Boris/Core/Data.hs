@@ -18,6 +18,7 @@ module Boris.Core.Data (
   , Registration (..)
   , BuildResult (..)
   , BuildInstance (..)
+  , DiscoverInstance (..)
   , Acknowledge (..)
   , WorkspacePath (..)
   , Workspace (..)
@@ -119,6 +120,13 @@ data BuildInstance =
       buildSpecification :: Specification
     , buildRef :: Ref
     , buildCommit :: Commit
+    } deriving (Eq, Show)
+
+data DiscoverInstance =
+  DiscoverInstance {
+      discoverBuildPattern :: BuildPattern
+    , discoverRef :: Ref
+    , discoverCommit :: Commit
     } deriving (Eq, Show)
 
 data Specification =

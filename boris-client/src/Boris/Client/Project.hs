@@ -3,6 +3,7 @@
 module Boris.Client.Project (
     list
   , fetch
+  , discover
   ) where
 
 import           Boris.Core.Data
@@ -28,6 +29,10 @@ fetch :: BalanceConfig -> Project -> EitherT BorisHttpClientError IO [Build]
 fetch c p =
   fmap (maybe [] getProjectBuilds) $
     H.get c ["project", renderProject p]
+
+discover :: BalanceConfig -> Project -> EitherT BorisHttpClientError IO ()
+discover c p =
+  H.post_ c ["project", renderProject p]
 
 newtype GetProjects =
   GetProjects {

@@ -20,7 +20,7 @@ import           Boris.Store.Build (BuildData (..))
 import qualified Boris.Store.Build as SB
 import qualified Boris.Store.Index as SI
 import qualified Boris.Store.Tick as ST
-import           Boris.Queue (BuildQueue (..), Request (..))
+import           Boris.Queue (BuildQueue (..), Request (..), RequestBuild (..))
 import qualified Boris.Queue as Q
 
 import           Charlotte.Airship (PostHandler (..), withVersionJson)
@@ -41,6 +41,7 @@ import           P
 import           System.IO (IO)
 
 import           X.Control.Monad.Trans.Either (bimapEitherT)
+
 
 collection :: Env -> Environment -> BuildQueue -> ConfigLocation -> Resource IO
 collection env e q c =
@@ -65,7 +66,7 @@ collection env e q c =
           i <- webT id . runAWST env renderError . bimapEitherT ST.renderTickError id $ ST.next e p b
           webT id . runAWST env renderError . bimapEitherT SB.renderRegisterError id $ SB.register e p b i
           r <- getPostBuildsRef <$> decodeJsonBody
-          let req = Request i p repository b r
+          let req = RequestBuild' $ RequestBuild i p repository b r
           webT renderError . runAWS env $ Q.put q req
           putResponseBody . jsonResponse $ GetBuild (BuildData i p b Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
           setLocation ["builds"]
