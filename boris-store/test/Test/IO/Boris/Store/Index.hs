@@ -35,6 +35,18 @@ prop_projectCommitBuildId p c i = once . testAWS . withClean environment (SI.del
   res <- SI.getProjectCommitBuildIds environment p c
   pure $ res === [i]
 
+prop_projectCommitSeen p c b = once . testAWS . withClean environment (SI.deleteProjectCommit environment p c) $ do
+  SI.addProjectCommitSeen environment p c b
+  res <- SI.getProjectCommitSeen environment p c
+  pure $ res === [b]
+
+prop_projectCommitSeenDuplicate p c b = once . testAWS . withClean environment (SI.deleteProjectCommit environment p c) $ do
+  SI.addProjectCommitSeen environment p c b
+  res1 <- SI.getProjectCommitSeen environment p c
+  SI.addProjectCommitSeen environment p c b
+  res2 <- SI.getProjectCommitSeen environment p c
+  pure $ [res1, res2] === [[b], [b]]
+
 prop_buildId p b r i = once . testAWS . withClean environment (SI.deleteBuildIds environment p b r) $ do
   SI.addBuildId environment p b r i
   res <- SI.getBuildIds environment p b r
