@@ -62,13 +62,6 @@ data BuilderError =
 --  * we record the results.
 --
 --
--- Future improvements:
---
---  * We should really be sending a heart-beat to the store so that
---    others can tell if we die.
---
---  * We should also allow for cancelling of a running build.
---
 builder :: Env -> Environment -> WorkspacePath -> RequestBuild -> EitherT BuilderError IO ()
 builder env e w request = do
   let
