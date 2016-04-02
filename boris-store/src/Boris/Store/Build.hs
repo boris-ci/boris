@@ -142,6 +142,8 @@ index e p b i r c = do
   addProjectCommit e p c
   liftIO . T.putStrLn $ "add-project-commit-build-id"
   addProjectCommitBuildId e p c i
+  liftIO . T.putStrLn $ "add-project-commit-seen"
+  addProjectCommitSeen e p c b
   liftIO . T.putStrLn $ "add-set-ref"
   void . A.send $ D.updateItem (tBuild e)
     & D.uiKey .~ H.fromList [

@@ -3,10 +3,16 @@
 module Boris.Queue (
     QueueError (..)
   , Request (..)
+  , RequestBuild (..)
+  , RequestDiscover (..)
   , BuildQueue (..)
   , put
   , get
   , renderQueueError
+  , fromRequest
+  , fromRequestV1
+  , fromRequestV2
+  , toRequest
   ) where
 
 import           Control.Lens ((^.))
@@ -35,19 +41,30 @@ data QueueError =
     deriving (Eq, Show)
 
 data Request =
-  Request {
+    RequestBuild' RequestBuild
+  | RequestDiscover' RequestDiscover
+    deriving (Eq, Show)
+
+data RequestBuild =
+  RequestBuild {
       requestBuildId :: BuildId
-    , requestProject :: Project
-    , requestRepository :: Repository
-    , requestBuild :: Build
-    , requestRef :: Maybe Ref
+    , requestBuildProject :: Project
+    , requestBuildRepository :: Repository
+    , requestBuildName :: Build
+    , requestBuildRef :: Maybe Ref
+    } deriving (Eq, Show)
+
+data RequestDiscover =
+  RequestDiscover {
+      requestDiscoverId :: BuildId
+    , requestDiscoverProject :: Project
+    , requestDiscoverRepository :: Repository
     } deriving (Eq, Show)
 
 newtype BuildQueue =
   BuildQueue {
       renderBuildQueue :: Text
     } deriving (Eq, Show)
-
 
 put :: BuildQueue -> Request -> AWS ()
 put bq request = do
@@ -64,31 +81,76 @@ get bq = do
     lift . void $ Q.deleteMessage q msg
     pure parsed
 
-
 fromRequest :: Request -> Value
-fromRequest r =
-  object [
-      "version" .= ("v1" :: Text)
-    , "id" .= (renderBuildId . requestBuildId) r
-    , "project" .= (renderProject . requestProject) r
-    , "repository" .= (renderRepository . requestRepository) r
-    , "build" .= (renderBuild . requestBuild) r
-    , "ref" .= (fmap renderRef . requestRef) r
-    ]
+fromRequest =
+  fromRequestV2
+
+fromRequestV1 :: Request -> Value
+fromRequestV1 r =
+  case r of
+    RequestDiscover' _ ->
+      fromRequestV2 r
+    RequestBuild' rr ->
+      object [
+          "version" .= ("v1" :: Text)
+        , "id" .= (renderBuildId . requestBuildId) rr
+        , "project" .= (renderProject . requestBuildProject) rr
+        , "repository" .= (renderRepository . requestBuildRepository) rr
+        , "build" .= (renderBuild . requestBuildName) rr
+        , "ref" .= (fmap renderRef . requestBuildRef) rr
+        ]
+
+fromRequestV2 :: Request -> Value
+fromRequestV2 r =
+  case r of
+    RequestDiscover' rr ->
+      object [
+          "version" .= ("v2" :: Text)
+        , "type" .= ("discover" :: Text)
+        , "id" .= (renderBuildId . requestDiscoverId) rr
+        , "project" .= (renderProject . requestDiscoverProject) rr
+        , "repository" .= (renderRepository . requestDiscoverRepository) rr
+        ]
+    RequestBuild' rr ->
+      object [
+          "version" .= ("v2" :: Text)
+        , "type" .= ("build" :: Text)
+        , "id" .= (renderBuildId . requestBuildId) rr
+        , "project" .= (renderProject . requestBuildProject) rr
+        , "repository" .= (renderRepository . requestBuildRepository) rr
+        , "build" .= (renderBuild . requestBuildName) rr
+        , "ref" .= (fmap renderRef . requestBuildRef) rr
+        ]
 
 toRequest :: Value -> Parser Request
 toRequest =
   withObject "Request" $ \o ->
     o .: "version" >>= \ver -> case ver of
       "v1" ->
-        Request
+        fmap RequestBuild' $ RequestBuild
           <$> (BuildId <$> o .: "id")
           <*> (Project <$> o .: "project")
           <*> (Repository <$> o .: "repository")
           <*> (Build <$> o .: "build")
           <*> (fmap Ref <$> o .:? "ref")
+      "v2" ->
+        o .: "type" >>= \ty -> case ty of
+          "discover" ->
+            fmap RequestDiscover'  $ RequestDiscover
+              <$> (BuildId <$> o .: "id")
+              <*> (Project <$> o .: "project")
+              <*> (Repository <$> o .: "repository")
+          "build" ->
+            fmap RequestBuild' $ RequestBuild
+              <$> (BuildId <$> o .: "id")
+              <*> (Project <$> o .: "project")
+              <*> (Repository <$> o .: "repository")
+              <*> (Build <$> o .: "build")
+              <*> (fmap Ref <$> o .:? "ref")
+          _ ->
+            fail $ "Unknown request type: " <> ty
       _ ->
-        fail $ "Unknown version: " <> ver
+        fail $ "Unknown request version: " <> ver
 
 renderQueueError :: QueueError -> Text
 renderQueueError err =

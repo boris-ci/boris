@@ -5,6 +5,7 @@ module Boris.Client.Http (
   , renderBorisHttpClientError
   , get
   , post
+  , post_
   , delete
   ) where
 
@@ -63,6 +64,19 @@ post b url a = do
   case H.responseStatus res of
     Status 201 _ ->
       hoistEither . first BorisHttpClientDecodeError $ decodeResponse res
+    _ ->
+      left $ BorisHttpClientUnhandledResponseError res
+
+post_ :: BalanceConfig -> [Text] -> EitherT BorisHttpClientError IO ()
+post_ b url = do
+  res <- bimapEitherT BorisHttpClientBalanceError id . newEitherT . runBalanceT b . httpBalanced $ \r -> r {
+      H.path = encodePathSegmentsBS url
+    , H.requestHeaders = [(HTTP.hContentType, borisVersion)]
+    , H.method = HTTP.methodPost
+    }
+  case H.responseStatus res of
+    Status 202 _ ->
+      pure ()
     _ ->
       left $ BorisHttpClientUnhandledResponseError res
 

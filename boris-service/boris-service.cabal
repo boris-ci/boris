@@ -58,7 +58,9 @@ library
                     src
 
   exposed-modules:
+                    Boris.Service.Build
                     Boris.Service.Daemon
+                    Boris.Service.Discover
                     Boris.Service.Listener
                     Boris.Service.Log
                     Boris.Service.Workspace

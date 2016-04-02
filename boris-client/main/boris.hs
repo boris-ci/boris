@@ -49,6 +49,7 @@ data Tail =
 
 data Cli =
     Trigger Tail Project Build (Maybe Ref)
+  | Discover Project
   | Cancel BuildId
   | List (Maybe Project) (Maybe Build)
   | Status BuildId
@@ -78,6 +79,9 @@ parser =
           <*> projectP
           <*> buildP
           <*> optional refP
+    , command' "discover" "Probe for builds to trigger for a project" $
+        Discover
+          <$> projectP
     , command' "cancel" "Cancel a build" $
         Cancel
           <$> buildIdP
@@ -148,6 +152,12 @@ run e c = case c of
           exitSuccess
         Right (Left err) ->
           bomb $ renderError err
+
+  Discover p -> do
+    bc <- mkBalanceConfig
+    void . orDie renderBorisHttpClientError $ P.discover bc p
+    T.putStrLn . mconcat $ ["Discovery kicked off for project ", renderProject p]
+    exitSuccess
 
   Cancel i -> do
     bc <- mkBalanceConfig

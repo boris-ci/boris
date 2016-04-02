@@ -14,11 +14,25 @@ import           Test.QuickCheck
 import           Test.QuickCheck.Instances ()
 
 
-instance Arbitrary Request where
+instance Arbitrary RequestBuild where
   arbitrary =
-    Request
+    RequestBuild
       <$> arbitrary
       <*> arbitrary
       <*> (Repository <$> arbitrary)
       <*> arbitrary
       <*> oneof [fmap (Just . Ref) arbitrary, pure Nothing]
+
+instance Arbitrary RequestDiscover where
+  arbitrary =
+    RequestDiscover
+      <$> arbitrary
+      <*> arbitrary
+      <*> (Repository <$> arbitrary)
+
+instance Arbitrary Request where
+  arbitrary =
+    oneof [
+        RequestDiscover' <$> arbitrary
+      , RequestBuild' <$> arbitrary
+      ]
