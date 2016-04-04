@@ -46,7 +46,7 @@ import           X.Control.Monad.Trans.Either (bimapEitherT)
 collection :: Env -> Environment -> BuildQueue -> ConfigLocation -> Resource IO
 collection env e q c =
   defaultResource {
-      allowedMethods = pure [HTTP.methodGet, HTTP.methodPost, HTTP.methodDelete]
+      allowedMethods = pure [HTTP.methodGet, HTTP.methodPost]
 
     , contentTypesProvided = return . withVersionJson $ \v -> case v of
         V1 -> do
@@ -77,7 +77,7 @@ collection env e q c =
 item :: Env -> Environment -> Resource IO
 item env e =
   defaultResource {
-      allowedMethods = pure [HTTP.methodGet]
+      allowedMethods = pure [HTTP.methodGet, HTTP.methodDelete]
 
     , contentTypesProvided = pure . withVersionJson $ \v -> case v of
         V1 -> do
