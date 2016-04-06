@@ -16,6 +16,7 @@ import           Control.Monad.IO.Class (liftIO)
 
 import           Data.Conduit (($$))
 import qualified Data.Conduit.List as CL
+import           Data.Default (def)
 import           Data.String (String)
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -24,7 +25,9 @@ import           Data.Time (UTCTime, diffUTCTime, formatTime)
 
 import           Mismi (renderRegionError, discoverAWSEnv, runAWS, renderError)
 
-import           Network.HTTP.Client (newManager, defaultManagerSettings)
+import           Network.Connection (ProxySettings (..))
+import           Network.HTTP.Client (ManagerSettings, newManager)
+import           Network.HTTP.Client.TLS (mkManagerSettings)
 
 import           Options.Applicative
 
@@ -263,11 +266,22 @@ bomb msg =
 
 mkBalanceConfig :: IO BalanceConfig
 mkBalanceConfig = do
-  mgr <- newManager defaultManagerSettings
+  ms <- getManagerSettings
+  mgr <- newManager ms
   h <- Host <$> text "HOST"
   p <- Port <$> intOr "PORT" 11111
   t <- balanceTableStatic . BalanceTable (BalanceEntry h p) $ []
   pure $ BalanceConfig t mempty mgr
+
+socksProxyKey :: String
+socksProxyKey =
+  "SOCKS_PROXY"
+
+getManagerSettings :: IO ManagerSettings
+getManagerSettings = do
+  msocks <- lookupEnv socksProxyKey
+  pure . mkManagerSettings def $
+    SockSettingsEnvironment (Just socksProxyKey) <$ msocks
 
 renderTime :: UTCTime -> Text
 renderTime =
