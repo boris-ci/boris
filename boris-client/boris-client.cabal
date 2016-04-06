@@ -85,12 +85,15 @@ executable boris
                     , async
                     , conduit
                     , conduit-extra
+                    , connection                      == 0.2.*
+                    , data-default                    == 0.5.*
                     , http-client
+                    , http-client-tls                 == 0.2.2.*
+                    , old-locale
                     , optparse-applicative            == 0.11.*
                     , text
                     , time
                     , transformers
-                    , old-locale
 
 test-suite test-io
   type:
