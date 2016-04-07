@@ -41,7 +41,11 @@ fetchLatestMasterBuilds env e c = do
     forM builds $ \b -> do
       -- We only care about master builds for scoreboard
       buildIds <- lift $ SI.getBuildIds e p b (Ref "refs/heads/master")
-      bimapEitherT ScoreboardFetchError id . mapM (SB.fetch e) . head . sortBuildIds $ buildIds
+      bimapEitherT ScoreboardFetchError id
+        -- Find the first build with a result
+        . findMapM (fmap (find (isJust . SB.buildDataResult) . Just) . SB.fetch e)
+        . sortBuildIds
+        $ buildIds
 
 renderScoreboardError :: ScoreboardError -> Text
 renderScoreboardError se =
