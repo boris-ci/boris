@@ -12,7 +12,6 @@ import           Control.Lens (view)
 import           Data.Conduit (Source, (=$=))
 import qualified Data.Conduit.List as CL
 
-import           Data.Text (Text)
 import qualified Data.Text as T
 
 import           Jebediah.Data (Following (..), GroupName (..), StreamName (..))

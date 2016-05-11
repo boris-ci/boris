@@ -22,7 +22,6 @@ import           Boris.Core.Data
 
 import           Data.Aeson (Value (..), object, withObject, (.=), (.:), (.:?))
 import           Data.Aeson.Types (Parser)
-import           Data.Text (Text)
 
 import           Mismi (AWS)
 import qualified Mismi.SQS as Q

@@ -6,7 +6,7 @@ module Boris.Service.Log (
 
 import           Boris.X (Out)
 
-import           Control.Lens (view, (&), (.~))
+import           Control.Lens (view, (.~))
 import           Control.Concurrent.MVar (MVar, newMVar, modifyMVar_)
 import           Control.Monad.Reader (ask)
 import           Control.Monad.IO.Class (liftIO)
@@ -17,7 +17,6 @@ import qualified Data.Conduit as C
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Text as CT
 import           Data.List.NonEmpty (NonEmpty (..))
-import           Data.Text (Text)
 import qualified Data.Text as T
 import           Data.Time (UTCTime, getCurrentTime)
 import           Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)

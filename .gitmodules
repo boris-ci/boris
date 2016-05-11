@@ -52,3 +52,6 @@
 [submodule "lib/boom"]
 	path = lib/boom
 	url = git@github.com:ambiata/boom
+[submodule "lib/clerk"]
+	path = lib/clerk
+	url = git@github.com:ambiata/clerk.git

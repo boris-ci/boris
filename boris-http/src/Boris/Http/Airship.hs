@@ -11,8 +11,6 @@ import           Boom.Airship (boom)
 
 import           Control.Monad.IO.Class (liftIO)
 
-import           Data.Text (Text)
-
 import           P
 
 import           System.IO (IO)

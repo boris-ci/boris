@@ -19,8 +19,6 @@ import           Data.Conduit (($=+), ($$+-))
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Text as CT
 
-import           Data.Text (Text)
-
 import           Mismi (Error, renderError, runAWST)
 import           Mismi.Amazonka (Env)
 import qualified Mismi.S3 as S3

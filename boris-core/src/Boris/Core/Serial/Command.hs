@@ -10,7 +10,6 @@ import           Boris.Core.Data
 
 import           Control.Lens ((^?))
 
-import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.HashMap.Strict as M
 

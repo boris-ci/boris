@@ -18,10 +18,9 @@ import           Data.Conduit (($$))
 import qualified Data.Conduit.List as CL
 import           Data.Default (def)
 import           Data.String (String)
-import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import           Data.Time (UTCTime, diffUTCTime, formatTime)
+import           Data.Time (UTCTime, diffUTCTime, formatTime, defaultTimeLocale)
 
 import           Mismi (renderRegionError, discoverAWSEnv, runAWS, renderError)
 
@@ -39,7 +38,6 @@ import           Snooze.Balance.Control (BalanceConfig (..))
 import           System.Exit (exitSuccess, exitFailure)
 import           System.Environment (lookupEnv)
 import           System.IO
-import           System.Locale (defaultTimeLocale)
 
 import           X.Options.Applicative
 import           X.Control.Monad.Trans.Either (newEitherT, runEitherT)

@@ -20,7 +20,6 @@ import qualified Boris.X as X
 import           Control.Monad.Trans.Class (lift)
 
 import qualified Data.List as L
-import           Data.Text (Text)
 
 import           Jebediah.Data (GroupName (..), StreamName (..))
 

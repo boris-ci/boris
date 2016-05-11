@@ -28,7 +28,6 @@ import           Charlotte.Airship (processPostMedia, jsonResponse, setResponseH
 
 import           Control.Monad.IO.Class (liftIO)
 
-import           Data.Text (Text)
 import           Data.Time (getCurrentTime, diffUTCTime)
 
 import           Mismi (runAWS, runAWST, renderError)

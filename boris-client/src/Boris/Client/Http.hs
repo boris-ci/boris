@@ -13,7 +13,6 @@ module Boris.Client.Http (
 import           Data.Aeson (FromJSON (..), ToJSON (..), encode)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as BL
-import           Data.Text (Text)
 import qualified Data.Text as T
 
 import qualified Network.HTTP.Client as H

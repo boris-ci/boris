@@ -29,7 +29,7 @@ module Boris.Store.Index (
 import           Boris.Core.Data
 import           Boris.Store.Schema
 
-import           Control.Lens (ix, (&), (.~), (^?))
+import           Control.Lens (ix, (.~), (^?))
 
 import qualified Data.HashMap.Strict as H
 

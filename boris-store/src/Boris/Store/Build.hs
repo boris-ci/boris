@@ -23,16 +23,16 @@ import           Boris.Core.Data
 import           Boris.Store.Schema
 import           Boris.Store.Index
 
-import           Control.Lens (_Just, ix, to, (&), (.~), (^?))
+import           Control.Lens (_Just, ix, to, (.~), (^?))
 import           Control.Exception.Lens (handling)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Trans.Class (lift)
 
-import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
-import           Data.Time (UTCTime, getCurrentTime, parseTime)
+import           Data.Time (UTCTime, getCurrentTime, parseTimeM)
+import           Data.Time.Locale.Compat (defaultTimeLocale)
 import qualified Data.HashMap.Strict as H
 
 import           Jebediah.Data (GroupName (..), StreamName (..))
@@ -43,8 +43,6 @@ import qualified Mismi.Amazonka as A
 import qualified Network.AWS.DynamoDB as D
 
 import           P
-
-import           System.Locale (defaultTimeLocale)
 
 import           X.Control.Monad.Trans.Either (EitherT, newEitherT)
 
@@ -108,7 +106,7 @@ fetch e i = newEitherT $ do
 
 blat :: Text -> Maybe UTCTime
 blat =
-  parseTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S" . T.unpack
+  parseTimeM True defaultTimeLocale "%Y-%m-%dT%H:%M:%S" . T.unpack
 
 register :: Environment -> Project -> Build -> BuildId -> EitherT RegisterError AWS ()
 register e p b i = do

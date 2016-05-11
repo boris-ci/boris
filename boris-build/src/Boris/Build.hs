@@ -12,7 +12,6 @@ import qualified Boris.X as X
 
 import           Control.Monad.IO.Class (liftIO)
 
-import           Data.Text (Text)
 import qualified Data.Text as T
 
 import           P
