@@ -7,31 +7,32 @@ module Boris.Client.Log (
 
 import           Boris.Core.Data
 
-import           Control.Lens (view)
-
 import           Data.Conduit (Source, (=$=))
 import qualified Data.Conduit.List as CL
 
 import qualified Data.Text as T
 
-import           Jebediah.Data (Following (..), GroupName (..), StreamName (..))
-import           Jebediah.Control (retrieveLogStream')
+import           Jebediah.Data (Following (..), Query (..), LogGroup (..), LogStream (..), Log (..))
+import qualified Jebediah.Conduit as J
 
-import           Mismi (AWS)
-import qualified Mismi.CloudwatchLogs.Amazonka as CW
+import           Mismi.Amazonka (Env)
 
 import           P
 
+import           System.IO (IO)
 
-source :: Environment -> BuildId -> Source AWS Text
-source e i =
+import           Twine.Snooze (seconds)
+
+source :: Env -> Environment -> BuildId -> Source IO Text
+source env e i =
   let
-    gname = GroupName . T.intercalate "." $ ["boris", renderEnvironment e]
-    sname = StreamName $ renderBuildId i
+    gname = LogGroup . T.intercalate "." $ ["boris", renderEnvironment e]
+    sname = LogStream $ renderBuildId i
   in
-    source' gname sname
+    source' env gname sname
 
-source' :: GroupName -> StreamName -> Source AWS Text
-source' gname sname =
-  retrieveLogStream' gname sname Nothing Nothing Nothing (Follow 1)
-    =$= CL.mapFoldable (view CW.oleMessage)
+source' :: Env -> LogGroup -> LogStream -> Source IO Text
+source' env gname sname =
+  J.source env gname sname Everything (Follow . seconds $ 1)
+    =$= J.unclean
+    =$= CL.map logChunk

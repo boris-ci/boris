@@ -22,7 +22,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           Data.Time (UTCTime, diffUTCTime, formatTime, defaultTimeLocale)
 
-import           Mismi (renderRegionError, discoverAWSEnv, runAWS, renderError)
+import           Mismi (renderRegionError, discoverAWSEnv)
 
 import           Network.Connection (ProxySettings (..))
 import           Network.HTTP.Client (ManagerSettings, newManager)
@@ -133,7 +133,7 @@ run e c = case c of
               pure x
 
         taillog env l =
-          runEitherT . runAWS env $ L.source' (logGroup l) (logStream l) $$
+          L.source' env (logGroup l) (logStream l) $$
             CL.mapM_ (liftIO . T.putStrLn)
 
       l <- orDie renderBorisHttpClientError waitForLog
@@ -149,10 +149,8 @@ run e c = case c of
           exitSuccess
         Left (Right BuildKo) ->
           exitFailure
-        Right (Right _) ->
+        Right () ->
           exitSuccess
-        Right (Left err) ->
-          bomb $ renderError err
 
   Discover p -> do
     bc <- mkBalanceConfig
@@ -208,7 +206,7 @@ run e c = case c of
         exitSuccess
   Log i -> do
     env <- orDie renderRegionError discoverAWSEnv
-    orDie renderError . runAWS env $ L.source e i $$ CL.mapM_ (liftIO . T.putStrLn)
+    L.source env e i $$ CL.mapM_ (liftIO . T.putStrLn)
 
 projectP :: Parser Project
 projectP =

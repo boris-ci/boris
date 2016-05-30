@@ -21,7 +21,7 @@ import           Control.Monad.Trans.Class (lift)
 
 import qualified Data.List as L
 
-import           Jebediah.Data (GroupName (..), StreamName (..))
+import           Jebediah.Data (LogGroup (..), LogStream (..))
 
 import           Mismi (Error, runAWST, renderError)
 import           Mismi.Amazonka (Env)
@@ -30,7 +30,7 @@ import           P
 
 import           System.IO (IO)
 
-import           X.Control.Monad.Trans.Either (EitherT, bimapEitherT)
+import           X.Control.Monad.Trans.Either (EitherT, runEitherT, newEitherT, bimapEitherT)
 
 data DiscoverError =
     DiscoverAwsError Error
@@ -43,50 +43,48 @@ discover env e q w request = do
     buildId = requestDiscoverId request
     project = requestDiscoverProject request
     repository = requestDiscoverRepository request
-    gname = GroupName $ mconcat ["boris.discover.", renderEnvironment e]
-    sname = StreamName $ mconcat [renderProject project, ".", renderBuildId buildId]
+    gname = LogGroup $ mconcat ["boris.discover.", renderEnvironment e]
+    sname = LogStream $ mconcat [renderProject project, ".", renderBuildId buildId]
 
-  out <- runAWST env DiscoverAwsError . lift $
-    newLogger gname sname
+  runAWST env DiscoverAwsError . newEitherT . withLogger gname sname $ \out -> runEitherT $
+    withWorkspace w buildId $ \workspace -> do
+      X.xPutStrLn out . mconcat $ ["[boris:discover] ", renderProject project]
 
-  withWorkspace w buildId $ \workspace -> do
-    X.xPutStrLn out . mconcat $ ["[boris:discover] ", renderProject project]
+      discovered <- bimapEitherT DiscoverInitialiseError id $
+        discovering out out workspace repository
 
-    discovered <- bimapEitherT DiscoverInitialiseError id $
-      discovering out out workspace repository
+      forM_ discovered $ \d -> do
+        let
+          build = buildName . discoverBuildPattern $ d
+          commit = discoverCommit d
+          ref = discoverRef d
 
-    forM_ discovered $ \d -> do
-      let
-        build = buildName . discoverBuildPattern $ d
-        commit = discoverCommit d
-        ref = discoverRef d
+        current <- runAWST env DiscoverAwsError . lift $
+          SI.getProjectCommitSeen e project commit
 
-      current <- runAWST env DiscoverAwsError . lift $
-        SI.getProjectCommitSeen e project commit
-
-      if L.elem build current
-        then do
-          X.xPutStrLn out $ mconcat [
-              "Already seen"
-            , ": project = ", renderProject project
-            , ", build = ", renderBuild build
-            , ", ref = ", renderRef ref
-            , ", commit = ", renderCommit commit
-            ]
-          pure ()
-        else do
-          newId <- runAWST env DiscoverAwsError . bimapEitherT DiscoverTickError id $
-            ST.next e project build
-          X.xPutStrLn out $ mconcat [
-              "New commit, triggering build"
-            , ": project = ", renderProject project
-            , ", build = ", renderBuild build
-            , ", ref = ", renderRef ref
-            , ", commit = ", renderCommit commit
-            , ", build-id ", renderBuildId newId
-            ]
-          runAWST env DiscoverAwsError . lift $
-            Q.put q (RequestBuild' $ RequestBuild newId project repository build (Just ref))
+        if L.elem build current
+          then do
+            X.xPutStrLn out $ mconcat [
+                "Already seen"
+              , ": project = ", renderProject project
+              , ", build = ", renderBuild build
+              , ", ref = ", renderRef ref
+              , ", commit = ", renderCommit commit
+              ]
+            pure ()
+          else do
+            newId <- runAWST env DiscoverAwsError . bimapEitherT DiscoverTickError id $
+              ST.next e project build
+            X.xPutStrLn out $ mconcat [
+                "New commit, triggering build"
+              , ": project = ", renderProject project
+              , ", build = ", renderBuild build
+              , ", ref = ", renderRef ref
+              , ", commit = ", renderCommit commit
+              , ", build-id ", renderBuildId newId
+              ]
+            runAWST env DiscoverAwsError . lift $
+              Q.put q (RequestBuild' $ RequestBuild newId project repository build (Just ref))
 
 renderDiscoverError :: DiscoverError -> Text
 renderDiscoverError err =

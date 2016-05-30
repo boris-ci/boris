@@ -14,7 +14,7 @@ import qualified Boris.Client.Http as H
 
 import           Data.Aeson (FromJSON (..), ToJSON (..), object, withObject, (.:), (.:?), (.=))
 
-import           Jebediah.Data (GroupName (..), StreamName (..))
+import           Jebediah.Data (LogGroup (..), LogStream (..))
 
 import           P
 
@@ -74,7 +74,7 @@ instance FromJSON GetBuild where
           <*> (do ll <- o .:? "log"
                   forM ll $ \l ->
                     flip (withObject "LogData") l $ \ld ->
-                      LogData <$> (fmap GroupName $ ld .: "group") <*> (fmap StreamName $ ld .: "stream"))
+                      LogData <$> (fmap LogGroup $ ld .: "group") <*> (fmap LogStream $ ld .: "stream"))
 
 newtype GetBuilds =
   GetBuilds {

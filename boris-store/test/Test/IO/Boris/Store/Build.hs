@@ -11,7 +11,7 @@ import qualified Boris.Store.Build as SB
 
 import           Disorder.Corpus
 
-import           Jebediah.Data (GroupName (..), StreamName (..))
+import           Jebediah.Data (LogGroup (..), LogStream (..))
 
 import           P
 
@@ -26,7 +26,7 @@ prop_store i p b r =
   forAll (elements cooking) $ \l ->
     once . testAWS . withClean environment (SB.delete environment i >> SB.deindex environment p b i) $ do
       void . runEitherT $ SB.register environment p b i
-      a <- SB.acknowledge environment i (GroupName l) (StreamName l)
+      a <- SB.acknowledge environment i (LogGroup l) (LogStream l)
       SB.complete environment i r
       pure $ a === Accept
 
@@ -34,7 +34,7 @@ prop_store_heartbeat i p b =
   forAll (elements cooking) $ \l ->
     once . testAWS . withClean environment (SB.delete environment i >> SB.deindex environment p b i) $ do
       void . runEitherT $ SB.register environment p b i
-      x0 <- SB.acknowledge environment i (GroupName l) (StreamName l)
+      x0 <- SB.acknowledge environment i (LogGroup l) (LogStream l)
       x1 <- SB.heartbeat environment i
       x2 <- SB.cancel environment i
       x3 <- SB.heartbeat environment i
