@@ -13,7 +13,7 @@ import qualified Boris.Store.Build as SB
 
 import           Data.Aeson (FromJSON (..), ToJSON (..), object, (.=), (.:?), withObject)
 
-import           Jebediah.Data (LogGroup (..), LogStream (..))
+import           Jebediah.Data (GroupName (..), StreamName (..))
 
 import           P
 
@@ -64,5 +64,5 @@ instance ToJSON GetBuild where
       , "completed" .= buildDataEndTime b
       , "heartbeat" .= buildDataHeartbeatTime b
       , "result" .= (flip fmap (buildDataResult b) $ \bb -> case bb of BuildOk -> True; BuildKo -> False)
-      , "log" .= (flip fmap (buildDataLog b) $ \l -> object ["group" .= (logGroup . SB.logGroup) l, "stream" .= (logStream . SB.logStream) l])
+      , "log" .= (flip fmap (buildDataLog b) $ \l -> object ["group" .= (unGroupName . SB.logGroup) l, "stream" .= (unStreamName . SB.logStream) l])
       ]

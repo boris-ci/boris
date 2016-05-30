@@ -23,7 +23,7 @@ import           Control.Monad.Trans.Class (lift)
 
 import qualified Data.Text.IO as T
 
-import           Jebediah.Data (LogGroup (..), LogStream (..))
+import           Jebediah.Data (GroupName (..), StreamName (..))
 
 import           Mismi (Error, runAWS, runAWST, renderError)
 import           Mismi.Amazonka (Env)
@@ -69,115 +69,117 @@ builder env e w request = do
     buildId = requestBuildId request
     repository = requestBuildRepository request
     mref = requestBuildRef request
-    gname = LogGroup $ mconcat ["boris.", renderEnvironment e]
-    sname = LogStream . renderBuildId $ buildId
+    gname = GroupName $ mconcat ["boris.", renderEnvironment e]
+    sname = StreamName . renderBuildId $ buildId
 
-  runAWST env BuildAwsError . newEitherT . withLogger gname sname $ \out -> runEitherT $ do
-    liftIO . T.putStrLn $ "acknowledge: " <> renderBuildId buildId
-    ack <- runAWST env BuildAwsError . lift $
-      SB.acknowledge e buildId gname sname
+  out <- runAWST env BuildAwsError . lift $
+    newLogger gname sname
 
-    case ack of
-      Accept -> do
-        withWorkspace w buildId $ \workspace -> do
-          bootstrap <- liftIO . runEitherT $
-            initialise out out workspace build repository mref
+  liftIO . T.putStrLn $ "acknowledge: " <> renderBuildId buildId
+  ack <- runAWST env BuildAwsError . lift $
+    SB.acknowledge e buildId gname sname
 
-          case bootstrap of
-            Left err -> do
-              X.xPutStrLn out $ mconcat ["| boris:ko | ", renderInitialiseError err]
+  case ack of
+    Accept -> do
+      withWorkspace w buildId $ \workspace -> do
+        bootstrap <- liftIO . runEitherT $
+          initialise out out workspace build repository mref
 
-              runAWST env BuildAwsError . lift $ do
-                liftIO . T.putStrLn $ "deindex: " <> renderBuildId buildId
-                SB.deindex e project build buildId
-                liftIO . T.putStrLn $ "complete: " <> renderBuildId buildId
-                SB.complete e buildId BuildKo
+        case bootstrap of
+          Left err -> do
+            X.xPutStrLn out $ mconcat ["| boris:ko | ", renderInitialiseError err]
 
-            Right instant -> do
-              let
-                ref = buildRef instant
-                commit = buildCommit instant
-                specification = buildSpecification instant
+            runAWST env BuildAwsError . lift $ do
+              liftIO . T.putStrLn $ "deindex: " <> renderBuildId buildId
+              SB.deindex e project build buildId
+              liftIO . T.putStrLn $ "complete: " <> renderBuildId buildId
+              SB.complete e buildId BuildKo
 
-                -- FIX inherit list should be defined externally
-                context = [
-                    InheritEnv "AWS_DEFAULT_REGION"
-                  , InheritEnv "AMBIATA_ARTEFACTS_MASTER"
-                  , InheritEnv "AMBIATA_HADDOCK"
-                  , InheritEnv "AMBIATA_DOWNLOAD"
-                  , InheritEnv "AMBIATA_MAFIA_CACHE"
-                  , InheritEnv "AMBIATA_ARTEFACTS_BRANCHES"
-                  , InheritEnv "AMBIATA_BENCHMARK_RESULTS"
-                  , InheritEnv "AMBIATA_TEST_BUCKET"
-                  , InheritEnv "AMBIATA_IVY_PAY"
-                  , InheritEnv "AMBIATA_IVY_OSS"
-                  , InheritEnv "AMBIATA_DOC"
-                  , InheritEnv "AMBIATA_DISPENSARY"
-                  , InheritEnv "HOME"
-                  , InheritEnv "TMPDIR"
-                  , InheritEnv "PATH"
-                  , InheritEnv "LOCALE"
-                  , InheritEnv "LC_COLLATE"
-                  , InheritEnv "LANG"
-                  , InheritEnv "HOSTNAME"
-                  , InheritEnv "SHELL"
-                  , InheritEnv "TERM"
-                  , InheritEnv "USER"
-                  , InheritEnv "RBENV_ROOT"
-                  , InheritEnv "HADOOP_USER_NAME"
-                  , InheritEnv "HADOOP_CONF_BASE"
-                  , SetEnv "BORIS_BUILD_ID" (renderBuildId buildId)
-                  , SetEnv "BORIS_PROJECT" (renderProject project)
-                  , SetEnv "BORIS_BUILD" (renderBuild build)
-                  , SetEnv "BORIS_REF" (renderRef ref)
-                  , SetEnv "BORIS_COMMIT" (renderCommit commit)
-                  ]
+          Right instant -> do
+            let
+              ref = buildRef instant
+              commit = buildCommit instant
+              specification = buildSpecification instant
 
-              runAWST env BuildAwsError . lift $ do
-                liftIO . T.putStrLn $ "index: " <> renderBuildId buildId
-                SB.index e project build buildId ref commit
+              -- FIX inherit list should be defined externally
+              context = [
+                  InheritEnv "AWS_DEFAULT_REGION"
+                , InheritEnv "AMBIATA_ARTEFACTS_MASTER"
+                , InheritEnv "AMBIATA_HADDOCK"
+                , InheritEnv "AMBIATA_DOWNLOAD"
+                , InheritEnv "AMBIATA_MAFIA_CACHE"
+                , InheritEnv "AMBIATA_ARTEFACTS_BRANCHES"
+                , InheritEnv "AMBIATA_BENCHMARK_RESULTS"
+                , InheritEnv "AMBIATA_TEST_BUCKET"
+                , InheritEnv "AMBIATA_IVY_PAY"
+                , InheritEnv "AMBIATA_IVY_OSS"
+                , InheritEnv "AMBIATA_DOC"
+                , InheritEnv "AMBIATA_DISPENSARY"
+                , InheritEnv "HOME"
+                , InheritEnv "TMPDIR"
+                , InheritEnv "PATH"
+                , InheritEnv "LOCALE"
+                , InheritEnv "LC_COLLATE"
+                , InheritEnv "LANG"
+                , InheritEnv "HOSTNAME"
+                , InheritEnv "SHELL"
+                , InheritEnv "TERM"
+                , InheritEnv "USER"
+                , InheritEnv "RBENV_ROOT"
+                , InheritEnv "HADOOP_USER_NAME"
+                , InheritEnv "HADOOP_CONF_BASE"
+                , SetEnv "BORIS_BUILD_ID" (renderBuildId buildId)
+                , SetEnv "BORIS_PROJECT" (renderProject project)
+                , SetEnv "BORIS_BUILD" (renderBuild build)
+                , SetEnv "BORIS_REF" (renderRef ref)
+                , SetEnv "BORIS_COMMIT" (renderCommit commit)
+                ]
+
+            runAWST env BuildAwsError . lift $ do
+              liftIO . T.putStrLn $ "index: " <> renderBuildId buildId
+              SB.index e project build buildId ref commit
 
 
-              let
-                runner =
-                  runEitherT $
-                    runBuild out out workspace specification context
+            let
+              runner =
+                runEitherT $
+                  runBuild out out workspace specification context
 
-                heartbeater =
-                  runEitherT $ do
-                    heart <- runAWS env $ do
-                      SB.heartbeat e buildId
-                    case heart of
-                      BuildCancelled ->
-                        pure ()
-                      BuildNotCancelled -> do
-                        liftIO . snooze . seconds $ 30
-                        newEitherT heartbeater
+              heartbeater =
+                runEitherT $ do
+                  heart <- runAWS env $ do
+                    SB.heartbeat e buildId
+                  case heart of
+                    BuildCancelled ->
+                      pure ()
+                    BuildNotCancelled -> do
+                      liftIO . snooze . seconds $ 30
+                      newEitherT heartbeater
 
-              runner' <- liftIO . async $ runner
-              heartbeater' <- liftIO . async $ heartbeater
-              state <- liftIO $ waitEitherCancel heartbeater' runner'
+            runner' <- liftIO . async $ runner
+            heartbeater' <- liftIO . async $ heartbeater
+            state <- liftIO $ waitEitherCancel heartbeater' runner'
 
-              result <- case state of
-                Right (Left err) -> do
-                  X.xPutStrLn out $ mconcat ["| boris:ko | ", renderBuildError err]
-                  pure $ BuildKo
-                Right (Right _) -> do
-                  X.xPutStrLn out $ "| boris:ok |"
-                  pure $ BuildOk
-                Left (Left err) -> do
-                  X.xPutStrLn out $ mconcat ["| boris:ko:heartbeat-error | ", renderError err]
-                  pure $ BuildKo
-                Left (Right _) -> do
-                  X.xPutStrLn out $ mconcat ["| boris:ko:cancelled | "]
-                  pure $ BuildKo
+            result <- case state of
+              Right (Left err) -> do
+                X.xPutStrLn out $ mconcat ["| boris:ko | ", renderBuildError err]
+                pure $ BuildKo
+              Right (Right _) -> do
+                X.xPutStrLn out $ "| boris:ok |"
+                pure $ BuildOk
+              Left (Left err) -> do
+                X.xPutStrLn out $ mconcat ["| boris:ko:heartbeat-error | ", renderError err]
+                pure $ BuildKo
+              Left (Right _) -> do
+                X.xPutStrLn out $ mconcat ["| boris:ko:cancelled | "]
+                pure $ BuildKo
 
-              runAWST env BuildAwsError . lift $ do
-                liftIO . T.putStrLn $ "complete: " <> renderBuildId buildId
-                SB.complete e buildId result
+            runAWST env BuildAwsError . lift $ do
+              liftIO . T.putStrLn $ "complete: " <> renderBuildId buildId
+              SB.complete e buildId result
 
-      AlreadyRunning ->
-          pure ()
+    AlreadyRunning ->
+        pure ()
 
 renderBuilderError :: BuilderError -> Text
 renderBuilderError err =
