@@ -17,20 +17,16 @@ import           Blaze.ByteString.Builder (fromByteString)
 
 import           Charlotte.Airship (withVersionJson)
 
-import           Control.Lens (view)
-
-import           Data.Conduit (Source, (=$=), transPipe, runConduit)
+import           Data.Conduit (Source, (=$=), runConduit)
 import qualified Data.Conduit.List as CL
 
 import qualified Data.Text.Encoding as T
 
-import           Jebediah.Data (Following (..))
-import           Jebediah.Control (retrieveLogStream')
+import           Jebediah.Data (Query (..), Following (..), Log (..))
+import qualified Jebediah.Conduit as J
 
-import           Mismi (AWS, rawRunAWS, runAWST, renderError)
+import           Mismi (runAWST, renderError)
 import           Mismi.Amazonka (Env)
-import qualified Mismi.CloudwatchLogs.Amazonka as CW
-
 
 import qualified Network.HTTP.Types as HTTP
 
@@ -59,16 +55,17 @@ item env e =
             Just ld -> do
               pure . ResponseStream $ \send flush ->
                 runConduit $
-                  transPipe (rawRunAWS env) (source ld) =$= CL.mapM_ (\t -> do
+                  source env ld =$= CL.mapM_ (\t -> do
                     send (fromByteString . T.encodeUtf8 $ t)
                     send (fromByteString "\n")
                     flush)
     }
 
-source :: LogData -> Source AWS Text
-source (LogData gname sname) =
-  retrieveLogStream' gname sname Nothing Nothing Nothing NoFollow
-    =$= CL.mapFoldable (view CW.oleMessage)
+source :: Env -> LogData -> Source IO Text
+source env (LogData gname sname) =
+  J.source env gname sname Everything NoFollow
+    =$= J.unclean
+    =$= CL.map logChunk
 
 getBuildId :: Webmachine IO BuildId
 getBuildId =

@@ -35,7 +35,7 @@ import           Data.Time (UTCTime, getCurrentTime, parseTimeM)
 import           Data.Time.Locale.Compat (defaultTimeLocale)
 import qualified Data.HashMap.Strict as H
 
-import           Jebediah.Data (GroupName (..), StreamName (..))
+import           Jebediah.Data (LogGroup (..), LogStream (..))
 
 import           Mismi (AWS)
 import qualified Mismi.Amazonka as A
@@ -62,8 +62,8 @@ data FetchError =
 
 data LogData =
   LogData {
-      logGroup :: GroupName
-    , logStream :: StreamName
+      logGroup :: LogGroup
+    , logStream :: LogStream
     } deriving (Eq, Show)
 
 data BuildCancelled =
@@ -102,7 +102,7 @@ fetch e i = newEitherT $ do
     <*> (forM (res ^? D.girsItem . ix kEndTime . D.avS . _Just) $ fromMaybeM (Left $ InvalidEndTime i) . blat)
     <*> (forM (res ^? D.girsItem . ix kHeartbeatTime . D.avS . _Just) $ fromMaybeM (Left $ InvalidHeartbeatTime i) . blat)
     <*> (Right . fmap (bool BuildKo BuildOk) $ res ^? D.girsItem . ix kBuildResult . D.avBOOL . _Just)
-    <*> (Right $ LogData <$> res ^? D.girsItem . ix kLogGroup . D.avS . _Just . to GroupName <*> res ^? D.girsItem . ix kLogStream . D.avS . _Just . to StreamName)
+    <*> (Right $ LogData <$> res ^? D.girsItem . ix kLogGroup . D.avS . _Just . to LogGroup <*> res ^? D.girsItem . ix kLogStream . D.avS . _Just . to LogStream)
 
 blat :: Text -> Maybe UTCTime
 blat =
@@ -157,7 +157,7 @@ deindex :: Environment -> Project -> Build -> BuildId -> AWS ()
 deindex e p b i = do
   clearQueued e p b i
 
-acknowledge :: Environment -> BuildId -> GroupName -> StreamName -> AWS Acknowledge
+acknowledge :: Environment -> BuildId -> LogGroup -> LogStream -> AWS Acknowledge
 acknowledge e i g s = do
   now <- liftIO getCurrentTime
   handling D._ConditionalCheckFailedException (const . pure $ AlreadyRunning) . fmap (const Accept) $ A.send $ D.updateItem (tBuild e)

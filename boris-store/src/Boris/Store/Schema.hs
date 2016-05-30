@@ -58,7 +58,7 @@ import           Control.Lens ((.~))
 import           Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Text as T
 import           Data.Time (UTCTime, formatTime)
-import           Jebediah.Data (GroupName (..), StreamName (..))
+import           Jebediah.Data (LogGroup (..), LogStream (..))
 import           Data.Time.Locale.Compat (defaultTimeLocale)
 
 import qualified Network.AWS.DynamoDB as D
@@ -317,13 +317,13 @@ vCommitOf :: Text -> Commit -> (Text, D.AttributeValue)
 vCommitOf k c =
   (k, D.attributeValue & D.avS .~ Just (renderCommit c))
 
-vLogGroup :: Text -> GroupName -> (Text, D.AttributeValue)
+vLogGroup :: Text -> LogGroup -> (Text, D.AttributeValue)
 vLogGroup k r =
-  (k, D.attributeValue & D.avS .~ Just (unGroupName r))
+  (k, D.attributeValue & D.avS .~ Just (logGroup r))
 
-vLogStream :: Text -> StreamName -> (Text, D.AttributeValue)
+vLogStream :: Text -> LogStream -> (Text, D.AttributeValue)
 vLogStream k r =
-  (k, D.attributeValue & D.avS .~ Just (unStreamName r))
+  (k, D.attributeValue & D.avS .~ Just (logStream r))
 
 vTime :: Text -> UTCTime -> (Text, D.AttributeValue)
 vTime k v =
