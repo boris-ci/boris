@@ -22,11 +22,13 @@ library
                     , ambiata-charlotte
                     , ambiata-jebediah
                     , ambiata-mismi-core
+                    , ambiata-mismi-cloudwatch-logs
                     , ambiata-mismi-s3
                     , ambiata-p
                     , ambiata-x-aeson
                     , ambiata-x-eithert
                     , blaze-html                      == 0.8.*
+                    , blaze-builder                   == 0.4.*
                     , amazonka-ec2                    >= 1.3.6     && < 1.5
                     , bytestring                      == 0.10.*
                     , conduit                         == 1.2.*
@@ -52,6 +54,7 @@ library
                     Boris.Http.Data
                     Boris.Http.Repository
                     Boris.Http.Resource.Build
+                    Boris.Http.Resource.Log
                     Boris.Http.Resource.Project
                     Boris.Http.Resource.Scoreboard
                     Boris.Http.Route

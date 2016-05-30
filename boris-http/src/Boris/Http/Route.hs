@@ -10,6 +10,7 @@ import           Airship (RoutingSpec, var, (#>), (</>))
 import           Boris.Core.Data
 import           Boris.Http.Data
 import qualified Boris.Http.Resource.Build as Build
+import qualified Boris.Http.Resource.Log as Log
 import qualified Boris.Http.Resource.Project as Project
 import qualified Boris.Http.Resource.Scoreboard as Scoreboard
 import           Boris.Queue (BuildQueue (..))
@@ -26,6 +27,7 @@ boris env e q c = do
   "project" </> var "project-name" </> "build" </> var "build-name" #> Build.collection env e q c
 --  "project" </> var "project-name" </> "commit" </> var "commit-hash" #> TODO
   "build" </> var "build-id" #> Build.item env e
+  "build" </> var "build-id" </> "log" #> Log.item env e
   "scoreboard" #> Scoreboard.scoreboard env e c
 
 borisReadonly :: Env -> Environment -> ConfigLocation -> RoutingSpec IO ()
