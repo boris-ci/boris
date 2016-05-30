@@ -13,6 +13,7 @@ import           Boom.Airship (notfound)
 import           Boris.Core.Data
 import           Boris.Http.Airship
 import           Boris.Http.Data
+import qualified Boris.Http.Html.Template as H
 import           Boris.Http.Repository (pick, list, renderConfigError)
 import           Boris.Http.Representation.Project
 import           Boris.Http.Version
@@ -42,12 +43,19 @@ collection env c =
   defaultResource {
       allowedMethods = pure [HTTP.methodGet]
 
-    , contentTypesProvided = return . withVersionJson $ \v -> case v of
-        V1 -> do
-          ps <- webT renderConfigError $
-            list env c
-
-          return . jsonResponse $ GetProjects ps
+    , contentTypesProvided = return . join $ [
+          withVersionJson $ \v -> case v of
+            V1 -> do
+              ps <- webT renderConfigError $
+                list env c
+              return . jsonResponse $ GetProjects ps
+        , [
+            (,) "text/html" $ do
+              ps <- webT renderConfigError $
+                list env c
+              H.render $ H.projects ps
+          ]
+        ]
     }
 
 item :: Env -> Environment -> BuildQueue -> ConfigLocation -> Resource IO
@@ -55,11 +63,19 @@ item env e q c =
   defaultResource {
       allowedMethods = pure [HTTP.methodGet, HTTP.methodPost]
 
-    , contentTypesProvided = pure . withVersionJson $ \v -> case v of
-        V1 -> do
-          p <- getProject
-          bs <- webT renderError . runAWS env $ SI.getProjects e p
-          pure . jsonResponse $ GetProject p bs
+      , contentTypesProvided = return . join $ [
+          withVersionJson $ \v -> case v of
+            V1 -> do
+              p <- getProject
+              bs <- webT renderError . runAWS env $ SI.getProjects e p
+              pure . jsonResponse $ GetProject p bs
+        , [
+            (,) "text/html" $ do
+              p <- getProject
+              bs <- webT renderError . runAWS env $ SI.getProjects e p
+              H.render $ H.project p bs
+          ]
+        ]
 
     , processPost = processPostMedia . withVersionJson $ \v -> case v of
         V1 -> do
@@ -69,7 +85,6 @@ item env e q c =
           let req = RequestDiscover' $ RequestDiscover i p repository
           webT renderError . runAWS env $ Q.put q req
           halt HTTP.status202
-
     }
 
 getProject :: Webmachine IO Project

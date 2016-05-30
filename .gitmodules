@@ -55,3 +55,6 @@
 [submodule "lib/clerk"]
 	path = lib/clerk
 	url = git@github.com:ambiata/clerk.git
+[submodule "lib/bmx.hs"]
+	path = lib/bmx.hs
+	url = git@github.com:ambiata/bmx.hs

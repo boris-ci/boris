@@ -15,6 +15,7 @@ library
                       base                            >= 3          && < 5
                     , aeson                           == 0.8.*
                     , airship
+                    , ambiata-bmx
                     , ambiata-boom
                     , ambiata-boris-core
                     , ambiata-boris-store
@@ -33,12 +34,14 @@ library
                     , bytestring                      == 0.10.*
                     , conduit                         == 1.2.*
                     , conduit-extra                   == 1.1.*
+                    , file-embed                      == 0.0.*
                     , lens                            >= 4.6        && < 4.9
                     , http-types                      == 0.8.*
                     , mmorph                          == 1.0.*
                     , resourcet                       == 1.1.*
                     , text                            == 1.2.*
-                    , time                            >=1.2         && < 1.6
+                    , template-haskell
+                    , time                            >= 1.2        && < 1.6
                     , old-locale                      == 1.0.*
                     , transformers                    == 0.4.*
                     , ini                             == 0.3.3
@@ -52,11 +55,14 @@ library
   exposed-modules:
                     Boris.Http.Airship
                     Boris.Http.Data
+                    Boris.Http.Html.Template
                     Boris.Http.Repository
                     Boris.Http.Resource.Build
+                    Boris.Http.Resource.Dashboard
                     Boris.Http.Resource.Log
                     Boris.Http.Resource.Project
                     Boris.Http.Resource.Scoreboard
+                    Boris.Http.Resource.Static
                     Boris.Http.Route
                     Boris.Http.Representation.Build
                     Boris.Http.Representation.Project
