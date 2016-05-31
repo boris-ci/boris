@@ -45,6 +45,7 @@ library
                     , old-locale                      == 1.0.*
                     , transformers                    == 0.4.*
                     , ini                             == 0.3.3
+                    , syb                             == 0.4.*
 
   ghc-options:
                     -Wall
