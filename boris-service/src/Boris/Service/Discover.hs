@@ -11,6 +11,8 @@ import           Boris.Service.Git
 import           Boris.Service.Log
 import           Boris.Service.Workspace
 import qualified Boris.Store.Index as SI
+import           Boris.Store.Build (RegisterError, renderRegisterError)
+import qualified Boris.Store.Build as SB
 import           Boris.Store.Tick (TickError, renderTickError)
 import qualified Boris.Store.Tick as ST
 import           Boris.Queue (BuildQueue (..), Request (..), RequestBuild (..), RequestDiscover (..))
@@ -36,6 +38,7 @@ data DiscoverError =
     DiscoverAwsError Error
   | DiscoverInitialiseError InitialiseError
   | DiscoverTickError TickError
+  | DiscoverRegisterError RegisterError
 
 discover :: Env -> Environment -> BuildQueue -> WorkspacePath -> RequestDiscover -> EitherT DiscoverError IO ()
 discover env e q w request = do
@@ -75,6 +78,8 @@ discover env e q w request = do
           else do
             newId <- runAWST env DiscoverAwsError . bimapEitherT DiscoverTickError id $
               ST.next e project build
+            _ <- runAWST env DiscoverAwsError . bimapEitherT DiscoverRegisterError id $
+              SB.register e project build newId
             X.xPutStrLn out $ mconcat [
                 "New commit, triggering build"
               , ": project = ", renderProject project
@@ -95,3 +100,5 @@ renderDiscoverError err =
       mconcat ["A git initialisation error has occurred trying to discover builds: ", renderInitialiseError e]
     DiscoverTickError e ->
       mconcat ["An error has occurred trying to generate an id for a discovered build: ", renderTickError e]
+    DiscoverRegisterError e ->
+      mconcat ["An error has occurred trying to register an id for a discovered build: ", renderRegisterError e]
