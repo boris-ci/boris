@@ -40,11 +40,17 @@ render t = do
   return . ResponseBuilder . fromByteString . T.encodeUtf8 $ c
 
 
-dashboard :: Either BMXError Text
-dashboard =
+dashboard :: [BuildData] -> Either BMXError Text
+dashboard bs =
   let
+    buildSort b = (buildDataProject b, buildDataBuild b)
     context = [
-        ("constant", BMXString "THIS IS A CONSTANT")
+        (,) "builds" $ BMXList . flip fmap (sortOn buildSort bs) $ \b ->
+          BMXContext [
+              (,) "project" (BMXString . renderProject $ buildDataProject b)
+            , (,) "build" (BMXString . renderBuild $ buildDataBuild b)
+            , (,) "id" (BMXString . renderBuildId $ buildDataId b)
+            ]
       ]
   in
     renderPage <$> renderTemplate (defaultState `usingContext` context) dashboard'

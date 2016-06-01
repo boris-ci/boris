@@ -23,7 +23,7 @@ import           System.IO (IO)
 
 boris :: Env -> Environment -> BuildQueue -> ConfigLocation -> RoutingSpec IO ()
 boris env e q c = do
-  root #> Dashboard.dashboard env c
+  root #> Dashboard.dashboard env e c
   "css" </> "boris.css" #> Static.css
   "project" #> Project.collection env c
   "project" </> var "project-name" #> Project.item env e q c
