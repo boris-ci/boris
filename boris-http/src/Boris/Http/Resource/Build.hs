@@ -30,6 +30,7 @@ import           Charlotte.Airship (processPostMedia, jsonResponse, setResponseH
 import           Control.Monad.IO.Class (liftIO)
 
 import           Data.Time (getCurrentTime, diffUTCTime)
+import qualified Data.Text as T
 
 import           Mismi (runAWS, runAWST, renderError)
 import           Mismi.Amazonka (Env)
@@ -79,7 +80,9 @@ collection env e q c =
           i <- webT id . runAWST env renderError . bimapEitherT ST.renderTickError id $ ST.next e p b
           webT id . runAWST env renderError . bimapEitherT SB.renderRegisterError id $ SB.register e p b i
           r <- getPostBuildsRef <$> decodeJsonBody
-          let req = RequestBuild' $ RequestBuild i p repository b r
+          let
+            normalised = flip fmap r $ \rr -> if T.isPrefixOf "refs/" . renderRef $ rr then rr else Ref . ((<>) "refs/heads/") . renderRef $ rr
+            req = RequestBuild' $ RequestBuild i p repository b normalised
           webT renderError . runAWS env $ Q.put q req
           putResponseBody . jsonResponse $ GetBuild (BuildData i p b Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
           setLocation ["builds"]
