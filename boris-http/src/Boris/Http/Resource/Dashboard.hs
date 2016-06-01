@@ -32,7 +32,7 @@ dashboard env e c =
     , contentTypesProvided = return [
           (,) "text/html" $ do
              bs <- webT id . bimapEitherT renderScoreboardError id $
-               fetchLatestMasterBuilds env e c
+               fetchBrokenMasterBuilds env e c
              T.render $ T.dashboard bs
         ]
     }
