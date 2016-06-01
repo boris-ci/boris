@@ -60,6 +60,7 @@ library
                     Boris.Client.Http
                     Boris.Client.Log
                     Boris.Client.Project
+                    Boris.Client.Scoreboard
 
 executable boris
   ghc-options:

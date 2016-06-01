@@ -5,6 +5,7 @@ module Boris.Client.Build (
   , cancel
   , fetch
   , list
+  , GetBuild (..)
   ) where
 
 import           Boris.Core.Data
