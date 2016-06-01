@@ -3,6 +3,7 @@
 module Boris.Http.Scoreboard (
     ScoreboardError (..)
   , fetchLatestMasterBuilds
+  , fetchBrokenMasterBuilds
   , renderScoreboardError
   ) where
 
@@ -44,6 +45,11 @@ fetchLatestMasterBuilds env e c = do
         . findMapM (fmap (find (isJust . SB.buildDataResult) . Just) . SB.fetch e)
         . sortBuildIds
         $ buildIds
+
+fetchBrokenMasterBuilds :: Env -> Environment -> ConfigLocation -> EitherT ScoreboardError IO [SB.BuildData]
+fetchBrokenMasterBuilds env e c =
+  filter ((==) (Just BuildKo) . SB.buildDataResult)
+    <$> fetchLatestMasterBuilds env e c
 
 renderScoreboardError :: ScoreboardError -> Text
 renderScoreboardError se =
