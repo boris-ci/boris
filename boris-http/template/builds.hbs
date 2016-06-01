@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>boris</title>
+        <link rel="stylesheet" type="text/css" href="/css/boris.css" />
+    </head>
+    <body>
+        <div id="header">
+          <div class="header-wrapper">
+            <a href="/">boris</a>
+          </div>
+        </div>
+
+        <div id="content">
+          <div class="content-wrapper">
+            <h2><a href="/project/{{project}}">{{project}}</a> : <a href="/project/{{project}}/build/{{build}}">{{build}}</a></h2>
+            {{#if queued}}
+            <div>
+            <h4>[queued]</h2>
+              {{#each queued}}
+                <span>
+                    <a href="/build/{{this}}">#{{this}}</a>
+                </span>
+              {{/each}}
+            </div>
+            {{/if}}
+            {{#each refs as |key val|}}
+            <div>
+              <h4>{{key}}</h4>
+              <div>
+              {{#each val}}
+                <span>
+                  <a href="/build/{{this}}">#{{this}}</a>
+                </span>
+              {{/each}}
+              </div>
+            </div>
+            {{/each}}
+          </div>
+        </div>
+
+        <div id="footer">
+        </div>
+    </body>
+</html>

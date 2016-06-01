@@ -13,6 +13,7 @@ import           Boom.Airship (notfound)
 import           Boris.Core.Data
 import           Boris.Http.Airship
 import           Boris.Http.Data
+import qualified Boris.Http.Html.Template as H
 import           Boris.Http.Repository
 import           Boris.Http.Representation.Build
 import           Boris.Http.Version
@@ -47,15 +48,28 @@ collection env e q c =
   defaultResource {
       allowedMethods = pure [HTTP.methodGet, HTTP.methodPost]
 
-    , contentTypesProvided = return . withVersionJson $ \v -> case v of
-        V1 -> do
-          b <- getBuild
-          p <- getProject
-          rs <- webT renderError . runAWS env $ SI.getBuildRefs e p b
-          r <- fmap (GetBuilds p b) . forM rs $ \r -> do
-            is <- webT renderError . runAWS env $ SI.getBuildIds e p b r
-            pure $ GetBuildsDetail r is
-          pure . jsonResponse $ r
+    , contentTypesProvided = return . join $ [
+          withVersionJson $ \v -> case v of
+            V1 -> do
+              b <- getBuild
+              p <- getProject
+              rs <- webT renderError . runAWS env $ SI.getBuildRefs e p b
+              r <- fmap (GetBuilds p b) . forM rs $ \r -> do
+                is <- webT renderError . runAWS env $ SI.getBuildIds e p b r
+                pure $ GetBuildsDetail r is
+              pure . jsonResponse $ r
+        , [
+            (,) "text/html" $ do
+              b <- getBuild
+              p <- getProject
+              rs <- webT renderError . runAWS env $ SI.getBuildRefs e p b
+              r <- forM rs $ \r -> do
+                is <- webT renderError . runAWS env $ SI.getBuildIds e p b r
+                pure $ (r, is)
+              queued <- webT renderError . runAWS env $ SI.getQueued e p b
+              H.render $ H.builds p b r queued
+          ]
+        ]
 
     , processPost = processPostMedia . withVersionJson $ \v -> case v of
         V1 -> do
@@ -78,22 +92,29 @@ item env e =
   defaultResource {
       allowedMethods = pure [HTTP.methodGet, HTTP.methodDelete]
 
-    , contentTypesProvided = pure . withVersionJson $ \v -> case v of
-        V1 -> do
-          now <- liftIO getCurrentTime
-          i <- getBuildId
-          b <- webT id . runAWST env renderError . bimapEitherT SB.renderFetchError id $ SB.fetch e i
-          case buildDataHeartbeatTime b of
-            Nothing ->
-              pure . jsonResponse $ GetBuild b
-            Just h ->
-              if diffUTCTime now h > 120
-                 then do
-                    void . webT id . bimapEitherT renderError id . runAWS env $ SB.cancel e i
-                    pure . jsonResponse . GetBuild $ b { buildDataResult = Just . fromMaybe BuildKo . buildDataResult $ b }
-                 else
-                    pure . jsonResponse $ GetBuild b
-
+    , contentTypesProvided = pure . join $ [
+          withVersionJson $ \v -> case v of
+            V1 -> do
+              now <- liftIO getCurrentTime
+              i <- getBuildId
+              b <- webT id . runAWST env renderError . bimapEitherT SB.renderFetchError id $ SB.fetch e i
+              case buildDataHeartbeatTime b of
+                Nothing ->
+                  pure . jsonResponse $ GetBuild b
+                Just h ->
+                  if diffUTCTime now h > 120
+                     then do
+                        void . webT id . bimapEitherT renderError id . runAWS env $ SB.cancel e i
+                        pure . jsonResponse . GetBuild $ b { buildDataResult = Just . fromMaybe BuildKo . buildDataResult $ b }
+                     else
+                        pure . jsonResponse $ GetBuild b
+        , [
+            (,) "text/html" $ do
+              i <- getBuildId
+              b <- webT id . runAWST env renderError . bimapEitherT SB.renderFetchError id $ SB.fetch e i
+              H.render $ H.build b
+          ]
+        ]
 
     , deleteCompleted =
         pure False

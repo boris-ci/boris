@@ -1,0 +1,10 @@
+#!/bin/sh -eux
+
+export AWS_DEFAULT_REGION=ap-southeast-2
+export BORIS_ENVIRONMENT=ci
+export BORIS_BUILD_QUEUE=boris-ci
+export BORIS_CONFIG_LOCATION=s3://ambiata-dispensary-v2/boris/master/projects
+export PORT=10080
+export BONES_PORT=10081
+
+$(dirname $0)/../dist/build/boris-http/boris-http

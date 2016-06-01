@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>boris</title>
+        <link rel="stylesheet" type="text/css" href="/css/boris.css" />
+    </head>
+    <body>
+        <div id="header">
+          <div class="header-wrapper">
+            <a href="/">boris</a>
+          </div>
+        </div>
+        <div id="content">
+          <div class="content-wrapper">
+            {{#if ok}}
+            <div style="float:right; height:50px; width: 50px; background-color: #16CC55; border-radius: 10px;"></div>
+            {{/if}}
+            {{#if ko}}
+            <div style="float:right; height:50px; width: 50px; background-color: #ef6464" border-radius: 10px;></div>
+            {{/if}}
+            {{#if undecided}}
+            <div style="float:right; height:50px; width: 50px; background-color: #c9c1c1" border-radius: 10px;></div>
+            {{/if}}
+
+            <h2><a href="/build/{{id}}">#{{id}}</a></h2>
+            <div>{{#if log}}<a href="/build/{{id}}/log">[log]</a>{{/if}}</div>
+            <div>project: <a href="/project/{{project}}">{{project}}</a></div>
+            <div>build: <a href="/project/{{project}}/build/{{build}}">{{build}}</a></div>
+            <div>{{#if ref}}ref: {{ref}}{{/if}}</div>
+            <div>{{#if queued}}queued at: {{queued}}{{/if}}</div>
+            <div>{{#if started}}started at: {{started}}{{/if}}</div>
+            <div>{{#if ended}}ended at: {{ended}}{{/if}}</div>
+            <div>{{#if heartbeat}}heartbeat at: {{heartbeat}}{{/if}}</div>
+            <div>{{#if duration}}duration: {{duration}}{{/if}}</div>
+            <div>{{#if result}}result: {{result}}{{/if}}</div>
+          </div>
+        </div>
+
+        <div id="footer">
+        </div>
+    </body>
+</html>
