@@ -44,11 +44,12 @@ fetchLatestMasterBuilds env e c = do
     forM builds $ \b -> do
       -- We only care about master builds for scoreboard
       buildIds <- lift $ SI.getBuildIds e p b (Ref "refs/heads/master")
-      bimapEitherT ScoreboardFetchError id
+      bd <- bimapEitherT ScoreboardFetchError id
         -- Find the first build with a result
         . findMapM (fmap (find (\bd -> hasResult bd && isRecent now bd) . Just) . SB.fetch e)
         . sortBuildIds
         $ buildIds
+      lift . filterM' (\_ -> fmap not $ SI.isBuildDisabled e p b) $ bd
 
 fetchBrokenMasterBuilds :: Env -> Environment -> ConfigLocation -> EitherT ScoreboardError IO [SB.BuildData]
 fetchBrokenMasterBuilds env e c =
@@ -63,6 +64,10 @@ isRecent :: UTCTime -> SB.BuildData -> Bool
 isRecent now =
   -- Two weeks
   maybe False (\d -> diffUTCTime now d < 60 * 60 * 24 * 14) . SB.buildDataEndTime
+
+filterM' :: Monad m => (a -> m Bool) -> Maybe a -> m (Maybe a)
+filterM' p =
+  maybe (return Nothing) (\x -> p x >>= return . flip valueOrEmpty x)
 
 renderScoreboardError :: ScoreboardError -> Text
 renderScoreboardError se =

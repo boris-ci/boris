@@ -68,5 +68,12 @@ prop_buildRef p b r = once . testAWS . withClean environment (SI.deleteBuildRefs
   res <- SI.getBuildRefs environment p b
   pure $ res === [r]
 
+prop_buildRef_disabled p b r d0 = once . testAWS . withClean environment (SI.deleteBuildRefs environment p b) $ do
+  SI.setBuildDisabled environment p b d0
+  d1 <- SI.isBuildDisabled environment p b
+  SI.addBuildRef environment p b r
+  d2 <- SI.isBuildDisabled environment p b
+  pure $ (d1, d2) === (d0, False)
+
 return []
 tests = $quickCheckAll
