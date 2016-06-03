@@ -55,6 +55,7 @@ data Cli =
   | List (Maybe Project) (Maybe Build)
   | Status BuildId
   | Log BuildId
+  | Ignore Project Build
     deriving (Eq, Show)
 
 main :: IO ()
@@ -96,6 +97,10 @@ parser =
     , command' "log" "Log of a build" $
         Log
           <$> buildIdP
+    , command' "ignore" "Ignore a build" $
+        Ignore
+          <$> projectP
+          <*> buildP
     ]
 
 run :: Environment -> Cli -> IO ()
@@ -207,6 +212,11 @@ run e c = case c of
   Log i -> do
     env <- orDie renderRegionError discoverAWSEnv
     L.source env e i $$ CL.mapM_ (liftIO . T.putStrLn)
+  Ignore p b -> do
+    bc <- mkBalanceConfig
+    void . orDie renderBorisHttpClientError $ B.ignore bc p b True
+    T.putStrLn "Build ignored"
+    exitSuccess
 
 projectP :: Parser Project
 projectP =
