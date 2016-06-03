@@ -22,6 +22,7 @@ module Boris.Store.Schema (
   , kBuildIdState
   , kRef
   , kRefs
+  , kDisabled
   , kCommit
   , kCommits
   , kQueued
@@ -252,6 +253,10 @@ kRef =
 kRefs :: Text
 kRefs =
   "refs"
+
+kDisabled :: Text
+kDisabled =
+  "disabled"
 
 kCommit :: Text
 kCommit =

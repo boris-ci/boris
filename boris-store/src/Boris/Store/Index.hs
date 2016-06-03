@@ -18,6 +18,8 @@ module Boris.Store.Index (
   , getBuildIds
   , getQueued
   , getBuildRefs
+  , setBuildDisabled
+  , isBuildDisabled
   , deleteProjects
   , deleteProjectRefs
   , deleteBuildIds
@@ -32,6 +34,7 @@ import           Boris.Store.Schema
 import           Control.Lens (ix, (.~), (^?))
 
 import qualified Data.HashMap.Strict as H
+import qualified Data.Text as T
 
 
 import           Mismi (AWS)
@@ -102,7 +105,10 @@ addBuildRef e p b r = do
       , vBuild b
       ]
     & D.uiUpdateExpression .~
-      Just (mconcat ["ADD ", kRefs, " ", kVal "v"])
+      Just (T.intercalate " " [
+          "ADD", kRefs, kVal "v"
+        , "REMOVE", kDisabled
+        ])
     & D.uiExpressionAttributeValues .~ H.fromList [
         vStrings (kVal "v") [renderRef r]
       ]
@@ -243,6 +249,30 @@ getBuildRefs e p b = do
     & D.giConsistentRead .~
       Just False
   pure . fmap Ref . fromMaybe [] $ res ^? D.girsItem . ix kRefs . D.avSS
+
+setBuildDisabled :: Environment -> Project -> Build -> Bool -> AWS ()
+setBuildDisabled e p b d = do
+  void . A.send $ D.updateItem (tBuilds e)
+    & D.uiKey .~ H.fromList [
+        vProject p
+      , vBuild b
+      ]
+    & D.uiUpdateExpression .~
+      Just (mconcat ["SET ", kDisabled, " = ", kVal "v"])
+    & D.uiExpressionAttributeValues .~ H.fromList [
+        vBool (kVal "v") d
+      ]
+
+isBuildDisabled :: Environment -> Project -> Build -> AWS Bool
+isBuildDisabled e p b = do
+  res <- A.send $ D.getItem (tBuilds e)
+    & D.giKey .~ H.fromList [
+        vProject p
+      , vBuild b
+      ]
+    & D.giConsistentRead .~
+      Just False
+  pure . maybe False (fromMaybe False) $ res ^? D.girsItem . ix kDisabled . D.avBOOL
 
 
 deleteProjects :: Environment -> Project -> AWS ()
