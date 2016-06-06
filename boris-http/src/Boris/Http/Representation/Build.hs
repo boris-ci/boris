@@ -5,13 +5,14 @@ module Boris.Http.Representation.Build (
   , GetBuildsDetail (..)
   , GetBuild (..)
   , PostBuilds (..)
+  , PutBuildIgnore (..)
   ) where
 
 import           Boris.Core.Data
 import           Boris.Store.Build (BuildData (..))
 import qualified Boris.Store.Build as SB
 
-import           Data.Aeson (FromJSON (..), ToJSON (..), object, (.=), (.:?), withObject)
+import           Data.Aeson (FromJSON (..), ToJSON (..), object, (.=), (.:), (.:?), withObject)
 
 import           Jebediah.Data (LogGroup (..), LogStream (..))
 
@@ -66,3 +67,14 @@ instance ToJSON GetBuild where
       , "result" .= (flip fmap (buildDataResult b) $ \bb -> case bb of BuildOk -> True; BuildKo -> False)
       , "log" .= (flip fmap (buildDataLog b) $ \l -> object ["group" .= (logGroup . SB.logGroup) l, "stream" .= (logStream . SB.logStream) l])
       ]
+
+newtype PutBuildIgnore =
+  PutBuildIgnore {
+      getPutBuildIgnore :: Bool
+    }
+
+instance FromJSON PutBuildIgnore where
+  parseJSON =
+    withObject "PutBuildIgnore" $ \o ->
+      PutBuildIgnore
+        <$> o .: "ignore"

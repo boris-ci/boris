@@ -5,6 +5,7 @@ module Boris.Client.Build (
   , cancel
   , fetch
   , list
+  , ignore
   , GetBuild (..)
   ) where
 
@@ -43,6 +44,10 @@ list :: BalanceConfig -> Project -> Build -> EitherT BorisHttpClientError IO [(R
 list c p b =
   fmap (maybe [] (fmap (\r -> (getBuildsDetailRef r, getBuildsDetailIds r))) . fmap getBuildsDetail) $
     H.get c ["project", renderProject p , "build", renderBuild b]
+
+ignore :: BalanceConfig -> Project -> Build -> Bool -> EitherT BorisHttpClientError IO ()
+ignore c p b i =
+  H.put c ["project", renderProject p , "build", renderBuild b, "ignore"] (PutBuildIgnore i)
 
 newtype PostBuildRequest =
   PostBuildRequest (Maybe Ref)
@@ -100,3 +105,14 @@ instance FromJSON GetBuildsDetail where
       GetBuildsDetail
         <$> fmap Ref (o .: "ref")
         <*> (fmap . fmap) BuildId (o .: "build_ids")
+
+newtype PutBuildIgnore =
+  PutBuildIgnore
+    Bool
+      deriving (Eq, Show)
+
+instance ToJSON PutBuildIgnore where
+  toJSON (PutBuildIgnore i) =
+    object [
+        "ignore" .= i
+      ]

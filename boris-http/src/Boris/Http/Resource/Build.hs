@@ -3,6 +3,7 @@
 module Boris.Http.Resource.Build (
     collection
   , item
+  , ignore
   ) where
 
 
@@ -87,7 +88,6 @@ collection env e q c =
           putResponseBody . jsonResponse $ GetBuild (BuildData i p b Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
           setLocation ["builds"]
           pure $ PostResponseLocation [renderBuildId i]
-
     }
 
 item :: Env -> Environment -> Resource IO
@@ -125,6 +125,20 @@ item env e =
     , deleteResource = do
         i <- getBuildId
         webT id . bimapEitherT renderError id . runAWS env $ SB.cancel e i
+    }
+
+ignore :: Env -> Environment -> Resource IO
+ignore env e =
+  defaultResource {
+      allowedMethods = pure [HTTP.methodPut]
+
+    , contentTypesAccepted = return . withVersionJson $ \v -> case v of
+        V1 -> do
+          b <- getBuild
+          p <- getProject
+          PutBuildIgnore i <- decodeJsonBody
+          webT renderError . runAWS env $ SI.setBuildDisabled e p b i
+
     }
 
 getBuild :: Webmachine IO Build
