@@ -69,6 +69,45 @@ prop_bare_clone_basic datas =
       pure . counterexample ("File " <> n <> " was not the same.") $
         x === d
 
+prop_bare_cloneref_basic datas =
+  testIO . withSystemTempDirectory "git" $ \t -> do
+    let
+      o = CB.sinkHandle stdout
+      e = CB.sinkHandle stderr
+      source = t </> "source.git"
+      target = t </> "bare.git"
+      check = t </> "check.git"
+
+      readme = source </> "readme"
+      files = fmap (\(n, d) -> ("data" <.> show n, d)) $ L.zip ([0..] :: [Int]) datas
+
+    D.createDirectoryIfMissing True source
+
+    T.writeFile readme "A testing repository (readme to guarantee there is at least one file)."
+
+    forM_ files $ \(n, d) ->
+      T.writeFile (source </> n) d
+
+    flail $
+      X.exec o e $ (proc "git" ["init"]) { cwd = Just source }
+
+    flail $
+      X.exec o e $ (proc "git" ["add", "-A"]) { cwd = Just source }
+
+    flail $
+      X.exec o e $ (proc "git" ["commit", "-m", "first"]) { cwd = Just source }
+
+    target' <- flailx $
+      Git.bare o e (Repository . T.pack $ source) target
+
+    _check' <- flailx $
+      Git.cloneref o e target' (Repository . T.pack $ source) check
+
+    fmap conjoin . forM files $ \(n, d) -> do
+      x <- T.readFile (check </> n)
+      pure . counterexample ("File " <> n <> " was not the same.") $
+        x === d
+
 prop_refs v0 v1 = v0 /= v1 ==>
   testIO . withSystemTempDirectory "git" $ \t -> do
     let
