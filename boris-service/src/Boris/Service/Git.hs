@@ -99,7 +99,7 @@ initialise sout serr workspace build repository mref = do
   specification <- hoistEither . maybeToRight (MissingBuildSpecification build specifications) $
     P.find ((==) build . specificationBuild) specifications
   work <- bimapEitherT CloneError id $
-    Git.clone sout serr mirror repository $ pathOfWorkingCopy workspace
+    Git.cloneref sout serr mirror repository $ pathOfWorkingCopy workspace
   bimapEitherT CheckoutError id $
     Git.checkout sout serr work (Ref . renderCommit $ commit)
   pure $ BuildInstance specification ref commit
