@@ -9,6 +9,167 @@ have incorrectly assumed they were up to the task of running so called
 running your builds for you.
 ```
 
+<img src="https://cloud.githubusercontent.com/assets/722409/15855397/9f777ec2-2cf2-11e6-8eaf-33d9433b73df.png" width="300" align="right"/>
+
+
+Working with Boris
+------------------
+
+There are three main ways to interact with boris:
+
+ - command line
+
+ - hipchat bot
+
+ - web interface (read only)
+
+
+### command line
+
+```
+boris build <project> <build> [<ref>]
+boris discover <project>
+boris cancel <build-id>
+boris list
+boris list <project>
+boris list <project> <build>
+boris status <build-id>
+boris log <build-id>
+```
+
+#### build
+
+Trigger a project build.
+
+This is different to other systems where triggering may mean "check
+if it needs to" or similar. With Boris asking for something to
+build, will result in exactly one build (that may or may not succeed).
+
+When triggering a build you need to specify:
+
+ - the project you want to build
+
+ - the build name you want to build
+
+ - if the build can be run on multiple branches, you also need
+   to tell it which of those branches to build, when asking for
+   a build, Boris will not guess.
+
+Additionally you can also follow the log locally by using `-t|--tail`.
+
+Examples:
+
+```
+boris build example master
+boris build example topic topic/feature-1
+boris build -t example topic topic/feature-1
+```
+
+
+#### discover
+
+Determine any outstanding builds for a project. This is closer to
+other non-boris systems idea of "triggering" a build. This is what
+github hooks for example would use to force builds on a commit.
+
+Examples:
+
+```
+boris discover example
+```
+
+#### cancel
+
+Make an attempt to cancel the build.
+
+Basically it just sets a flag, and when the build next sends a
+heartbeat it will shut itself down and fail if this flag is set.
+
+Examples:
+
+```
+boris cancel 71
+```
+
+#### list
+
+List all projects that Boris knows about.
+
+Examples:
+
+```
+boris list
+```
+
+
+#### list <project>
+
+List all builds that Boris has ever attempted for a specific project.
+
+This isn't all that it *can* build, because that would require
+scraping the git repository which we really don't want to do for this
+type of query.
+
+Examples:
+
+```
+boris list example
+```
+
+
+#### list <project> <build>
+
+List all build ids that Boris has ever attempted for this specific
+project and build.
+
+Examples:
+
+```
+boris list example master
+boris list example topic
+```
+
+#### status <build-id>
+
+Get the status of a specific build id.
+
+
+Examples:
+
+```
+boris status 71
+boris status 72
+```
+
+
+#### log <build-id>
+
+Get the log of a specific build id.
+
+Examples:
+
+```
+boris log 71
+boris log 72 | grep INTERESTING
+boris log 72 | less
+```
+
+### the bot
+
+The bot is largely designed to mimic the command line interface, and
+provides most functionality except dumping logs. We won't provide all
+the details here as the implementation lives elsewhere and may change,
+but as a starting point `/boris help` should get you part of the way
+there.
+
+
+### web interface
+
+The [web interface](http://boris.ambiata.com) is a simple read-only
+view to help with those with out easy access to command line
+tooling. It is useful for discovering builds and viewing logs.
+
+
 Telling Boris How To Build Your Project
 ---------------------------------------
 
@@ -51,11 +212,11 @@ called 'boris-git.toml' in the root of your git
 repository. Importantly, but not obviously until you understand how
 Boris works, this file is *only read from the master branch*.
 
-For more detail on why, you can try *how Boris works* below, but for
-now accept the simple justification that we need to know this
-whitelist before we know the branch we are building so we must be able
-to fetch it from a known (and trusted) location, storing this
-information on each branch for example would create unresolvable
+For more detail on why, you can try [how Boris works](#how-boris-works)
+below, but for now accept the simple justification that we need to
+know this whitelist before we know the branch we are building so we
+must be able to fetch it from a known (and trusted) location, storing
+this information on each branch for example would create unresolvable
 ambiguity.
 
 
@@ -197,160 +358,6 @@ that well with Boris who hopes to provide a better mechanism for
 templatizing away the boilerplate, so stay tuned for updates here.
 
 
-Working with Boris
-------------------
-
-There are three main ways to interact with boris:
-
- - command line
-
- - hipchat bot
-
- - web interface (read only)
-
-
-### command line
-
-```
-boris build <project> <build> [<ref>]
-boris discover <project>
-boris cancel <build-id>
-boris list
-boris list <project>
-boris list <project> <build>
-boris status <build-id>
-boris log <build-id>
-```
-
-#### build
-
-Trigger a project build.
-
-This is different to other systems where triggering may mean "check
-if it needs to" or similar. With Boris asking for something to
-build, will result in exactly one build (that may or may not succeed).
-
-When triggering a build you need to specify:
-
- - the project you want to build
-
- - the build name you want to build
-
- - if the build can be run on multiple branches, you also need
-   to tell it which of those branches to build, when asking for
-   a build, Boris will not guess.
-
-Examples:
-
-```
-boris build example master
-boris build example topic topic/feature-1
-```
-
-#### discover
-
-Determine any outstanding builds for a project. This is closer to
-other non-boris systems idea of "triggering" a build. This is what
-github hooks for example would use to force builds on a commit.
-
-Examples:
-
-```
-boris discover example
-```
-
-#### cancel
-
-Make an attempt to cancel the build.
-
-Basically it just sets a flag, and when the build next sends a
-heartbeat it will shut itself down and fail if this flag is set.
-
-Examples:
-
-```
-boris cancel 71
-```
-
-#### list
-
-List all projects that Boris knows about.
-
-Examples:
-
-```
-boris list
-```
-
-
-#### list <project>
-
-List all builds that Boris has ever attempted for a specific project.
-
-This isn't all that it *can* build, because that would require
-scraping the git repository which we really don't want to do for this
-type of query.
-
-Examples:
-
-```
-boris list example
-```
-
-
-#### list <project> <build>
-
-List all build ids that Boris has ever attempted for this specific
-project and build.
-
-Examples:
-
-```
-boris list example master
-boris list example topic
-```
-
-#### status <build-id>
-
-Get the status of a specific build id.
-
-
-Examples:
-
-```
-boris status 71
-boris status 72
-```
-
-
-#### log <build-id>
-
-Get the log of a specific build id.
-
-Examples:
-
-```
-boris log 71
-boris log 72 | grep INTERESTING
-boris log 72 | less
-```
-
-### the bot
-
-The bot is largely designed to mimic the command line interface, and
-provides most functionality except dumping logs. We won't provide all
-the details here as the implementation lives elsewhere and may change,
-but as a starting point `/boris help` should get you part of the way
-there.
-
-
-### web interface
-
-The [web interface](http://boris.ambiata.com) is a simple read-only
-view to help with those with out easy access to command line
-tooling. It is useful for discovering builds and viewing logs.
-
-
 How Boris Works
 ---------------
 
@@ -365,14 +372,14 @@ When a build is triggered with Boris, the following happens:
    id which makes it easy to directly reference any build.
 
  - Boris puts the build on the queue to be actioned (he can't/won't
-   any additional judgement calls on whether this is a valid build at
-   this point because it needs access to the repository level
+   make any additional judgement calls on whether this is a valid
+   build at this point because it needs access to the repository level
    configuration to do so.
 
  - One of the running Boris services will pick the build off the queue
    when it has some downtime.
 
- - It will acknowledge this build id to make sure know one else picks
+ - It will acknowledge this build id to make sure no one else picks
    it up (this is when the build officially "starts" from a duration
    perspective).
 
