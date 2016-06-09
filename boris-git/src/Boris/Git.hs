@@ -3,6 +3,7 @@
 module Boris.Git (
     bare
   , clone
+  , cloneref
   , checkout
   , cat
   , refs
@@ -41,6 +42,14 @@ clone sout serr r target = do
   X.hoistExitM $
     X.exec sout serr =<<
       X.xproc sout "git" ["clone", renderLocalRepository r, T.pack target]
+  pure local
+
+cloneref :: Out -> Out -> LocalRepository -> Repository -> FilePath -> EitherT ExitCode IO LocalRepository
+cloneref sout serr l r target = do
+  let local = LocalRepository $ T.pack  target
+  X.hoistExitM $
+    X.exec sout serr =<<
+      X.xproc sout "git" ["clone", "--reference", renderLocalRepository l, renderRepository r, T.pack target]
   pure local
 
 checkout :: Out -> Out -> LocalRepository -> Ref -> EitherT ExitCode IO ()
