@@ -85,7 +85,7 @@ collection env e q c =
             normalised = flip fmap r $ \rr -> if T.isPrefixOf "refs/" . renderRef $ rr then rr else Ref . ((<>) "refs/heads/") . renderRef $ rr
             req = RequestBuild' $ RequestBuild i p repository b normalised
           webT renderError . runAWS env $ Q.put q req
-          putResponseBody . jsonResponse $ GetBuild (BuildData i p b Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
+          putResponseBody . jsonResponse $ GetBuild (BuildData i p b Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
           setLocation ["builds"]
           pure $ PostResponseLocation [renderBuildId i]
     }

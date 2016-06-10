@@ -98,6 +98,7 @@ build b =
       , ("build", BMXString (renderBuild . buildDataBuild $ b))
       , ("id", BMXString (renderBuildId . buildDataId $ b))
       , ("ref", maybe BMXNull (BMXString . renderRef) . buildDataRef $ b)
+      , ("commit", maybe BMXNull (BMXString . renderCommit) . buildDataCommit $ b)
       , ("queued", maybe BMXNull (BMXString . renderTime) . buildDataQueueTime $ b)
       , ("started", maybe BMXNull (BMXString . renderTime) . buildDataStartTime $ b)
       , ("ended", maybe BMXNull (BMXString . renderTime) . buildDataEndTime $ b)

@@ -60,6 +60,7 @@ instance ToJSON GetBuild where
       , "project" .= (renderProject . buildDataProject) b
       , "build" .= (renderBuild . buildDataBuild) b
       , "ref" .= (fmap renderRef . buildDataRef) b
+      , "commit" .= (fmap renderCommit . buildDataCommit) b
       , "queued" .= buildDataQueueTime b
       , "started" .= buildDataStartTime b
       , "completed" .= buildDataEndTime b
