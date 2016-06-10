@@ -7,6 +7,7 @@ module Boris.Http.Html.Template (
   , projects
   , project
   , builds
+  , commit
   , build
   , render
   ) where
@@ -19,7 +20,7 @@ import           BMX (BMXError, renderBMXError)
 import           BMX (Template, renderPage, renderTemplate, templateFile)
 import           BMX (BMXValue (..), defaultState, usingContext)
 
-import           Boris.Core.Data (Project (..), Build (..), Ref (..), BuildId (..), BuildResult (..), sortBuildIds)
+import           Boris.Core.Data (Project (..), Build (..), Commit (..), Ref (..), BuildId (..), BuildResult (..), sortBuildIds)
 import           Boris.Store.Build (BuildData (..))
 import           Boris.Http.Airship (webT)
 
@@ -90,6 +91,17 @@ builds p b rs queued =
   in
     renderPage <$> renderTemplate (defaultState `usingContext` context) builds'
 
+commit :: Project -> Commit -> [BuildId] -> Either BMXError Text
+commit p c buildIds =
+  let
+    context = [
+        ("project", BMXString (renderProject p))
+      , ("commit", BMXString (renderCommit c))
+      , ("builds", BMXList ((BMXString . renderBuildId) <$> sortBuildIds buildIds))
+      ]
+  in
+    renderPage <$> renderTemplate (defaultState `usingContext` context) commit'
+
 build :: BuildData -> Either BMXError Text
 build b =
   let
@@ -144,6 +156,10 @@ project' =
 builds' :: Template
 builds' =
   $(templateFile "template/builds.hbs")
+
+commit' :: Template
+commit' =
+  $(templateFile "template/commit.hbs")
 
 build' :: Template
 build' =

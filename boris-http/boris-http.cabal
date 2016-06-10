@@ -58,6 +58,7 @@ library
                     Boris.Http.Html.Template
                     Boris.Http.Repository
                     Boris.Http.Resource.Build
+                    Boris.Http.Resource.Commit
                     Boris.Http.Resource.Dashboard
                     Boris.Http.Resource.Log
                     Boris.Http.Resource.Project
@@ -65,6 +66,7 @@ library
                     Boris.Http.Resource.Static
                     Boris.Http.Route
                     Boris.Http.Representation.Build
+                    Boris.Http.Representation.Commit
                     Boris.Http.Representation.Project
                     Boris.Http.Representation.Scoreboard
                     Boris.Http.Scoreboard
