@@ -15,8 +15,16 @@
         <div id="content">
           <div class="content-wrapper">
             <h2><a href="/project/{{project}}">{{project}}</a> : <a href="/project/{{project}}/commit/{{commit}}">{{commit}}</a></h2>
-            {{#each builds}}
-            <div><a href="/build/{{this}}">#{{this}}</a></div>
+            {{#each builds as |build|}}
+            <div>
+              <h4><a href="/project/{{project}}/build/{{build.name}}">{{build.name}}</a></h4>
+              <div>
+              {{#each build.ids}}
+                <span>
+                  <a href="/build/{{this}}">#{{this}}</a>
+                </span>
+              {{/each}}
+            </div>
             {{/each}}
           </div>
         </div>

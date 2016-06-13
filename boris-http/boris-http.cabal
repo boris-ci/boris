@@ -34,6 +34,7 @@ library
                     , bytestring                      == 0.10.*
                     , conduit                         == 1.2.*
                     , conduit-extra                   == 1.1.*
+                    , containers                      == 0.5.*
                     , file-embed                      == 0.0.*
                     , lens                            >= 4.6        && < 4.9
                     , http-types                      == 0.8.*

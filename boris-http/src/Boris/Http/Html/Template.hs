@@ -24,6 +24,8 @@ import           Boris.Core.Data (Project (..), Build (..), Commit (..), Ref (..
 import           Boris.Store.Build (BuildData (..))
 import           Boris.Http.Airship (webT)
 
+import           Data.Map (Map)
+import qualified Data.Map as M
 import           Data.Time (UTCTime, diffUTCTime, formatTime, defaultTimeLocale)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -91,13 +93,18 @@ builds p b rs queued =
   in
     renderPage <$> renderTemplate (defaultState `usingContext` context) builds'
 
-commit :: Project -> Commit -> [BuildId] -> Either BMXError Text
-commit p c buildIds =
+commit :: Project -> Commit -> [BuildData] -> Either BMXError Text
+commit p c bs =
   let
+    byBuild =
+      M.toList . mapFromListGrouped . fmap (\b -> (buildDataBuild b, buildDataId b)) $ bs
     context = [
         ("project", BMXString (renderProject p))
       , ("commit", BMXString (renderCommit c))
-      , ("builds", BMXList ((BMXString . renderBuildId) <$> sortBuildIds buildIds))
+      , ("builds", BMXList . flip fmap byBuild $ (\(b, ids) -> BMXContext [
+          ("name", BMXString $ renderBuild b)
+        , ("ids", BMXList . fmap (BMXString . renderBuildId) . sortBuildIds $ ids)
+        ]))
       ]
   in
     renderPage <$> renderTemplate (defaultState `usingContext` context) commit'
@@ -140,6 +147,10 @@ renderBuildResult r =
       "ok"
     BuildKo ->
       "ko"
+
+mapFromListGrouped :: Ord a => [(a, b)] -> Map a [b]
+mapFromListGrouped =
+  foldr (\(k, v) -> M.insertWith (<>) k [v]) M.empty
 
 dashboard' :: Template
 dashboard' =

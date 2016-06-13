@@ -12,12 +12,13 @@ import           Boris.Http.Airship
 import qualified Boris.Http.Html.Template as H
 import           Boris.Http.Representation.Commit
 import           Boris.Http.Version
+import qualified Boris.Store.Build as SB
 import qualified Boris.Store.Index as SI
 
 import           Charlotte.Airship (withVersionJson)
 import           Charlotte.Airship (jsonResponse)
 
-import           Mismi (runAWS, renderError)
+import           Mismi (runAWS, runAWST, renderError)
 import           Mismi.Amazonka (Env)
 
 import qualified Network.HTTP.Types as HTTP
@@ -44,7 +45,8 @@ item env e =
               p <- getProject
               c <- getCommit
               bs <- webT renderError . runAWS env $ SI.getProjectCommitBuildIds e p c
-              H.render $ H.commit p c bs
+              bds <- webT id . runAWST env renderError . firstT SB.renderFetchError . for bs $ SB.fetch e
+              H.render $ H.commit p c bds
           ]
         ]
     }
