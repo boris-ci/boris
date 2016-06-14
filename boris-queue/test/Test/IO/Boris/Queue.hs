@@ -33,5 +33,12 @@ prop_queue qn r =
       Right rr ->
         rr === Just r
 
+prop_queue_size qn r =
+  testAWS . withQueue qn $ \_ ->  do
+    let bq = BuildQueue $ unQueueName qn
+    Q.put bq r
+    size <- Q.size bq
+    pure $ size === 1
+
 return []
 tests = $forAllProperties $ quickCheckWithResult (stdArgs { maxSuccess = 10 })
