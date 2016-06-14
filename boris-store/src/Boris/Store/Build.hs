@@ -77,6 +77,7 @@ data BuildData =
     , buildDataProject :: Project
     , buildDataBuild :: Build
     , buildDataRef :: Maybe Ref
+    , buildDataCommit :: Maybe Commit
     , buildDataQueueTime :: Maybe UTCTime
     , buildDataStartTime :: Maybe UTCTime
     , buildDataEndTime :: Maybe UTCTime
@@ -97,6 +98,7 @@ fetch e i = newEitherT $ do
     <$> (maybe (Left $ MissingProject i) Right $ res ^? D.girsItem . ix kProject . D.avS . _Just . to Project)
     <*> (maybe (Left $ MissingBuild i) Right $ res ^? D.girsItem . ix kBuild . D.avS . _Just . to Build)
     <*> (Right $ res ^? D.girsItem . ix kRef . D.avS . _Just . to Ref)
+    <*> (Right $ res ^? D.girsItem . ix kCommit . D.avS . _Just . to Commit)
     <*> (forM (res ^? D.girsItem . ix kQueueTime . D.avS . _Just) $ fromMaybeM (Left $ InvalidQueueTime i) . blat)
     <*> (forM (res ^? D.girsItem . ix kStartTime . D.avS . _Just) $ fromMaybeM (Left $ InvalidStartTime i) . blat)
     <*> (forM (res ^? D.girsItem . ix kEndTime . D.avS . _Just) $ fromMaybeM (Left $ InvalidEndTime i) . blat)

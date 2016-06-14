@@ -7,6 +7,7 @@ module Boris.Http.Html.Template (
   , projects
   , project
   , builds
+  , commit
   , build
   , render
   ) where
@@ -19,10 +20,12 @@ import           BMX (BMXError, renderBMXError)
 import           BMX (Template, renderPage, renderTemplate, templateFile)
 import           BMX (BMXValue (..), defaultState, usingContext)
 
-import           Boris.Core.Data (Project (..), Build (..), Ref (..), BuildId (..), BuildResult (..), sortBuildIds)
+import           Boris.Core.Data (Project (..), Build (..), Commit (..), Ref (..), BuildId (..), BuildResult (..), sortBuildIds)
 import           Boris.Store.Build (BuildData (..))
 import           Boris.Http.Airship (webT)
 
+import           Data.Map (Map)
+import qualified Data.Map as M
 import           Data.Time (UTCTime, diffUTCTime, formatTime, defaultTimeLocale)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -90,6 +93,22 @@ builds p b rs queued =
   in
     renderPage <$> renderTemplate (defaultState `usingContext` context) builds'
 
+commit :: Project -> Commit -> [BuildData] -> Either BMXError Text
+commit p c bs =
+  let
+    byBuild =
+      M.toList . mapFromListGrouped . fmap (\b -> (buildDataBuild b, buildDataId b)) $ bs
+    context = [
+        ("project", BMXString (renderProject p))
+      , ("commit", BMXString (renderCommit c))
+      , ("builds", BMXList . flip fmap byBuild $ (\(b, ids) -> BMXContext [
+          ("name", BMXString $ renderBuild b)
+        , ("ids", BMXList . fmap (BMXString . renderBuildId) . sortBuildIds $ ids)
+        ]))
+      ]
+  in
+    renderPage <$> renderTemplate (defaultState `usingContext` context) commit'
+
 build :: BuildData -> Either BMXError Text
 build b =
   let
@@ -98,6 +117,7 @@ build b =
       , ("build", BMXString (renderBuild . buildDataBuild $ b))
       , ("id", BMXString (renderBuildId . buildDataId $ b))
       , ("ref", maybe BMXNull (BMXString . renderRef) . buildDataRef $ b)
+      , ("commit", maybe BMXNull (BMXString . renderCommit) . buildDataCommit $ b)
       , ("queued", maybe BMXNull (BMXString . renderTime) . buildDataQueueTime $ b)
       , ("started", maybe BMXNull (BMXString . renderTime) . buildDataStartTime $ b)
       , ("ended", maybe BMXNull (BMXString . renderTime) . buildDataEndTime $ b)
@@ -128,6 +148,10 @@ renderBuildResult r =
     BuildKo ->
       "ko"
 
+mapFromListGrouped :: Ord a => [(a, b)] -> Map a [b]
+mapFromListGrouped =
+  foldr (\(k, v) -> M.insertWith (<>) k [v]) M.empty
+
 dashboard' :: Template
 dashboard' =
   $(templateFile "template/dashboard.hbs")
@@ -143,6 +167,10 @@ project' =
 builds' :: Template
 builds' =
   $(templateFile "template/builds.hbs")
+
+commit' :: Template
+commit' =
+  $(templateFile "template/commit.hbs")
 
 build' :: Template
 build' =
