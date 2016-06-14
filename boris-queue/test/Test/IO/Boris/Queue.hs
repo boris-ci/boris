@@ -4,7 +4,7 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Test.IO.Boris.Queue where
 
-import           Boris.Queue (BuildQueue (..))
+import           Boris.Queue (BuildQueue (..), QueueSize (..))
 import qualified Boris.Queue as Q
 
 import           Disorder.Core (failWith)
@@ -38,7 +38,7 @@ prop_queue_size qn r =
     let bq = BuildQueue $ unQueueName qn
     Q.put bq r
     size <- Q.size bq
-    pure $ size === 1
+    pure $ size === QueueSize 1
 
 return []
 tests = $forAllProperties $ quickCheckWithResult (stdArgs { maxSuccess = 10 })
