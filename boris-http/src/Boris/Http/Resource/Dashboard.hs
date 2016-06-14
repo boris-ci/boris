@@ -12,7 +12,10 @@ import           Boris.Http.Airship
 import           Boris.Http.Data
 import qualified Boris.Http.Html.Template as T
 import           Boris.Http.Scoreboard
+import           Boris.Queue (BuildQueue (..))
+import qualified Boris.Queue as Q
 
+import           Mismi (runAWS, renderError)
 import           Mismi.Amazonka (Env)
 
 import qualified Network.HTTP.Types as HTTP
@@ -24,8 +27,8 @@ import           System.IO (IO)
 import           X.Control.Monad.Trans.Either (bimapEitherT)
 
 
-dashboard :: Env -> Environment -> ConfigLocation -> Resource IO
-dashboard env e c =
+dashboard :: Env -> Environment -> BuildQueue -> ConfigLocation -> Resource IO
+dashboard env e q c =
   defaultResource {
       allowedMethods = pure [HTTP.methodGet]
 
@@ -33,6 +36,7 @@ dashboard env e c =
           (,) "text/html" $ do
              bs <- webT id . bimapEitherT renderScoreboardError id $
                fetchBrokenMasterBuilds env e c
-             T.render $ T.dashboard bs
+             s <- webT renderError . runAWS env $ Q.size q
+             T.render $ T.dashboard bs s
         ]
     }

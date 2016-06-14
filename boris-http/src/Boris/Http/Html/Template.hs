@@ -23,6 +23,7 @@ import           BMX (BMXValue (..), defaultState, usingContext)
 import           Boris.Core.Data (Project (..), Build (..), Commit (..), Ref (..), BuildId (..), BuildResult (..), sortBuildIds)
 import           Boris.Store.Build (BuildData (..))
 import           Boris.Http.Airship (webT)
+import           Boris.Queue (QueueSize (..))
 
 import           Data.Map (Map)
 import qualified Data.Map as M
@@ -43,8 +44,8 @@ render t = do
   return . ResponseBuilder . fromByteString . T.encodeUtf8 $ c
 
 
-dashboard :: [BuildData] -> Either BMXError Text
-dashboard bs =
+dashboard :: [BuildData] -> QueueSize -> Either BMXError Text
+dashboard bs s =
   let
     buildSort b = (buildDataProject b, buildDataBuild b)
     context = [
@@ -54,6 +55,7 @@ dashboard bs =
             , (,) "build" (BMXString . renderBuild $ buildDataBuild b)
             , (,) "id" (BMXString . renderBuildId $ buildDataId b)
             ]
+       , (,) "size" $ BMXNum . fromIntegral . getQueueSize $ s
       ]
   in
     renderPage <$> renderTemplate (defaultState `usingContext` context) dashboard'

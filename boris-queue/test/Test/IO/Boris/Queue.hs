@@ -4,7 +4,7 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Test.IO.Boris.Queue where
 
-import           Boris.Queue (BuildQueue (..))
+import           Boris.Queue (BuildQueue (..), QueueSize (..))
 import qualified Boris.Queue as Q
 
 import           Disorder.Core (failWith)
@@ -32,6 +32,13 @@ prop_queue qn r =
         failWith . Q.renderQueueError $ e
       Right rr ->
         rr === Just r
+
+prop_queue_size qn r =
+  testAWS . withQueue qn $ \_ ->  do
+    let bq = BuildQueue $ unQueueName qn
+    Q.put bq r
+    size <- Q.size bq
+    pure $ size === QueueSize 1
 
 return []
 tests = $forAllProperties $ quickCheckWithResult (stdArgs { maxSuccess = 10 })

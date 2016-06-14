@@ -65,11 +65,13 @@ library
                     Boris.Http.Resource.Project
                     Boris.Http.Resource.Scoreboard
                     Boris.Http.Resource.Static
+                    Boris.Http.Resource.Queue
                     Boris.Http.Route
                     Boris.Http.Representation.Build
                     Boris.Http.Representation.Commit
                     Boris.Http.Representation.Project
                     Boris.Http.Representation.Scoreboard
+                    Boris.Http.Representation.Queue
                     Boris.Http.Scoreboard
                     Boris.Http.Version
 

@@ -6,6 +6,8 @@ module Boris.Queue (
   , RequestBuild (..)
   , RequestDiscover (..)
   , BuildQueue (..)
+  , QueueSize (..)
+  , size
   , put
   , get
   , renderQueueError
@@ -15,15 +17,17 @@ module Boris.Queue (
   , toRequest
   ) where
 
-import           Control.Lens ((^.))
+import           Control.Lens ((.~), (^.), (^?), ix, to)
 import           Control.Monad.Trans.Class (lift)
 
 import           Boris.Core.Data
 
 import           Data.Aeson (Value (..), object, withObject, (.=), (.:), (.:?))
 import           Data.Aeson.Types (Parser)
+import qualified Data.Text as T
 
 import           Mismi (AWS)
+import qualified Mismi.Amazonka as A
 import qualified Mismi.SQS as Q
 import qualified Mismi.SQS.Amazonka as A
 
@@ -65,9 +69,21 @@ newtype BuildQueue =
       renderBuildQueue :: Text
     } deriving (Eq, Show)
 
+newtype QueueSize =
+  QueueSize {
+      getQueueSize :: Int
+    } deriving (Eq, Show)
+
+size :: BuildQueue -> AWS QueueSize
+size bq = do
+  q <- Q.createQueue (Q.QueueName . renderBuildQueue $ bq) (Just 10)
+  r <- A.send $ A.getQueueAttributes (Q.unQueueUrl q)
+    & A.gqaAttributeNames .~ [A.ApproximateNumberOfMessages]
+  pure . QueueSize . fromMaybe 0 . join $ r ^? A.gqarsAttributes . ix A.ApproximateNumberOfMessages . to T.unpack . to readMaybe
+
 put :: BuildQueue -> Request -> AWS ()
 put bq request = do
-  q <- Q.createQueue (Q.QueueName . renderBuildQueue $ bq) (Just 10)
+  q <- Q.createQueue  (Q.QueueName . renderBuildQueue $ bq) (Just 10)
   void $ Q.writeMessage q (asTextWith fromRequest request) Nothing
 
 get :: BuildQueue -> EitherT QueueError AWS (Maybe Request)

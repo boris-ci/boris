@@ -14,12 +14,17 @@
 
         <div id="content">
           <div class="content-wrapper">
-            It would be wonderful if this provided some useful information, but for
-            now boris suggests the list of <a href="/project">projects</a> may be
-            more useful.
-
-            <h2>Borked</h2>
+            <p>
+              It would be wonderful if this provided some useful information, but for
+              now boris suggests the list of <a href="/project">projects</a> may be
+              more useful.
+            </p>
+            <p>
+              Current queue size: {{size}}
+            </p>
+            <p>
             {{#if builds}}
+             Builds that are currently borked:
               {{#each builds as |b|}}
                 <div>
                   <a href="/project/{{b.project}}">{{b.project}}</a>
@@ -30,11 +35,11 @@
                 </div>
              {{/each}}
            {{else}}
-             All builds are green!
+             All builds are green.
            {{/if}}
+           <p>
           </div>
         </div>
-
         <div id="footer">
         </div>
     </body>
