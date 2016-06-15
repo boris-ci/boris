@@ -9,12 +9,14 @@ module Boris.Store.Index (
   , addProjectCommit
   , addProjectCommitBuildId
   , addProjectCommitSeen
+  , addProjectCommitDiscovered
   , clearQueued
   , getProjects
   , getProjectRefs
   , getProjectCommits
   , getProjectCommitBuildIds
   , getProjectCommitSeen
+  , getProjectCommitDiscovered
   , getBuildIds
   , getQueued
   , getBuildRefs
@@ -151,6 +153,19 @@ addProjectCommitSeen e p c b = do
         vStrings (kVal "v") [renderBuild b]
       ]
 
+addProjectCommitDiscovered :: Environment -> Project -> Commit -> Build -> AWS ()
+addProjectCommitDiscovered e p c b = do
+  void . A.send $ D.updateItem (tProjectCommits e)
+    & D.uiKey .~ H.fromList [
+        vProject p
+      , vCommit c
+      ]
+    & D.uiUpdateExpression .~
+      Just (mconcat ["ADD ", kDiscovered, " ", kVal "v"])
+    & D.uiExpressionAttributeValues .~ H.fromList [
+        vStrings (kVal "v") [renderBuild b]
+      ]
+
 clearQueued :: Environment -> Project -> Build -> BuildId -> AWS ()
 clearQueued e p b i = do
   void . A.send $ D.updateItem (tBuilds e)
@@ -216,6 +231,17 @@ getProjectCommitSeen e p c = do
     & D.giConsistentRead .~
       Just False
   pure . fmap Build . fromMaybe [] $ res ^? D.girsItem . ix kSeen . D.avSS
+
+getProjectCommitDiscovered :: Environment -> Project -> Commit -> AWS [Build]
+getProjectCommitDiscovered e p c = do
+  res <- A.send $ D.getItem (tProjectCommits e)
+    & D.giKey .~ H.fromList [
+        vProject p
+      , vCommit c
+      ]
+    & D.giConsistentRead .~
+      Just False
+  pure . fmap Build . fromMaybe [] $ res ^? D.girsItem . ix kDiscovered . D.avSS
 
 getBuildIds :: Environment -> Project -> Build -> Ref -> AWS [BuildId]
 getBuildIds e p b r = do
