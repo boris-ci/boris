@@ -16,6 +16,7 @@ module Boris.Store.Schema (
   , kBuild
   , kBuilds
   , kSeen
+  , kDiscovered
   , kBuildId
   , kBuildIds
   , kBuildResult
@@ -245,6 +246,10 @@ kBuilds =
 kSeen :: Text
 kSeen =
   "seen"
+
+kDiscovered :: Text
+kDiscovered =
+  "discovered"
 
 kRef :: Text
 kRef =
