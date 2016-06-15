@@ -65,10 +65,10 @@ discover env e q w request = do
         current <- runAWST env DiscoverAwsError . lift $
           SI.getProjectCommitSeen e project commit
 
-        discovered <- runAWST env DiscoverAwsError . lift $
+        already <- runAWST env DiscoverAwsError . lift $
           SI.getProjectCommitDiscovered e project commit
 
-        if L.elem build current || L.elem build discovered
+        if L.elem build current || L.elem build already
           then do
             X.xPutStrLn out $ mconcat [
                 "Already seen"
