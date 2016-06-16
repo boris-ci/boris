@@ -12,7 +12,6 @@ import           Boris.Core.Data
 import           Boris.Core.Serial.Ref
 import           Boris.Core.Serial.Command
 import qualified Boris.Git as Git
-import           Boris.X (Out)
 
 import qualified Data.Text as T
 
@@ -20,6 +19,8 @@ import           P
 
 import           System.Exit (ExitCode (..))
 import           System.IO (IO)
+
+import           Tine.Conduit (Out)
 
 import           X.Control.Monad.Trans.Either (EitherT, bimapEitherT, hoistEither)
 

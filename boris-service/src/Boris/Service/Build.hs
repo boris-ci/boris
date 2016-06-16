@@ -14,8 +14,6 @@ import           Boris.Service.Workspace
 import           Boris.Store.Build (BuildCancelled (..))
 import qualified Boris.Store.Build as SB
 import           Boris.Queue (RequestBuild (..))
-import           Boris.X (WithEnv (..))
-import qualified Boris.X as X
 
 import           Control.Concurrent.Async (async, waitEitherCancel)
 import           Control.Monad.IO.Class (liftIO)
@@ -31,6 +29,9 @@ import           Mismi.Amazonka (Env)
 import           P
 
 import           System.IO (IO)
+
+import           Tine.Conduit (WithEnv (..))
+import qualified Tine.Conduit as X
 
 import           Twine.Snooze (snooze, seconds)
 

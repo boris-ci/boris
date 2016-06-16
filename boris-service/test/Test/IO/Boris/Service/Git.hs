@@ -7,7 +7,6 @@ module Test.IO.Boris.Service.Git where
 import           Boris.Core.Data
 import           Boris.Service.Workspace
 import qualified Boris.Service.Git as Git
-import qualified Boris.X as X
 
 import qualified Data.Conduit.Binary as CB
 import qualified Data.Text as T
@@ -28,6 +27,8 @@ import qualified System.Directory as D
 import           Test.Boris.Core.Arbitrary ()
 import           Test.QuickCheck
 import           Test.QuickCheck.Instances ()
+
+import qualified Tine.Conduit as X
 
 import           X.Control.Monad.Trans.Either (runEitherT)
 

@@ -17,7 +17,6 @@ import           Boris.Store.Tick (TickError, renderTickError)
 import qualified Boris.Store.Tick as ST
 import           Boris.Queue (BuildQueue (..), Request (..), RequestBuild (..), RequestDiscover (..))
 import qualified Boris.Queue as Q
-import qualified Boris.X as X
 
 import           Control.Monad.Trans.Class (lift)
 
@@ -31,6 +30,8 @@ import           Mismi.Amazonka (Env)
 import           P
 
 import           System.IO (IO)
+
+import qualified Tine.Conduit as X
 
 import           X.Control.Monad.Trans.Either (EitherT, runEitherT, newEitherT, bimapEitherT)
 

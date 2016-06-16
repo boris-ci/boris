@@ -7,14 +7,15 @@ module Boris.Build (
   ) where
 
 import           Boris.Core.Data
-import           Boris.X (Out, WithEnv (..))
-import qualified Boris.X as X
 
 import           Control.Monad.IO.Class (liftIO)
 
 import qualified Data.Text as T
 
 import           P
+
+import           Tine.Conduit (Out, WithEnv (..))
+import qualified Tine.Conduit as X
 
 import           System.Exit (ExitCode (..))
 import           System.IO (IO)
