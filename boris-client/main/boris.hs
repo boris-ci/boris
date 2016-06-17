@@ -4,6 +4,8 @@
 import           BuildInfo_ambiata_boris_client
 
 import           Boris.Core.Data
+import qualified Boris.Core.Serial.Command as S
+import qualified Boris.Core.Serial.Ref as S
 import           Boris.Store.Build (BuildData (..), LogData (..))
 import           Boris.Client.Http (renderBorisHttpClientError)
 import qualified Boris.Client.Build as B
@@ -40,7 +42,7 @@ import           System.Environment (lookupEnv)
 import           System.IO
 
 import           X.Options.Applicative
-import           X.Control.Monad.Trans.Either (newEitherT, runEitherT)
+import           X.Control.Monad.Trans.Either (EitherT, newEitherT, runEitherT)
 import           X.Control.Monad.Trans.Either.Exit (orDie)
 
 data Tail =
@@ -49,6 +51,11 @@ data Tail =
     deriving (Eq, Show)
 
 data Cli =
+      RemoteCommand RemoteCommand
+    | LocalCommand LocalCommand
+    deriving (Eq, Show)
+
+data RemoteCommand =
     Trigger Tail Project Build (Maybe Ref)
   | Discover Project
   | Cancel BuildId
@@ -58,11 +65,15 @@ data Cli =
   | Ignore Project Build
     deriving (Eq, Show)
 
+data LocalCommand =
+  Validate (Maybe FilePath) (Maybe FilePath)
+    deriving (Eq, Show)
+
+
 main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
   hSetBuffering stderr LineBuffering
-  environment <- Environment <$> text "BORIS_ENVIRONMENT"
   dispatch parser >>= \sc ->
     case sc of
       VersionCommand ->
@@ -70,40 +81,49 @@ main = do
       RunCommand DryRun c ->
         print c >> exitSuccess
       RunCommand RealRun c ->
-        run environment c
+        case c of
+          RemoteCommand r -> do
+            environment <- Environment <$> text "BORIS_ENVIRONMENT"
+            run environment r
+          LocalCommand r ->
+            local r
 
 parser :: Parser (SafeCommand Cli)
 parser =
   safeCommand . subparser . mconcat $ [
-      command' "build" "Trigger a build" $
+      command' "build" "Trigger a build" . fmap RemoteCommand $
         Trigger
           <$> tailP
           <*> projectP
           <*> buildP
           <*> optional refP
-    , command' "discover" "Probe for builds to trigger for a project" $
+    , command' "discover" "Probe for builds to trigger for a project" . fmap RemoteCommand $
         Discover
           <$> projectP
-    , command' "cancel" "Cancel a build" $
+    , command' "cancel" "Cancel a build" . fmap RemoteCommand $
         Cancel
           <$> buildIdP
-    , command' "list" "list of projects / builds" $
+    , command' "list" "list of projects / builds" . fmap RemoteCommand $
         List
           <$> optional projectP
           <*> optional buildP
-    , command' "status" "status of build" $
+    , command' "status" "status of build" . fmap RemoteCommand $
         Status
           <$> buildIdP
-    , command' "log" "Log of a build" $
+    , command' "log" "Log of a build" . fmap RemoteCommand $
         Log
           <$> buildIdP
-    , command' "ignore" "Ignore a build" $
+    , command' "ignore" "Ignore a build" . fmap RemoteCommand $
         Ignore
           <$> projectP
           <*> buildP
+    , command' "validate" "Validate a configuration" . fmap LocalCommand $
+        Validate
+          <$> optional borisrefP
+          <*> optional boriscommandP
     ]
 
-run :: Environment -> Cli -> IO ()
+run :: Environment -> RemoteCommand -> IO ()
 run e c = case c of
   Trigger t p b ref -> do
     bc <- mkBalanceConfig
@@ -218,6 +238,17 @@ run e c = case c of
     T.putStrLn "Build ignored"
     exitSuccess
 
+local :: LocalCommand -> IO ()
+local c =
+  case c of
+    Validate g b -> orDie id $ do
+      let
+        xx :: (Text -> Either e a) -> Maybe FilePath -> EitherT e IO ()
+        xx f y = forM_ y $ \file ->
+          newEitherT $ f <$> T.readFile file
+      firstT S.renderBorisPatternConfigError $ xx S.parsePatternConfig g
+      firstT S.renderBorisConfigError $ xx S.parseConfig b
+
 projectP :: Parser Project
 projectP =
   fmap Project . argument textRead . mconcat $ [
@@ -252,6 +283,22 @@ tailP =
       short 't'
     , long "tail"
     , help "Tail build log after submitting."
+    ]
+
+borisrefP :: Parser FilePath
+borisrefP =
+ strOption . mconcat $ [
+      long "boris-ref"
+    , metavar "FILEPATH"
+    , help "A boris ref file, e.g. boris-git.toml."
+    ]
+
+boriscommandP :: Parser FilePath
+boriscommandP =
+  strOption . mconcat $ [
+      long "boris-command"
+    , metavar "FILEPATH"
+    , help "A boris command file, e.g. boris-toml."
     ]
 
 text :: String -> IO Text
