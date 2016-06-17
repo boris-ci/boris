@@ -11,8 +11,6 @@ module Boris.Git (
   ) where
 
 import           Boris.Core.Data
-import           Boris.X (Out)
-import qualified Boris.X as X
 
 import           Control.Monad.IO.Class (liftIO)
 
@@ -24,6 +22,9 @@ import           P
 import           System.Exit (ExitCode (..))
 import           System.Directory (doesDirectoryExist)
 import           System.IO (IO, FilePath)
+
+import           Tine.Conduit (Out)
+import qualified Tine.Conduit as X
 
 import           X.Control.Monad.Trans.Either (EitherT)
 

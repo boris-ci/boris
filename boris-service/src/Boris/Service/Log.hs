@@ -4,8 +4,6 @@ module Boris.Service.Log (
     withLogger
   ) where
 
-import           Boris.X (Out)
-
 import           Control.Monad.Reader (ask)
 import           Control.Monad.IO.Class (MonadIO (..))
 
@@ -23,6 +21,9 @@ import           Mismi (AWS)
 import           P
 
 import           System.IO (IO)
+
+import           Tine.Conduit (Out)
+
 
 withLogger :: LogGroup -> LogStream -> (Out -> IO a) -> AWS a
 withLogger group stream f = do

@@ -15,8 +15,8 @@ library
                       base                            >= 3          && < 5
                     , aeson                           == 0.8.*
                     , ambiata-boris-core
-                    , ambiata-boris-x
                     , ambiata-p
+                    , ambiata-tine
                     , ambiata-twine
                     , ambiata-x-eithert
                     , async                           == 2.0.*
@@ -56,10 +56,10 @@ test-suite test
                       base                            >= 3          && < 5
                     , ambiata-boris-core
                     , ambiata-boris-build
-                    , ambiata-boris-x
                     , ambiata-disorder-core
                     , ambiata-disorder-corpus
                     , ambiata-p
+                    , ambiata-tine
                     , QuickCheck                      == 2.7.*
                     , quickcheck-instances            == 0.3.*
 
@@ -81,10 +81,10 @@ test-suite test-io
                     , ambiata-boris-core
                     , ambiata-boris-core-test
                     , ambiata-boris-build
-                    , ambiata-boris-x
                     , ambiata-disorder-core
                     , ambiata-disorder-corpus
                     , ambiata-p
+                    , ambiata-tine
                     , ambiata-x-eithert
                     , conduit                         == 1.2.*
                     , conduit-extra                   == 1.1.*

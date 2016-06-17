@@ -19,13 +19,13 @@ library
                     , ambiata-boris-git
                     , ambiata-boris-store
                     , ambiata-boris-queue
-                    , ambiata-boris-x
                     , ambiata-jebediah
                     , ambiata-mismi-cloudwatch-logs
                     , ambiata-mismi-core
                     , ambiata-mismi-sqs
                     , ambiata-mismi-s3
                     , ambiata-p
+                    , ambiata-tine
                     , ambiata-twine
                     , ambiata-x-aeson
                     , ambiata-x-eithert
@@ -113,7 +113,7 @@ test-suite test
                     , ambiata-disorder-core
                     , ambiata-disorder-corpus
                     , ambiata-p
-                    , QuickCheck                      >= 2.7        && < 2.9                    
+                    , QuickCheck                      >= 2.7        && < 2.9
                     , quickcheck-instances            == 0.3.*
 
 test-suite test-io
@@ -136,11 +136,11 @@ test-suite test-io
                     , ambiata-boris-service
                     , ambiata-boris-store
                     , ambiata-boris-queue
-                    , ambiata-boris-x
                     , ambiata-disorder-core
                     , ambiata-disorder-corpus
                     , ambiata-mismi-core
                     , ambiata-mismi-core-test
+                    , ambiata-tine
                     , ambiata-p
                     , ambiata-x-eithert
                     , conduit
