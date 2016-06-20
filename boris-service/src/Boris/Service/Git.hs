@@ -13,6 +13,8 @@ import           Boris.Core.Serial.Ref
 import           Boris.Core.Serial.Command
 import qualified Boris.Git as Git
 
+import           Control.Monad.IO.Class (liftIO)
+
 import qualified Data.Text as T
 
 import           P
@@ -22,7 +24,7 @@ import           System.IO (IO)
 
 import           Tine.Conduit (Out)
 
-import           X.Control.Monad.Trans.Either (EitherT, bimapEitherT, hoistEither)
+import           X.Control.Monad.Trans.Either (EitherT, runEitherT, bimapEitherT, hoistEither)
 
 
 data InitialiseError =
@@ -131,17 +133,24 @@ discovering :: Out -> Out -> Workspace -> Repository -> EitherT InitialiseError 
 discovering sout serr workspace repository  = do
   mirror <- bimapEitherT MirrorError id $
     Git.bare sout serr repository $ pathOfMirror workspace
-  patterntext <- bimapEitherT MissingConfigError id $
+  patterntext' <- liftIO . fmap rightToMaybe . runEitherT $
     Git.cat sout serr mirror (Ref "refs/heads/master") ("boris-git.toml")
-  patterns <- bimapEitherT PatternConfigParseError id . hoistEither $
-    parsePatternConfig patterntext
-  fmap join . forM patterns $ \pattern -> do
-    refs <- bimapEitherT ListingRefsError id $
-      Git.refs sout serr mirror . buildPattern $ pattern
-    forM refs $ \ref -> do
-      commit <- bimapEitherT (InitialiseCommitError (buildName pattern) ref) id $
-        Git.commitAt sout serr mirror ref
-      pure $ DiscoverInstance pattern ref commit
+  fmap (fromMaybe []) . for patterntext' $ \patterntext -> do
+    patterns <- bimapEitherT PatternConfigParseError id . hoistEither $
+      parsePatternConfig patterntext
+    fmap join . fmap catMaybes . fmap join . forM patterns $ \pattern -> do
+      refs <- bimapEitherT ListingRefsError id $
+        Git.refs sout serr mirror . buildPattern $ pattern
+      forM refs $ \ref -> do
+        commit <- bimapEitherT (InitialiseCommitError (buildName pattern) ref) id $
+          Git.commitAt sout serr mirror ref
+        specificationtext' <- liftIO . fmap rightToMaybe . runEitherT $
+          Git.cat sout serr mirror (Ref . renderCommit $ commit) ("boris.toml")
+        for specificationtext' $ \specificationtext -> do
+          specifications <- bimapEitherT ConfigParseError id . hoistEither $
+            parseConfig specificationtext
+          pure $ filter (const . not . null $ filter (\s -> specificationBuild s == buildName pattern) specifications) $
+            [DiscoverInstance pattern ref commit]
 
 -- |
 -- Resolving a pattern to a ref.
