@@ -9,7 +9,7 @@ module Boris.Http.Representation.Build (
   ) where
 
 import           Boris.Core.Data
-import           Boris.Store.Build (BuildData (..))
+import           Boris.Store.Build (BuildData (..), BuildCancelled (..))
 import qualified Boris.Store.Build as SB
 
 import           Data.Aeson (FromJSON (..), ToJSON (..), object, (.=), (.:), (.:?), withObject)
@@ -67,6 +67,7 @@ instance ToJSON GetBuild where
       , "heartbeat" .= buildDataHeartbeatTime b
       , "result" .= (flip fmap (buildDataResult b) $ \bb -> case bb of BuildOk -> True; BuildKo -> False)
       , "log" .= (flip fmap (buildDataLog b) $ \l -> object ["group" .= (logGroup . SB.logGroup) l, "stream" .= (logStream . SB.logStream) l])
+      , "cancelled" .= (flip fmap (buildDataCancelled b) $ \bb -> case bb of BuildCancelled -> True; BuildNotCancelled -> False)
       ]
 
 newtype PutBuildIgnore =

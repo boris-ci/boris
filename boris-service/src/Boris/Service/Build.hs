@@ -80,13 +80,13 @@ builder env e w request = do
   runAWST env BuildAwsError . newEitherT . withLogger gname sname $ \out -> runEitherT $ do
     liftIO . T.putStrLn $ "acknowledge: " <> renderBuildId buildId
 
-    heart <- runAWS env $ do
+    initial <- runAWST env BuildAwsError . lift $ do
       SB.heartbeat e buildId
 
     ack <- runAWST env BuildAwsError . lift $
       SB.acknowledge e buildId gname sname
 
-    case (ack, heart) of
+    case (ack, initial) of
       (Accept, BuildNotCancelled) -> do
         let
           heartbeater =
@@ -146,7 +146,7 @@ builder env e w request = do
 
       (Accept, BuildCancelled) ->
         runAWST env BuildAwsError . lift $ do
-          SB.complete e buildId BuiildKo
+          SB.complete e buildId BuildKo
 
 
 lifecycle :: X.Out -> Env -> Environment -> WorkspacePath -> Project -> Build -> Repository -> Maybe Ref -> BuildId -> EitherT LifecycleError IO (Either BuildError ())
