@@ -84,6 +84,7 @@ data BuildData =
     , buildDataHeartbeatTime :: Maybe UTCTime
     , buildDataResult :: Maybe BuildResult
     , buildDataLog :: Maybe LogData
+    , buildDataCancelled :: Maybe BuildCancelled
     } deriving (Eq, Show)
 
 fetch :: Environment -> BuildId -> EitherT FetchError AWS BuildData
@@ -105,6 +106,7 @@ fetch e i = newEitherT $ do
     <*> (forM (res ^? D.girsItem . ix kHeartbeatTime . D.avS . _Just) $ fromMaybeM (Left $ InvalidHeartbeatTime i) . blat)
     <*> (Right . fmap (bool BuildKo BuildOk) $ res ^? D.girsItem . ix kBuildResult . D.avBOOL . _Just)
     <*> (Right $ LogData <$> res ^? D.girsItem . ix kLogGroup . D.avS . _Just . to LogGroup <*> res ^? D.girsItem . ix kLogStream . D.avS . _Just . to LogStream)
+    <*> (Right . fmap (bool BuildNotCancelled BuildCancelled) $ res ^? D.girsItem . ix kCancelled . D.avBOOL . _Just)
 
 blat :: Text -> Maybe UTCTime
 blat =

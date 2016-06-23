@@ -40,6 +40,10 @@ import           X.Control.Monad.Trans.Either (EitherT, newEitherT, runEitherT)
 data BuilderError =
     BuildAwsError Error
 
+data LifecycleError =
+    LifecycleAwsError Error
+  | LifecycleInitialiseError InitialiseError
+
 -- |
 -- Basic executor flow:
 --
@@ -75,113 +79,139 @@ builder env e w request = do
 
   runAWST env BuildAwsError . newEitherT . withLogger gname sname $ \out -> runEitherT $ do
     liftIO . T.putStrLn $ "acknowledge: " <> renderBuildId buildId
+
+    heart <- runAWS env $ do
+      SB.heartbeat e buildId
+
     ack <- runAWST env BuildAwsError . lift $
       SB.acknowledge e buildId gname sname
 
-    case ack of
-      Accept -> do
-        withWorkspace w buildId $ \workspace -> do
-          bootstrap <- liftIO . runEitherT $
-            initialise out out workspace build repository mref
+    case (ack, heart) of
+      (Accept, BuildNotCancelled) -> do
+        let
+          heartbeater =
+            runEitherT $ do
+              heart <- runAWS env $ do
+                SB.heartbeat e buildId
+              case heart of
+                BuildCancelled ->
+                  pure ()
+                BuildNotCancelled -> do
+                  liftIO . snooze . seconds $ 30
+                  newEitherT heartbeater
 
-          case bootstrap of
-            Left err -> do
-              X.xPutStrLn out $ mconcat ["| boris:ko | ", renderInitialiseError err]
+        heartbeater' <- liftIO . async $ heartbeater
+        lifecycle' <- liftIO . async . runEitherT $ lifecycle out env e w project build repository mref buildId
 
-              runAWST env BuildAwsError . lift $ do
-                liftIO . T.putStrLn $ "deindex: " <> renderBuildId buildId
-                SB.deindex e project build buildId
-                liftIO . T.putStrLn $ "complete: " <> renderBuildId buildId
-                SB.complete e buildId BuildKo
+        state <- liftIO $ waitEitherCancel heartbeater' lifecycle'
 
-            Right instant -> do
-              let
-                ref = buildRef instant
-                commit = buildCommit instant
-                specification = buildSpecification instant
+        result <- case state of
+          -- we couldn't send a heartbeat, so had to give up, this should be rare, but can happen.
+          Left (Left err) -> do
+            X.xPutStrLn out $ mconcat ["| boris:ko:heartbeat-error | ", renderError err]
+            pure $ BuildKo
 
-                -- FIX inherit list should be defined externally
-                context = [
-                    InheritEnv "AWS_DEFAULT_REGION"
-                  , InheritEnv "AMBIATA_ARTEFACTS_MASTER"
-                  , InheritEnv "AMBIATA_HADDOCK"
-                  , InheritEnv "AMBIATA_DOWNLOAD"
-                  , InheritEnv "AMBIATA_MAFIA_CACHE"
-                  , InheritEnv "AMBIATA_ARTEFACTS_BRANCHES"
-                  , InheritEnv "AMBIATA_BENCHMARK_RESULTS"
-                  , InheritEnv "AMBIATA_TEST_BUCKET"
-                  , InheritEnv "AMBIATA_IVY_PAY"
-                  , InheritEnv "AMBIATA_IVY_OSS"
-                  , InheritEnv "AMBIATA_DOC"
-                  , InheritEnv "AMBIATA_DISPENSARY"
-                  , InheritEnv "HOME"
-                  , InheritEnv "TMPDIR"
-                  , InheritEnv "PATH"
-                  , InheritEnv "LOCALE"
-                  , InheritEnv "LC_COLLATE"
-                  , InheritEnv "LANG"
-                  , InheritEnv "HOSTNAME"
-                  , InheritEnv "SHELL"
-                  , InheritEnv "TERM"
-                  , InheritEnv "USER"
-                  , InheritEnv "RBENV_ROOT"
-                  , InheritEnv "HADOOP_USER_NAME"
-                  , InheritEnv "HADOOP_CONF_BASE"
-                  , SetEnv "BORIS_BUILD_ID" (renderBuildId buildId)
-                  , SetEnv "BORIS_PROJECT" (renderProject project)
-                  , SetEnv "BORIS_BUILD" (renderBuild build)
-                  , SetEnv "BORIS_REF" (renderRef ref)
-                  , SetEnv "BORIS_COMMIT" (renderCommit commit)
-                  ]
+          -- we were cancelled, nothing more to see here.
+          Left (Right _) -> do
+            X.xPutStrLn out $ mconcat ["| boris:ko:cancelled | "]
+            pure $ BuildKo
 
-              runAWST env BuildAwsError . lift $ do
-                liftIO . T.putStrLn $ "index: " <> renderBuildId buildId
-                SB.index e project build buildId ref commit
+          -- initialisation error, wasn't even a valid build we ditch it all together (i.e. deindex).
+          Right (Left err) -> do
+            liftIO . T.putStrLn $ "deindex: " <> renderBuildId buildId
+            runAWST env BuildAwsError . lift $ do
+              SB.deindex e project build buildId
+            X.xPutStrLn out $ mconcat ["| boris:ko:initialization | ", renderLifecycleError err]
+            pure $ BuildKo
+
+          -- build completed but failed.
+          Right (Right (Left err)) -> do
+            X.xPutStrLn out $ mconcat ["| boris:ko | ", renderBuildError err]
+            pure $ BuildKo
+
+          -- build completed, defied all odds, and actually succeeded.
+          Right (Right (Right ())) -> do
+            X.xPutStrLn out $ "| boris:ok |"
+            pure $ BuildOk
+
+        runAWST env BuildAwsError . lift $ do
+          liftIO . T.putStrLn $ "complete: " <> renderBuildId buildId
+          SB.complete e buildId result
+
+      (AlreadyRunning, BuildCancelled) ->
+        pure ()
+
+      (AlreadyRunning, BuildNotCancelled) ->
+        pure ()
+
+      (Accept, BuildCancelled) ->
+        runAWST env BuildAwsError . lift $ do
+          SB.complete e buildId BuiildKo
 
 
-              let
-                runner =
-                  runEitherT $
-                    runBuild out out workspace specification context
+lifecycle :: X.Out -> Env -> Environment -> WorkspacePath -> Project -> Build -> Repository -> Maybe Ref -> BuildId -> EitherT LifecycleError IO (Either BuildError ())
+lifecycle out env e w project build repository mref buildId =
+  withWorkspace w buildId $ \workspace -> do
+    instant <- firstT LifecycleInitialiseError $
+      initialise out out workspace build repository mref
 
-                heartbeater =
-                  runEitherT $ do
-                    heart <- runAWS env $ do
-                      SB.heartbeat e buildId
-                    case heart of
-                      BuildCancelled ->
-                        pure ()
-                      BuildNotCancelled -> do
-                        liftIO . snooze . seconds $ 30
-                        newEitherT heartbeater
+    let
+      ref = buildRef instant
+      commit = buildCommit instant
+      specification = buildSpecification instant
 
-              runner' <- liftIO . async $ runner
-              heartbeater' <- liftIO . async $ heartbeater
-              state <- liftIO $ waitEitherCancel heartbeater' runner'
+      -- FIX inherit list should be defined externally
+      context = [
+        InheritEnv "AWS_DEFAULT_REGION"
+        , InheritEnv "AMBIATA_ARTEFACTS_MASTER"
+        , InheritEnv "AMBIATA_HADDOCK"
+        , InheritEnv "AMBIATA_DOWNLOAD"
+        , InheritEnv "AMBIATA_MAFIA_CACHE"
+        , InheritEnv "AMBIATA_ARTEFACTS_BRANCHES"
+        , InheritEnv "AMBIATA_BENCHMARK_RESULTS"
+        , InheritEnv "AMBIATA_TEST_BUCKET"
+        , InheritEnv "AMBIATA_IVY_PAY"
+        , InheritEnv "AMBIATA_IVY_OSS"
+        , InheritEnv "AMBIATA_DOC"
+        , InheritEnv "AMBIATA_DISPENSARY"
+        , InheritEnv "HOME"
+        , InheritEnv "TMPDIR"
+        , InheritEnv "PATH"
+        , InheritEnv "LOCALE"
+        , InheritEnv "LC_COLLATE"
+        , InheritEnv "LANG"
+        , InheritEnv "HOSTNAME"
+        , InheritEnv "SHELL"
+        , InheritEnv "TERM"
+        , InheritEnv "USER"
+        , InheritEnv "RBENV_ROOT"
+        , InheritEnv "HADOOP_USER_NAME"
+        , InheritEnv "HADOOP_CONF_BASE"
+        , SetEnv "BORIS_BUILD_ID" (renderBuildId buildId)
+        , SetEnv "BORIS_PROJECT" (renderProject project)
+        , SetEnv "BORIS_BUILD" (renderBuild build)
+        , SetEnv "BORIS_REF" (renderRef ref)
+        , SetEnv "BORIS_COMMIT" (renderCommit commit)
+        ]
 
-              result <- case state of
-                Right (Left err) -> do
-                  X.xPutStrLn out $ mconcat ["| boris:ko | ", renderBuildError err]
-                  pure $ BuildKo
-                Right (Right _) -> do
-                  X.xPutStrLn out $ "| boris:ok |"
-                  pure $ BuildOk
-                Left (Left err) -> do
-                  X.xPutStrLn out $ mconcat ["| boris:ko:heartbeat-error | ", renderError err]
-                  pure $ BuildKo
-                Left (Right _) -> do
-                  X.xPutStrLn out $ mconcat ["| boris:ko:cancelled | "]
-                  pure $ BuildKo
+    runAWST env LifecycleAwsError . lift $ do
+      liftIO . T.putStrLn $ "index: " <> renderBuildId buildId
+      SB.index e project build buildId ref commit
 
-              runAWST env BuildAwsError . lift $ do
-                liftIO . T.putStrLn $ "complete: " <> renderBuildId buildId
-                SB.complete e buildId result
+    liftIO . runEitherT $
+      runBuild out out workspace specification context
 
-      AlreadyRunning ->
-          pure ()
 
 renderBuilderError :: BuilderError -> Text
 renderBuilderError err =
   case err of
     BuildAwsError e ->
       mconcat ["An AWS error occurred trying to obtain a build to run: ", renderError e]
+
+renderLifecycleError :: LifecycleError -> Text
+renderLifecycleError err =
+  case err of
+    LifecycleAwsError e ->
+      mconcat ["An AWS error occurred trying to update boris store: ", renderError e]
+    LifecycleInitialiseError e ->
+      mconcat ["An error occurred trying to initialise git repository: ", renderInitialiseError e]

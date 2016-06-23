@@ -18,7 +18,7 @@ import qualified Boris.Http.Html.Template as H
 import           Boris.Http.Repository
 import           Boris.Http.Representation.Build
 import           Boris.Http.Version
-import           Boris.Store.Build (BuildData (..))
+import           Boris.Store.Build (BuildData (..), BuildCancelled (..))
 import qualified Boris.Store.Build as SB
 import qualified Boris.Store.Index as SI
 import qualified Boris.Store.Tick as ST
@@ -85,7 +85,7 @@ collection env e q c =
             normalised = flip fmap r $ \rr -> if T.isPrefixOf "refs/" . renderRef $ rr then rr else Ref . ((<>) "refs/heads/") . renderRef $ rr
             req = RequestBuild' $ RequestBuild i p repository b normalised
           webT renderError . runAWS env $ Q.put q req
-          putResponseBody . jsonResponse $ GetBuild (BuildData i p b Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
+          putResponseBody . jsonResponse $ GetBuild (BuildData i p b Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
           setLocation ["builds"]
           pure $ PostResponseLocation [renderBuildId i]
     }
@@ -98,23 +98,14 @@ item env e =
     , contentTypesProvided = pure . join $ [
           withVersionJson $ \v -> case v of
             V1 -> do
-              now <- liftIO getCurrentTime
               i <- getBuildId
-              b <- webT id . runAWST env renderError . bimapEitherT SB.renderFetchError id $ SB.fetch e i
-              case buildDataHeartbeatTime b of
-                Nothing ->
-                  pure . jsonResponse $ GetBuild b
-                Just h ->
-                  if diffUTCTime now h > 120
-                     then do
-                        void . webT id . bimapEitherT renderError id . runAWS env $ SB.cancel e i
-                        pure . jsonResponse . GetBuild $ b { buildDataResult = Just . fromMaybe BuildKo . buildDataResult $ b }
-                     else
-                        pure . jsonResponse $ GetBuild b
+              b <- getWithHeartbeatCheck env e i
+              pure . jsonResponse $ GetBuild b
+
         , [
             (,) "text/html" $ do
               i <- getBuildId
-              b <- webT id . runAWST env renderError . bimapEitherT SB.renderFetchError id $ SB.fetch e i
+              b <- getWithHeartbeatCheck env e i
               H.render $ H.build b
           ]
         ]
@@ -124,8 +115,33 @@ item env e =
 
     , deleteResource = do
         i <- getBuildId
-        webT id . bimapEitherT renderError id . runAWS env $ SB.cancel e i
+        d <- webT id . runAWST env renderError . firstT SB.renderFetchError $
+          SB.fetch e i
+        webT id . bimapEitherT renderError id . runAWS env $ do
+          SB.deindex e (buildDataProject d) (buildDataBuild d) i
+          SB.cancel e i
     }
+
+getWithHeartbeatCheck :: Env -> Environment -> BuildId -> Webmachine IO BuildData
+getWithHeartbeatCheck env e i = do
+  b <- webT id . runAWST env renderError . bimapEitherT SB.renderFetchError id $ SB.fetch e i
+  case buildDataHeartbeatTime b of
+    Nothing ->
+      case buildDataCancelled b of
+        Nothing ->
+          pure b
+        Just BuildNotCancelled ->
+          pure b
+        Just BuildCancelled ->
+          pure $ b { buildDataResult = Just . fromMaybe BuildKo . buildDataResult $ b }
+    Just h -> do
+      now <- liftIO getCurrentTime
+      if diffUTCTime now h > 120
+        then do
+          void . webT id . bimapEitherT renderError id . runAWS env $ SB.cancel e i
+          pure $ b { buildDataResult = Just . fromMaybe BuildKo . buildDataResult $ b }
+        else
+          pure b
 
 ignore :: Env -> Environment -> Resource IO
 ignore env e =
