@@ -15,7 +15,7 @@ import qualified Boris.Store.Build as SB
 
 import           Blaze.ByteString.Builder (fromByteString)
 
-import           Charlotte.Airship (withVersionJson)
+import           Charlotte.Airship (Versioned, withVersion')
 
 import           Data.Conduit (Source, (=$=), runConduit)
 import qualified Data.Conduit.List as CL
@@ -28,6 +28,7 @@ import qualified Jebediah.Conduit as J
 import           Mismi (runAWST, renderError)
 import           Mismi.Amazonka (Env)
 
+import           Network.HTTP.Media.MediaType (MediaType)
 import qualified Network.HTTP.Types as HTTP
 
 import           P
@@ -41,7 +42,7 @@ item env e =
            HTTP.methodGet
          ]
 
-    , contentTypesProvided = pure . withVersionJson $ \v -> case v of
+    , contentTypesProvided = pure . withVersionText $ \v -> case v of
         V1 -> do
           i <- getBuildId
 
@@ -60,6 +61,10 @@ item env e =
                     send (fromByteString "\n")
                     flush)
     }
+
+withVersionText :: Versioned v => (v -> a) -> [(MediaType, a)]
+withVersionText r =
+  [("text/plain; charset=utf-8", r maxBound)] <> withVersion' r
 
 source :: Env -> LogData -> Source IO Text
 source env (LogData gname sname) =
