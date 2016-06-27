@@ -37,6 +37,7 @@ library
                     , containers                      == 0.5.*
                     , file-embed                      == 0.0.*
                     , lens                            >= 4.6        && < 4.9
+                    , http-media                      == 0.6.*
                     , http-types                      == 0.8.*
                     , mmorph                          == 1.0.*
                     , resourcet                       == 1.1.*
