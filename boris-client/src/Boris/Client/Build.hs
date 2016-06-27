@@ -10,7 +10,7 @@ module Boris.Client.Build (
   ) where
 
 import           Boris.Core.Data
-import           Boris.Store.Build (BuildData (..), LogData (..))
+import           Boris.Store.Build (BuildData (..), LogData (..), BuildCancelled (..))
 import           Boris.Client.Http (BorisHttpClientError (..))
 import qualified Boris.Client.Http as H
 
@@ -82,6 +82,7 @@ instance FromJSON GetBuild where
                   forM ll $ \l ->
                     flip (withObject "LogData") l $ \ld ->
                       LogData <$> (fmap LogGroup $ ld .: "group") <*> (fmap LogStream $ ld .: "stream"))
+          <*> ((fmap . fmap) (bool BuildNotCancelled BuildCancelled) $ o .:? "cancelled")
 
 newtype GetBuilds =
   GetBuilds {
