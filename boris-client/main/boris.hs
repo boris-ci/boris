@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import           BuildInfo_ambiata_boris_client
+import           DependencyInfo_ambiata_boris_client
 
 import           Boris.Core.Data
 import qualified Boris.Core.Serial.Command as S
@@ -78,6 +79,8 @@ main = do
     case sc of
       VersionCommand ->
         putStrLn buildInfoVersion >> exitSuccess
+      DependencyCommand ->
+        mapM putStrLn dependencyInfo >> exitSuccess
       RunCommand DryRun c ->
         print c >> exitSuccess
       RunCommand RealRun c ->
