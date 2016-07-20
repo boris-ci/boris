@@ -46,7 +46,7 @@ fetchLatestMasterBuilds env e c = do
       buildIds <- lift $ SI.getBuildIds e p b (Ref "refs/heads/master")
       bd <- bimapEitherT ScoreboardFetchError id
         -- Find the first build with a result
-        . findMapM (fmap (find (\bd -> hasResult bd && isRecent now bd) . Just) . SB.fetch e)
+        . findMapM (fmap (find (\bd -> hasResult bd && isRecent now bd) . Just) . fmap updateDataResult . SB.fetch e)
         . sortBuildIds
         $ buildIds
       lift . filterM' (\_ -> fmap not $ SI.isBuildDisabled e p b) $ bd
@@ -59,6 +59,13 @@ fetchBrokenMasterBuilds env e c =
 hasResult :: SB.BuildData -> Bool
 hasResult =
   isJust . SB.buildDataResult
+
+updateDataResult :: SB.BuildData -> SB.BuildData
+updateDataResult b =
+  if SB.buildDataCancelled b == Just SB.BuildCancelled then
+    b { SB.buildDataResult = Just . fromMaybe BuildKo . SB.buildDataResult $ b }
+  else
+    b
 
 isRecent :: UTCTime -> SB.BuildData -> Bool
 isRecent now =
