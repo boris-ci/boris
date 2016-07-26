@@ -30,7 +30,7 @@ import           Charlotte.Airship (processPostMedia, jsonResponse, setResponseH
 
 import           Control.Monad.IO.Class (liftIO)
 
-import           Data.Time (getCurrentTime, diffUTCTime)
+import           Data.Time (getCurrentTime, diffUTCTime, getCurrentTimeZone)
 import qualified Data.Text as T
 
 import           Mismi (runAWS, runAWST, renderError)
@@ -106,7 +106,8 @@ item env e =
             (,) "text/html" $ do
               i <- getBuildId
               b <- getWithHeartbeatCheck env e i
-              H.render $ H.build b
+              tz <- liftIO getCurrentTimeZone
+              H.render $ H.build tz b
           ]
         ]
 

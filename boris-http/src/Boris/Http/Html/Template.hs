@@ -28,6 +28,7 @@ import           Boris.Queue (QueueSize (..))
 import           Data.Map (Map)
 import qualified Data.Map as M
 import           Data.Time (UTCTime, diffUTCTime, formatTime, defaultTimeLocale)
+import           Data.Time.LocalTime (TimeZone, utcToZonedTime)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
@@ -111,8 +112,8 @@ commit p c bs =
   in
     renderPage <$> renderTemplate (defaultState `usingContext` context) commit'
 
-build :: BuildData -> Either BMXError Text
-build b =
+build :: TimeZone -> BuildData -> Either BMXError Text
+build tz b =
   let
     context = [
         ("project", BMXString (renderProject . buildDataProject $ b))
@@ -120,10 +121,10 @@ build b =
       , ("id", BMXString (renderBuildId . buildDataId $ b))
       , ("ref", maybe BMXNull (BMXString . renderRef) . buildDataRef $ b)
       , ("commit", maybe BMXNull (BMXString . renderCommit) . buildDataCommit $ b)
-      , ("queued", maybe BMXNull (BMXString . renderTime) . buildDataQueueTime $ b)
-      , ("started", maybe BMXNull (BMXString . renderTime) . buildDataStartTime $ b)
-      , ("ended", maybe BMXNull (BMXString . renderTime) . buildDataEndTime $ b)
-      , ("hearbeat", maybe BMXNull (BMXString . renderTime) . buildDataHeartbeatTime $ b)
+      , ("queued", maybe BMXNull (BMXString . renderTime tz) . buildDataQueueTime $ b)
+      , ("started", maybe BMXNull (BMXString . renderTime tz) . buildDataStartTime $ b)
+      , ("ended", maybe BMXNull (BMXString . renderTime tz) . buildDataEndTime $ b)
+      , ("hearbeat", maybe BMXNull (BMXString . renderTime tz) . buildDataHeartbeatTime $ b)
       , ("duration", maybe BMXNull (BMXString . uncurry renderDuration) $ liftA2 (,) (buildDataStartTime b) (buildDataEndTime b))
       , ("result", maybe BMXNull (BMXString . renderBuildResult) $ buildDataResult b)
       , ("ok", maybe BMXNull (BMXBool . (==) BuildOk) $ buildDataResult b)
@@ -134,9 +135,9 @@ build b =
   in
     renderPage <$> renderTemplate (defaultState `usingContext` context) build'
 
-renderTime :: UTCTime -> Text
-renderTime =
-  T.pack . formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S"
+renderTime :: TimeZone -> UTCTime -> Text
+renderTime tz =
+  T.pack . formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S %Z" . utcToZonedTime tz
 
 renderDuration :: UTCTime -> UTCTime -> Text
 renderDuration s e =
