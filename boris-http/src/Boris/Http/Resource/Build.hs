@@ -30,7 +30,7 @@ import           Charlotte.Airship (processPostMedia, jsonResponse, setResponseH
 
 import           Control.Monad.IO.Class (liftIO)
 
-import           Data.Time (getCurrentTime, diffUTCTime, getCurrentTimeZone)
+import           Data.Time (getCurrentTime, diffUTCTime)
 import qualified Data.Text as T
 
 import           Mismi (runAWS, runAWST, renderError)
@@ -90,8 +90,8 @@ collection env e q c =
           pure $ PostResponseLocation [renderBuildId i]
     }
 
-item :: Env -> Environment -> Resource IO
-item env e =
+item :: ClientLocale -> Env -> Environment -> Resource IO
+item l env e =
   defaultResource {
       allowedMethods = pure [HTTP.methodGet, HTTP.methodDelete]
 
@@ -106,8 +106,7 @@ item env e =
             (,) "text/html" $ do
               i <- getBuildId
               b <- getWithHeartbeatCheck env e i
-              tz <- liftIO getCurrentTimeZone
-              H.render $ H.build tz b
+              H.render $ H.build l b
           ]
         ]
 

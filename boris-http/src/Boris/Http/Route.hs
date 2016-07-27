@@ -23,8 +23,8 @@ import           Mismi.Amazonka (Env)
 
 import           System.IO (IO)
 
-boris :: Env -> Environment -> BuildQueue -> ConfigLocation -> RoutingSpec IO ()
-boris env e q c = do
+boris :: ClientLocale -> Env -> Environment -> BuildQueue -> ConfigLocation -> RoutingSpec IO ()
+boris l env e q c = do
   root #> Dashboard.dashboard env e q c
   "css" </> "boris.css" #> Static.css
   "queue" #> Queue.collection env q
@@ -33,7 +33,7 @@ boris env e q c = do
   "project" </> var "project-name" </> "build" </> var "build-name" #> Build.collection env e q c
   "project" </> var "project-name" </> "build" </> var "build-name" </> "ignore" #> Build.ignore env e
   "project" </> var "project-name" </> "commit" </> var "commit-hash" #> Commit.item env e
-  "build" </> var "build-id" #> Build.item env e
+  "build" </> var "build-id" #> Build.item l env e
   "build" </> var "build-id" </> "log" #> Log.item env e
   "scoreboard" #> Scoreboard.scoreboard env e c
 

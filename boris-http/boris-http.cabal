@@ -56,6 +56,7 @@ library
 
   exposed-modules:
                     Boris.Http.Airship
+                    Boris.Http.Config
                     Boris.Http.Data
                     Boris.Http.Html.Template
                     Boris.Http.Repository

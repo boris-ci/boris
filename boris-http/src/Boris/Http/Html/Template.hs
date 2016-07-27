@@ -23,12 +23,13 @@ import           BMX (BMXValue (..), defaultState, usingContext)
 import           Boris.Core.Data (Project (..), Build (..), Commit (..), Ref (..), BuildId (..), BuildResult (..), sortBuildIds)
 import           Boris.Store.Build (BuildData (..))
 import           Boris.Http.Airship (webT)
+import           Boris.Http.Data (ClientLocale (..))
 import           Boris.Queue (QueueSize (..))
 
 import           Data.Map (Map)
 import qualified Data.Map as M
 import           Data.Time (UTCTime, diffUTCTime, formatTime, defaultTimeLocale)
-import           Data.Time.LocalTime (TimeZone, utcToZonedTime)
+import           Data.Time.LocalTime (utcToZonedTime)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
@@ -112,8 +113,8 @@ commit p c bs =
   in
     renderPage <$> renderTemplate (defaultState `usingContext` context) commit'
 
-build :: TimeZone -> BuildData -> Either BMXError Text
-build tz b =
+build :: ClientLocale -> BuildData -> Either BMXError Text
+build l b =
   let
     context = [
         ("project", BMXString (renderProject . buildDataProject $ b))
@@ -121,10 +122,10 @@ build tz b =
       , ("id", BMXString (renderBuildId . buildDataId $ b))
       , ("ref", maybe BMXNull (BMXString . renderRef) . buildDataRef $ b)
       , ("commit", maybe BMXNull (BMXString . renderCommit) . buildDataCommit $ b)
-      , ("queued", maybe BMXNull (BMXString . renderTime tz) . buildDataQueueTime $ b)
-      , ("started", maybe BMXNull (BMXString . renderTime tz) . buildDataStartTime $ b)
-      , ("ended", maybe BMXNull (BMXString . renderTime tz) . buildDataEndTime $ b)
-      , ("hearbeat", maybe BMXNull (BMXString . renderTime tz) . buildDataHeartbeatTime $ b)
+      , ("queued", maybe BMXNull (BMXString . renderTime l) . buildDataQueueTime $ b)
+      , ("started", maybe BMXNull (BMXString . renderTime l) . buildDataStartTime $ b)
+      , ("ended", maybe BMXNull (BMXString . renderTime l) . buildDataEndTime $ b)
+      , ("hearbeat", maybe BMXNull (BMXString . renderTime l) . buildDataHeartbeatTime $ b)
       , ("duration", maybe BMXNull (BMXString . uncurry renderDuration) $ liftA2 (,) (buildDataStartTime b) (buildDataEndTime b))
       , ("result", maybe BMXNull (BMXString . renderBuildResult) $ buildDataResult b)
       , ("ok", maybe BMXNull (BMXBool . (==) BuildOk) $ buildDataResult b)
@@ -135,9 +136,9 @@ build tz b =
   in
     renderPage <$> renderTemplate (defaultState `usingContext` context) build'
 
-renderTime :: TimeZone -> UTCTime -> Text
-renderTime tz =
-  T.pack . formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S %Z" . utcToZonedTime tz
+renderTime :: ClientLocale -> UTCTime -> Text
+renderTime l =
+  T.pack . formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S" . utcToZonedTime (clientLocaleTimeZone l)
 
 renderDuration :: UTCTime -> UTCTime -> Text
 renderDuration s e =
