@@ -90,8 +90,8 @@ collection env e q c =
           pure $ PostResponseLocation [renderBuildId i]
     }
 
-item :: Env -> Environment -> Resource IO
-item env e =
+item :: ClientLocale -> Env -> Environment -> Resource IO
+item l env e =
   defaultResource {
       allowedMethods = pure [HTTP.methodGet, HTTP.methodDelete]
 
@@ -106,7 +106,7 @@ item env e =
             (,) "text/html" $ do
               i <- getBuildId
               b <- getWithHeartbeatCheck env e i
-              H.render $ H.build b
+              H.render $ H.build l b
           ]
         ]
 

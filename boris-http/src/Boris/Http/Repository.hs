@@ -37,7 +37,7 @@ data ConfigError =
 pick :: Env -> ConfigLocation -> Project -> EitherT ConfigError IO (Maybe Repository)
 pick env location project = do
   registration <- runAWST env ConfigAwsError $ do
-    attempt <- lift $ S3.read' (configLocation location)
+    attempt <- lift $ S3.read' (configLocationAddress location)
     source <- fromMaybeM (left $ ConfigFileNotFoundError location) $
       attempt
     mapEitherT (liftIO . runResourceT) $ (hoist lift $ source)
@@ -53,7 +53,7 @@ pick env location project = do
 list :: Env -> ConfigLocation -> EitherT ConfigError IO [Project]
 list env location =
   runAWST env ConfigAwsError $ do
-    attempt <- lift $ S3.read' (configLocation location)
+    attempt <- lift $ S3.read' (configLocationAddress location)
     source <- fromMaybeM (left $ ConfigFileNotFoundError location) $
       attempt
     mapEitherT (liftIO . runResourceT) $ (hoist lift $ source)
@@ -67,7 +67,7 @@ renderConfigError :: ConfigError -> Text
 renderConfigError err =
   case err of
     ConfigFileNotFoundError l ->
-      mconcat ["Service is mis-configured, repository configuration could not be found: ", S3.addressToText . configLocation $ l]
+      mconcat ["Service is mis-configured, repository configuration could not be found: ", S3.addressToText . configLocationAddress $ l]
     ConfigAwsError e ->
       mconcat ["Service could not retrieve repository configuration: ", renderError e]
     ConfigParseError t ->
