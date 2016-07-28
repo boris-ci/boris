@@ -31,8 +31,8 @@ main = do
   (q, e, c, l) <- orDie renderHttpConfigError $ (,,,)
     <$> (BuildQueue <$> text "BORIS_BUILD_QUEUE")
     <*> (Environment <$> text "BORIS_ENVIRONMENT")
-    <*> configLocation
-    <*> clientLocale
+    <*> configLocation "BORIS_CONFIG_LOCATION"
+    <*> clientLocale "BORIS_CLIENT_TIMEZONE"
   env <- orDie renderRegionError discoverAWSEnv
   orDie renderError $ runAWS env $ SL.initialise e
 

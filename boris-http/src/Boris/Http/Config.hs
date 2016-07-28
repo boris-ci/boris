@@ -30,14 +30,14 @@ import qualified System.Environment as E
 import           X.Control.Monad.Trans.Either (EitherT, eitherTFromMaybe, firstEitherT, left, newEitherT)
 
 
-configLocation :: EitherT HttpConfigError IO ConfigLocation
+configLocation :: Text -> EitherT HttpConfigError IO ConfigLocation
 configLocation =
-  ConfigLocation <$> addr "BORIS_CONFIG_LOCATION"
+  fmap ConfigLocation . addr
 
-clientLocale :: EitherT HttpConfigError IO ClientLocale
-clientLocale =
+clientLocale :: Text -> EitherT HttpConfigError IO ClientLocale
+clientLocale tze =
   ClientLocale
-    <$> timeZoneOrLocal "BORIS_CLIENT_TIMEZONE"
+    <$> timeZoneOrLocal tze
 
 
 data HttpConfigError =
