@@ -15,7 +15,9 @@ import           Boris.Http.Data
 
 import           Data.String (String)
 import qualified Data.Text as T
-import           Data.Time (TimeZone, defaultTimeLocale, getCurrentTimeZone, parseTimeM)
+import qualified Data.Text.Encoding as T
+import           Data.Time.Zones (TZ, loadLocalTZ)
+import           Data.Time.Zones.All (tzByName)
 
 import           Control.Monad.IO.Class (liftIO)
 
@@ -27,7 +29,7 @@ import           System.IO (IO)
 
 import qualified System.Environment as E
 
-import           X.Control.Monad.Trans.Either (EitherT, eitherTFromMaybe, firstEitherT, left, newEitherT)
+import           X.Control.Monad.Trans.Either (EitherT, eitherTFromMaybe, left)
 
 
 configLocation :: Text -> EitherT HttpConfigError IO ConfigLocation
@@ -43,7 +45,7 @@ clientLocale tze =
 data HttpConfigError =
     MissingEnvironmentVariableHttpConfigError Text
   | InvalidAddressHttpConfigError Text
-  | InvalidTimeZoneHttpConfigError Text Text
+  | UnknownLocationHttpConfigError Text
   deriving (Eq, Show)
 
 renderHttpConfigError :: HttpConfigError -> Text
@@ -52,8 +54,8 @@ renderHttpConfigError = \case
     x <> " is a required environment variable to start boris-http."
   InvalidAddressHttpConfigError x ->
     x <> " is not a valid s3 address."
-  InvalidTimeZoneHttpConfigError x e -> 
-    "Error parsing TimeZone value '" <> x <> "'. Parser error: " <> e
+  UnknownLocationHttpConfigError x -> 
+    "Unknown location: " <> x
 
 
 text :: Text -> EitherT HttpConfigError IO Text
@@ -65,14 +67,16 @@ addr v = do
   a <- text v
   (left . InvalidAddressHttpConfigError) a `fromMaybeM` addressFromText a
 
-timeZoneOrLocal :: Text -> EitherT HttpConfigError IO TimeZone
+timeZoneOrLocal :: Text -> EitherT HttpConfigError IO TZ
 timeZoneOrLocal =
-  fromMaybeM (liftIO getCurrentTimeZone) <=< timeZone
+  fromMaybeM (liftIO loadLocalTZ) <=< timeZone
 
-timeZone :: Text -> EitherT HttpConfigError IO (Maybe TimeZone)
-timeZone v =
-  let parseTimeZone = runWrappedFail . parseTimeM True defaultTimeLocale "%z" . T.unpack
-  in firstEitherT (InvalidTimeZoneHttpConfigError v . T.pack) . newEitherT $ traverse parseTimeZone <$> lookupEnv v
+timeZone :: Text -> EitherT HttpConfigError IO (Maybe TZ)
+timeZone v = do
+  mt <- liftIO $ lookupEnv v
+  for mt $ \t ->
+    fromMaybeM (left $ UnknownLocationHttpConfigError t) . tzByName . T.encodeUtf8 $ t
+
 
 lookupEnv :: Text -> IO (Maybe Text)
 lookupEnv =

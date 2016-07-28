@@ -29,7 +29,7 @@ import           Boris.Queue (QueueSize (..))
 import           Data.Map (Map)
 import qualified Data.Map as M
 import           Data.Time (UTCTime, diffUTCTime, formatTime, defaultTimeLocale)
-import           Data.Time.LocalTime (utcToZonedTime)
+import           Data.Time.Zones (utcToLocalTimeTZ)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
@@ -138,7 +138,7 @@ build l b =
 
 renderTime :: ClientLocale -> UTCTime -> Text
 renderTime l =
-  T.pack . formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S%z" . utcToZonedTime (clientLocaleTimeZone l)
+  T.pack . formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S%z" . utcToLocalTimeTZ (clientLocaleTZ l)
 
 renderDuration :: UTCTime -> UTCTime -> Text
 renderDuration s e =

@@ -4,7 +4,7 @@ module Boris.Http.Data (
   , ClientLocale (..)
   ) where
 
-import           Data.Time (TimeZone)
+import           Data.Time.Zones (TZ)
 
 import           Mismi.S3 (Address)
 
@@ -18,5 +18,5 @@ newtype ConfigLocation =
 
 data ClientLocale =
   ClientLocale {
-      clientLocaleTimeZone :: TimeZone
+      clientLocaleTZ :: TZ
     } deriving (Eq, Show)
