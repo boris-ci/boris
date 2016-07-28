@@ -138,7 +138,7 @@ build l b =
 
 renderTime :: ClientLocale -> UTCTime -> Text
 renderTime l =
-  T.pack . formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S" . utcToZonedTime (clientLocaleTimeZone l)
+  T.pack . formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S%z" . utcToZonedTime (clientLocaleTimeZone l)
 
 renderDuration :: UTCTime -> UTCTime -> Text
 renderDuration s e =
