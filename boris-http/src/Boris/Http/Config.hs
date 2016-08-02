@@ -13,23 +13,22 @@ module Boris.Http.Config (
 
 import           Boris.Http.Data
 
-import           Data.String (String)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Data.Time.Zones (TZ, loadLocalTZ)
 import           Data.Time.Zones.All (tzByName)
 
+import           Control.Arrow ((&&&))
 import           Control.Monad.IO.Class (liftIO)
 
 import           Mismi.S3 (Address, addressFromText)
 
 import           P
 
+import qualified System.Environment as E
 import           System.IO (IO)
 
-import qualified System.Environment as E
-
-import           X.Control.Monad.Trans.Either (EitherT, eitherTFromMaybe, left)
+import           X.Control.Monad.Trans.Either (EitherT, eitherTFromMaybe)
 
 
 configLocation :: Text -> EitherT HttpConfigError IO ConfigLocation
@@ -59,35 +58,25 @@ renderHttpConfigError = \case
 
 
 text :: Text -> EitherT HttpConfigError IO Text
-text v =
-  MissingEnvironmentVariableHttpConfigError v `eitherTFromMaybe` lookupEnv v
+text =
+  uncurry eitherTFromMaybe . (MissingEnvironmentVariableHttpConfigError &&& lookupEnv)
 
 addr :: Text -> EitherT HttpConfigError IO Address
-addr v = do
-  a <- text v
-  (left . InvalidAddressHttpConfigError) a `fromMaybeM` addressFromText a
+addr =
+  text >=> 
+    uncurry eitherTFromMaybe . (InvalidAddressHttpConfigError &&& return . addressFromText)
+
+timeZone :: Text -> EitherT HttpConfigError IO (Maybe TZ)
+timeZone = do
+  liftIO . lookupEnv >=>
+    traverse (uncurry eitherTFromMaybe . (UnknownLocationHttpConfigError &&& return . tzByName . T.encodeUtf8))
 
 timeZoneOrLocal :: Text -> EitherT HttpConfigError IO TZ
 timeZoneOrLocal =
-  fromMaybeM (liftIO loadLocalTZ) <=< timeZone
-
-timeZone :: Text -> EitherT HttpConfigError IO (Maybe TZ)
-timeZone v = do
-  mt <- liftIO $ lookupEnv v
-  for mt $ \t ->
-    fromMaybeM (left $ UnknownLocationHttpConfigError t) . tzByName . T.encodeUtf8 $ t
+  timeZone >=>
+    fromMaybeM (liftIO loadLocalTZ)
 
 
 lookupEnv :: Text -> IO (Maybe Text)
 lookupEnv =
   (fmap . fmap) T.pack . E.lookupEnv . T.unpack
-
-
-newtype WrappedFail a =
-  WrappedFail {
-      runWrappedFail :: Either String a
-    } deriving (Eq, Show, Functor, Applicative)
-
-instance Monad WrappedFail where
-  m >>= f = WrappedFail $ runWrappedFail m >>= runWrappedFail . f
-  fail = WrappedFail . Left
