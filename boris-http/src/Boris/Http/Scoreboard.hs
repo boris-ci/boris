@@ -68,9 +68,17 @@ updateDataResult b =
     b
 
 isRecent :: UTCTime -> SB.BuildData -> Bool
-isRecent now =
-  -- Two weeks
-  maybe False (\d -> diffUTCTime now d < 60 * 60 * 24 * 14) . SB.buildDataEndTime
+isRecent now bd =
+  let
+    lastTwoWeeks d = diffUTCTime now d < 60 * 60 * 24 * 14
+  in
+    case SB.buildDataEndTime bd of
+      Just d ->
+        lastTwoWeeks d
+      Nothing ->
+        -- Builds that have timed out don't have an end-time
+        -- Only use the start-time if we're actually finished
+        hasResult bd && maybe False lastTwoWeeks (SB.buildDataStartTime bd)
 
 filterM' :: Monad m => (a -> m Bool) -> Maybe a -> m (Maybe a)
 filterM' p =
