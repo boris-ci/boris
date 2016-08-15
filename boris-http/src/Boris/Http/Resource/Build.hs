@@ -27,7 +27,7 @@ import           Boris.Queue (BuildQueue (..), Request (..), RequestBuild (..))
 import qualified Boris.Queue as Q
 
 import qualified Data.ByteString.Builder as BB
-import qualified Data.ByteString.Lazy as BSL
+import qualified Data.ByteString.Lazy as BL
 
 import           Charlotte.Airship (PostHandler (..), withVersionJson)
 import           Charlotte.Airship (processPostMedia, jsonResponse, setResponseHeader, decodeJsonBody)
@@ -203,4 +203,4 @@ setLocation p =
 
 setLocationAbsolute :: [Text] -> Webmachine IO ()
 setLocationAbsolute =
-  setResponseHeader . (,) HTTP.hLocation . BSL.toStrict . BB.toLazyByteString . HTTP.encodePathSegments
+  setResponseHeader . (,) HTTP.hLocation . BL.toStrict . BB.toLazyByteString . HTTP.encodePathSegments
