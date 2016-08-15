@@ -7,7 +7,7 @@ module Boris.Http.Resource.Build (
   ) where
 
 
-import           Airship (Resource (..), Webmachine, defaultResource, lookupParam, putResponseBody, appendRequestPath)
+import           Airship (Resource (..), Webmachine, defaultResource, lookupParam, putResponseBody, appendRequestPath, halt)
 
 import           Boom.Airship (notfound)
 
@@ -15,6 +15,7 @@ import           Boris.Core.Data
 import           Boris.Http.Airship
 import           Boris.Http.Data
 import qualified Boris.Http.Html.Template as H
+import           Boris.Http.Form
 import           Boris.Http.Repository
 import           Boris.Http.Representation.Build
 import           Boris.Http.Version
@@ -25,11 +26,15 @@ import qualified Boris.Store.Tick as ST
 import           Boris.Queue (BuildQueue (..), Request (..), RequestBuild (..))
 import qualified Boris.Queue as Q
 
+import qualified Data.ByteString.Builder as BB
+import qualified Data.ByteString.Lazy as BSL
+
 import           Charlotte.Airship (PostHandler (..), withVersionJson)
 import           Charlotte.Airship (processPostMedia, jsonResponse, setResponseHeader, decodeJsonBody)
 
 import           Control.Monad.IO.Class (liftIO)
 
+import           Data.List (lookup)
 import           Data.Time (getCurrentTime, diffUTCTime)
 import qualified Data.Text as T
 
@@ -73,22 +78,45 @@ collection env e q c =
           ]
         ]
 
-    , processPost = processPostMedia . withVersionJson $ \v -> case v of
+    , processPost = processPostMedia . join $ [ withVersionJson $ \v -> case v of
         V1 -> do
           b <- getBuild
           p <- getProject
-          repository <- webT renderConfigError (pick env c p) >>= notfound
-          i <- webT id . runAWST env renderError . bimapEitherT ST.renderTickError id $ ST.next e p b
-          webT id . runAWST env renderError . bimapEitherT SB.renderRegisterError id $ SB.register e p b i
           r <- getPostBuildsRef <$> decodeJsonBody
-          let
-            normalised = flip fmap r $ \rr -> if T.isPrefixOf "refs/" . renderRef $ rr then rr else Ref . ((<>) "refs/heads/") . renderRef $ rr
-            req = RequestBuild' $ RequestBuild i p repository b normalised
-          webT renderError . runAWS env $ Q.put q req
+          i <- buildPost env e q c b p r
           putResponseBody . jsonResponse $ GetBuild (BuildData i p b Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
           setLocation ["builds"]
           pure $ PostResponseLocation [renderBuildId i]
+
+      , [("application/x-www-form-urlencoded", do
+          b <- getBuild
+          p <- getProject
+          form <- loadForm
+          ref <- case lookup "ref" form of
+            Nothing ->
+              pure Nothing
+            Just r ->
+              pure . Just $ Ref r
+          i <- buildPost env e q c b p ref
+          setLocationAbsolute ["build", renderBuildId i]
+          halt HTTP.status302
+         )
+        ]
+      ]
     }
+
+buildPost :: Env -> Environment -> BuildQueue -> ConfigLocation -> Build -> Project -> Maybe Ref -> Webmachine IO BuildId
+buildPost env e q c b p r = do
+  repository <- webT renderConfigError (pick env c p) >>= notfound
+  i <- webT id . runAWST env renderError . bimapEitherT ST.renderTickError id $ ST.next e p b
+  webT id . runAWST env renderError . bimapEitherT SB.renderRegisterError id $ SB.register e p b i
+  let
+    normalised = flip fmap r $ \rr ->
+      if T.isPrefixOf "refs/" . renderRef $ rr then rr else Ref . ((<>) "refs/heads/") . renderRef $ rr
+    req = RequestBuild' $ RequestBuild i p repository b normalised
+  webT renderError . runAWS env $ Q.put q req
+  pure i
+
 
 item :: ClientLocale -> Env -> Environment -> Resource IO
 item l env e =
@@ -172,3 +200,7 @@ getBuildId =
 setLocation :: [Text] -> Webmachine IO ()
 setLocation p =
   appendRequestPath p >>= setResponseHeader . (,) HTTP.hLocation
+
+setLocationAbsolute :: [Text] -> Webmachine IO ()
+setLocationAbsolute =
+  setResponseHeader . (,) HTTP.hLocation . BSL.toStrict . BB.toLazyByteString . HTTP.encodePathSegments

@@ -48,3 +48,25 @@ div#header a {
 div#footer {
     height: 10em;
 }
+
+
+.btn {
+    text-decoration: none;
+    text-transform: none;
+    color: #555;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    border-style: none none dashed none;
+    border-bottom: 2px dashed #aaa;
+    display: inline-block;
+    background-color: white;
+    font-size: 20px;
+    font-family: "Lucida Console", Monaco, monospace;
+    padding: 0;
+}
+
+.btn:hover {
+    text-decoration: none;
+    color: #16CC55;
+    border-bottom: 2px dashed #47a4ad;
+}

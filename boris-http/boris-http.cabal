@@ -30,6 +30,7 @@ library
                     , ambiata-x-eithert
                     , blaze-html                      == 0.8.*
                     , blaze-builder                   == 0.4.*
+                    , bytestring                      == 0.10.*
                     , conduit                         == 1.2.*
                     , conduit-extra                   == 1.1.*
                     , containers                      == 0.5.*
@@ -53,6 +54,7 @@ library
                     Boris.Http.Airship
                     Boris.Http.Config
                     Boris.Http.Data
+                    Boris.Http.Form
                     Boris.Http.Html.Template
                     Boris.Http.Repository
                     Boris.Http.Resource.Build
