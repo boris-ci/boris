@@ -64,6 +64,7 @@ data RemoteCommand =
   | Status BuildId
   | Log BuildId
   | Ignore Project Build
+  | Rebuild BuildId
     deriving (Eq, Show)
 
 data LocalCommand =
@@ -124,6 +125,9 @@ parser =
         Validate
           <$> optional borisrefP
           <*> optional boriscommandP
+    , command' "rebuild" "Rebuild a build" . fmap RemoteCommand $
+        Rebuild
+          <$>  buildIdP
     ]
 
 run :: Environment -> RemoteCommand -> IO ()
@@ -218,19 +222,7 @@ run e c = case c of
         T.putStrLn . mconcat $ ["No build [", renderBuildId i, "] found."]
         exitFailure
       Just r -> do
-        T.putStrLn . T.unlines $ [
-            mconcat ["id: ", renderBuildId . buildDataId $ r]
-          , mconcat ["project: ", renderProject . buildDataProject $ r]
-          , mconcat ["build: ", renderBuild . buildDataBuild $ r]
-          , mconcat ["ref: ", maybe "n/a" renderRef . buildDataRef $ r]
-          , mconcat ["queued-at: ", maybe "n/a" renderTime . buildDataQueueTime $ r]
-          , mconcat ["started-at: ", maybe "n/a" renderTime . buildDataStartTime $ r]
-          , mconcat ["end-at: ", maybe "n/a" renderTime . buildDataEndTime $ r]
-          , mconcat ["heartbeat-at: ", maybe "n/a" renderTime . buildDataHeartbeatTime $ r]
-          , mconcat ["duration: ", maybe "n/a" (uncurry renderDuration) $ (,) <$> buildDataStartTime r <*> buildDataEndTime r]
-          , mconcat ["log: ", maybe "n/a" (const $ "boris log " <> renderBuildId i) . buildDataLog $ r]
-          , mconcat ["result: ", maybe "n/a" (\br -> case br of BuildOk -> "successful"; BuildKo -> "failure") . buildDataResult $ r]
-          ]
+        T.putStrLn  $ renderBuildData r i
         exitSuccess
   Log i -> do
     env <- orDie renderRegionError discoverAWSEnv
@@ -240,6 +232,34 @@ run e c = case c of
     void . orDie renderBorisHttpClientError $ B.ignore bc p b True
     T.putStrLn "Build ignored"
     exitSuccess
+  Rebuild i -> do
+    bc <- mkBalanceConfig
+    rr <- orDie renderBorisHttpClientError $ B.rebuild bc i
+    case rr of
+      Nothing -> do
+        T.putStrLn . mconcat $ ["No build [", renderBuildId i, "] found."]
+        exitFailure
+      Just r -> do
+        T.putStrLn $ renderBuildData r i
+        exitSuccess
+
+renderBuildData :: BuildData -> BuildId -> Text
+renderBuildData r i =
+   T.unlines $ [
+       mconcat ["id: ", renderBuildId . buildDataId $ r]
+     , mconcat ["project: ", renderProject . buildDataProject $ r]
+     , mconcat ["build: ", renderBuild . buildDataBuild $ r]
+     , mconcat ["ref: ", maybe "n/a" renderRef . buildDataRef $ r]
+     , mconcat ["queued-at: ", maybe "n/a" renderTime . buildDataQueueTime $ r]
+     , mconcat ["started-at: ", maybe "n/a" renderTime . buildDataStartTime $ r]
+     , mconcat ["end-at: ", maybe "n/a" renderTime . buildDataEndTime $ r]
+     , mconcat ["heartbeat-at: ", maybe "n/a" renderTime . buildDataHeartbeatTime $ r]
+     , mconcat ["duration: ", maybe "n/a" (uncurry renderDuration) $ (,) <$> buildDataStartTime r <*> buildDataEndTime r]
+     , mconcat ["log: ", maybe "n/a" (const $ "boris log " <> renderBuildId i) . buildDataLog $ r]
+     , mconcat ["result: ", maybe "n/a" (\br -> case br of BuildOk -> "successful"; BuildKo -> "failure") . buildDataResult $ r]
+     ]
+
+
 
 local :: LocalCommand -> IO ()
 local c =

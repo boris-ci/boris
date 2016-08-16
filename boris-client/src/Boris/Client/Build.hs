@@ -6,6 +6,7 @@ module Boris.Client.Build (
   , fetch
   , list
   , ignore
+  , rebuild
   , GetBuild (..)
   ) where
 
@@ -48,6 +49,20 @@ list c p b =
 ignore :: BalanceConfig -> Project -> Build -> Bool -> EitherT BorisHttpClientError IO ()
 ignore c p b i =
   H.put c ["project", renderProject p , "build", renderBuild b, "ignore"] (PutBuildIgnore i)
+
+rebuild :: BalanceConfig -> BuildId -> EitherT BorisHttpClientError IO (Maybe BuildData)
+rebuild c i = do
+  m <- fetch c i
+  case m of
+    Nothing ->
+      pure Nothing
+    Just d ->
+      (fmap . fmap) getBuild $
+        H.post c [
+            "project", renderProject $ buildDataProject d
+          , "build", renderBuild $ buildDataBuild d
+          ] (PostBuildRequest $ buildDataRef d)
+
 
 newtype PostBuildRequest =
   PostBuildRequest (Maybe Ref)
