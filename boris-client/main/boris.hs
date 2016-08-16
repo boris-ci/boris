@@ -12,6 +12,7 @@ import           Boris.Client.Http (renderBorisHttpClientError)
 import qualified Boris.Client.Build as B
 import qualified Boris.Client.Project as P
 import qualified Boris.Client.Log as L
+import           Boris.Queue (QueueSize (..))
 
 import           Control.Concurrent.Async (async, waitEitherCancel)
 import           Control.Concurrent (threadDelay)
@@ -65,6 +66,7 @@ data RemoteCommand =
   | Log BuildId
   | Ignore Project Build
   | Rebuild BuildId
+  | Queue
     deriving (Eq, Show)
 
 data LocalCommand =
@@ -128,6 +130,8 @@ parser =
     , command' "rebuild" "Rebuild a build" . fmap RemoteCommand $
         Rebuild
           <$>  buildIdP
+    , command' "queue" "Get the current queue number" . pure $
+        RemoteCommand Queue
     ]
 
 run :: Environment -> RemoteCommand -> IO ()
@@ -242,6 +246,17 @@ run e c = case c of
       Just r -> do
         T.putStrLn $ renderBuildData r i
         exitSuccess
+  Queue -> do
+    bc <- mkBalanceConfig
+    rr <- orDie renderBorisHttpClientError $ B.queue bc
+    case rr of
+      Nothing -> do
+        T.putStrLn "Unable to retrieve queue information"
+        exitFailure
+      Just q -> do
+        T.putStrLn . T.pack . show . getQueueSize $ q
+        exitSuccess
+
 
 renderBuildData :: BuildData -> BuildId -> Text
 renderBuildData r i =

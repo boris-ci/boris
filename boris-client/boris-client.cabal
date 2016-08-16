@@ -16,6 +16,7 @@ library
                     , aeson                           == 0.8.*
                     , ambiata-boris-core
                     , ambiata-boris-store
+                    , ambiata-boris-queue
                     , ambiata-jebediah
                     , ambiata-mismi-core
                     , ambiata-mismi-cloudwatch-logs
@@ -77,6 +78,7 @@ executable boris
                     , ambiata-boris-core
                     , ambiata-boris-client
                     , ambiata-boris-store
+                    , ambiata-boris-queue
                     , ambiata-mismi-core
                     , ambiata-p
                     , ambiata-snooze
