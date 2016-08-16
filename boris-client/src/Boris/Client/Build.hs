@@ -7,13 +7,16 @@ module Boris.Client.Build (
   , list
   , ignore
   , rebuild
+  , queue
   , GetBuild (..)
+  , GetQueue (..)
   ) where
 
 import           Boris.Core.Data
 import           Boris.Store.Build (BuildData (..), LogData (..), BuildCancelled (..))
 import           Boris.Client.Http (BorisHttpClientError (..))
 import qualified Boris.Client.Http as H
+import           Boris.Queue (QueueSize (..))
 
 import           Data.Aeson (FromJSON (..), ToJSON (..), object, withObject, (.:), (.:?), (.=))
 
@@ -63,6 +66,10 @@ rebuild c i = do
           , "build", renderBuild $ buildDataBuild d
           ] (PostBuildRequest $ buildDataRef d)
 
+queue :: BalanceConfig -> EitherT BorisHttpClientError IO (Maybe QueueSize)
+queue c =
+  (fmap . fmap) getQueue $
+    H.get c ["queue"]
 
 newtype PostBuildRequest =
   PostBuildRequest (Maybe Ref)
@@ -133,3 +140,17 @@ instance ToJSON PutBuildIgnore where
     object [
         "ignore" .= i
       ]
+
+newtype GetQueue =
+  GetQueue {
+      getQueue :: QueueSize
+    }
+
+instance ToJSON GetQueue where
+  toJSON (GetQueue q) =
+    object ["size" .= getQueueSize q]
+
+instance FromJSON GetQueue where
+  parseJSON =
+    withObject "GetQueue" $ \o ->
+      (GetQueue . QueueSize) <$> o .: "size"
