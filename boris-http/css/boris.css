@@ -22,7 +22,7 @@ a, a:visited {
 a:hover {
     text-decoration: none;
     color: #16CC55;
-    border-bottom: 2px dashed #47a4ad;
+    border-bottom: 2px dashed #16CC55;
 }
 
 div#header {
@@ -47,4 +47,26 @@ div#header a {
 
 div#footer {
     height: 10em;
+}
+
+.btn {
+    border: 2px dashed #aaa;
+    border-radius: 3px;
+    background-color: white;
+    color: #555;
+    font-size: 20px;
+    font-family: "Lucida Console", Monaco, monospace;
+    margin-top: 0.8em;
+    padding: 0.3em 0.8em;
+    cursor: pointer;
+}
+
+.btn:hover {
+    border: 2px dashed #16CC55;
+    color: #16CC55;
+}
+
+.btn:focus, .btn:active {
+    border: 2px dashed #16CC55;
+    color: #16CC55;
 }
