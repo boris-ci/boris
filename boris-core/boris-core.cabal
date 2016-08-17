@@ -16,6 +16,7 @@ library
                     , ambiata-p
                     , ambiata-x-htoml
                     , containers                      == 0.5.*
+                    , Glob                            == 0.7.*
                     , htoml                           >= 0.1.0.3    && < 0.2
                     , lens                            >= 4.6        && < 4.13
                     , filepath                        == 1.3.*
