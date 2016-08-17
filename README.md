@@ -212,6 +212,10 @@ called 'boris-git.toml' in the root of your git
 repository. Importantly, but not obviously until you understand how
 Boris works, this file is *only read from the master branch*.
 
+If you are setting up boris for an Ambiata project you may find
+these guidelines for [simple projects](https://github.com/ambiata/engineering/blob/master/how/project/builds-simple.md)
+and [multi level projects](https://github.com/ambiata/engineering/blob/master/how/project/builds-multi.md) useful.
+
 For more detail on why, you can try [how Boris works](#how-boris-works)
 below, but for now accept the simple justification that we need to
 know this whitelist before we know the branch we are building so we
