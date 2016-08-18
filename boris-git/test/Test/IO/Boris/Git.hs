@@ -154,11 +154,16 @@ prop_refs v0 v1 = v0 /= v1 ==>
     star <- flailx $
       Git.refs o e local (Pattern "refs/heads/*")
 
+    starstar <- flailx $
+      Git.refs o e local (Pattern "refs/heads/**")
+
     pure $
-      [topics, L.sort branches, star] === [
+      [topics, L.sort branches, star, starstar] === [
           [Ref "refs/heads/topic/branch"]
         , L.sort [Ref "refs/heads/topic/branch", Ref "refs/heads/dev/branch"]
-        , [Ref "refs/heads/master"]]
+        , [Ref "refs/heads/master"]
+        , L.sort [Ref "refs/heads/master", Ref "refs/heads/topic/branch", Ref "refs/heads/dev/branch"]
+        ]
 
 prop_checkout v0 v1 = v0 /= v1 ==>
   testIO . withSystemTempDirectory "git" $ \t -> do
