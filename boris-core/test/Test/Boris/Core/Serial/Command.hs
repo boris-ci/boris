@@ -88,6 +88,8 @@ prop_parse_error =
         ConfigUnknownVersionError 2
     , check "test/data/config/command/v1/invalid.empty-command.toml" . Left $
         ConfigInvalidCommand (Build "invalid")
+    , check "test/data/config/command/v1/invalid.build-name.toml" . Left $
+        ConfigInvalidName "no/slash"
     ]
 
 check path expected =

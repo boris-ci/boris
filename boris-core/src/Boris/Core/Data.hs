@@ -31,6 +31,7 @@ module Boris.Core.Data (
   , repositoryOfMirror
   , repositoryOfWorkingCopy
   , sortBuildIds
+  , newBuild
   , renderBuildNamePattern
   , parseBuildNamePattern
   , matchesBuild
@@ -198,6 +199,11 @@ pathOf w =
 sortBuildIds :: [BuildId] -> [BuildId]
 sortBuildIds =
   fmap (BuildId . T.pack . show) . L.reverse . L.sort . catMaybes . fmap ((readMaybe :: [Char] -> Maybe Int) . T.unpack . renderBuildId)
+
+newBuild :: Text -> Maybe Build
+newBuild b =
+  emptyOrValue (T.isInfixOf "/" b) $
+    Build b
 
 renderBuildNamePattern :: BuildNamePattern -> Text
 renderBuildNamePattern (BuildNamePattern g) =
