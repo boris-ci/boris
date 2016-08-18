@@ -49,6 +49,7 @@ data BorisConfigError =
   | ConfigUnknownVersionError Int64
   | ConfigInvalidCommand Build
   | ConfigBuildsTypeError
+  | ConfigInvalidName Text
     deriving (Eq, Show)
 
 parseConfig :: Text -> Either BorisConfigError [Specification]
@@ -68,16 +69,14 @@ parseTomlConfig t =
 parseTomlConfigV1 :: Table -> Either BorisConfigError [Specification]
 parseTomlConfigV1 t =
   parseBuilds t >>= \builds ->
-    forM (M.keys builds) $ \k ->
-      let
-        build = Build k
-      in
-        Specification build
-          <$> parseCommands' builds build "pre" [Command "tsar" ["pre"]]
-          <*> parseCommands' builds build "command" [Command "master" ["build", k]]
-          <*> parseCommands builds build "post"
-          <*> parseCommands' builds build "success" [Command "tsar" ["success"]]
-          <*> parseCommands' builds build "failure" [Command "tsar" ["failure"]]
+    forM (M.keys builds) $ \k -> do
+      build <- maybeToRight (ConfigInvalidName k) $ newBuild k
+      Specification build
+        <$> parseCommands' builds build "pre" [Command "tsar" ["pre"]]
+        <*> parseCommands' builds build "command" [Command "master" ["build", k]]
+        <*> parseCommands builds build "post"
+        <*> parseCommands' builds build "success" [Command "tsar" ["success"]]
+        <*> parseCommands' builds build "failure" [Command "tsar" ["failure"]]
 
 parseBuilds :: Table -> Either BorisConfigError Table
 parseBuilds doc =
@@ -131,3 +130,5 @@ renderBorisConfigError err =
       mconcat ["Boris configuration contains an invalid 'command' for build: ", renderBuild b]
     ConfigBuildsTypeError ->
       mconcat ["Boris configuration should contain a top level table 'build'."]
+    ConfigInvalidName n ->
+      mconcat ["Boris configuration contains an invalid name: ", n]
