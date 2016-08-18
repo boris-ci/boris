@@ -41,6 +41,7 @@ data InitialiseError =
   | AmbiguousRef Build BuildPattern [Ref]
   | MismatchedRef Build BuildPattern Ref [Ref]
   | InitialiseCommitError Build Ref ExitCode
+  | InitialiseCommitDiscoverError BuildNamePattern Ref ExitCode
     deriving (Eq, Show)
 
 -- |
@@ -88,7 +89,7 @@ initialise sout serr workspace build repository mref = do
   patterns <- bimapEitherT PatternConfigParseError id . hoistEither $
     parsePatternConfig patterntext
   pattern <- hoistEither . maybeToRight (MissingBuildPattern build patterns) $
-    P.find ((==) build . buildName) patterns
+    P.find (flip matchesBuild build . buildNamePattern) patterns
   refs <- bimapEitherT ListingRefsError id $
     Git.refs sout serr mirror . buildPattern $ pattern
   ref <- hoistEither $
@@ -142,15 +143,18 @@ discovering sout serr workspace repository  = do
       refs <- bimapEitherT ListingRefsError id $
         Git.refs sout serr mirror . buildPattern $ pattern
       forM refs $ \ref -> do
-        commit <- bimapEitherT (InitialiseCommitError (buildName pattern) ref) id $
+        commit <- bimapEitherT (InitialiseCommitDiscoverError (buildNamePattern pattern) ref) id $
           Git.commitAt sout serr mirror ref
         specificationtext' <- liftIO . fmap rightToMaybe . runEitherT $
           Git.cat sout serr mirror (Ref . renderCommit $ commit) ("boris.toml")
         for specificationtext' $ \specificationtext -> do
           specifications <- bimapEitherT ConfigParseError id . hoistEither $
             parseConfig specificationtext
-          pure $ filter (const . not . null $ filter (\s -> specificationBuild s == buildName pattern) specifications) $
-            [DiscoverInstance pattern ref commit]
+          pure . fmap (\build -> DiscoverInstance build ref commit) . matchSpecifications pattern $ specifications
+
+matchSpecifications :: BuildPattern -> [Specification] -> [Build]
+matchSpecifications pattern =
+  filter (matchesBuild (buildNamePattern pattern)) . fmap specificationBuild
 
 -- |
 -- Resolving a pattern to a ref.
@@ -210,7 +214,7 @@ renderInitialiseError err =
     PatternConfigParseError e ->
       mconcat ["Boris pattern configuration failed to parse: ", renderBorisPatternConfigError e]
     MissingBuildPattern b qs ->
-      mconcat ["Boris build refs could not be found: build = ", renderBuild b, ", queries = [", T.intercalate ", " ((renderBuild . buildName) <$> qs), "]"]
+      mconcat ["Boris build refs could not be found: build = ", renderBuild b, ", queries = [", T.intercalate ", " ((renderBuildNamePattern . buildNamePattern) <$> qs), "]"]
     MissingBuildSpecification b ss ->
       mconcat ["Boris build specification could not be found: build = ", renderBuild b, ", specifications = [", T.intercalate ", " ((renderBuild . specificationBuild) <$> ss), "]"]
     NoMatchingRef b s ->
@@ -221,3 +225,5 @@ renderInitialiseError err =
       mconcat ["Boris build ref mismatch, requested ref does not match allowed refs for this build: build = ", renderBuild b, ", pattern = ", renderPattern . buildPattern $ s, ", refs = [", T.intercalate ", " (renderRef <$> rs) ,"], requested = ", renderRef r]
     InitialiseCommitError b r c ->
       mconcat ["Boris could not determine commit for ref: build = ", renderBuild b, ", ref = ", renderRef r, ", exit with ", T.pack . show $ c]
+    InitialiseCommitDiscoverError b r c ->
+      mconcat ["Boris could not determine commit for ref: buildNamePattern = ", renderBuildNamePattern b, ", ref = ", renderRef r, ", exit with ", T.pack . show $ c]

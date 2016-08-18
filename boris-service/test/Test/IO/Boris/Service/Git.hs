@@ -147,7 +147,7 @@ prop_discovering i =
       \[boris] \n\
       \  version = 1 \n\
       \\n\
-      \[build.test]\n\
+      \[build.test-*]\n\
       \  git = \"refs/heads/test\"\n\
       \[build.no-test-yet]\n\
       \  git = \"refs/heads/no-test-yet\"\n\
@@ -210,8 +210,11 @@ prop_discovering i =
       \[boris]\n\
       \  version = 1\n\
       \\n\
-      \[build.test]\n\
-      \  command = [[\"echo\", \"test\"]]\n\
+      \[build.test-1]\n\
+      \  command = [[\"echo\", \"test 1\"]]\n\
+      \\n\
+      \[build.test-2]\n\
+      \  command = [[\"echo\", \"test 2\"]]\n\
       \\n"
 
     flail $
@@ -229,7 +232,10 @@ prop_discovering i =
         scenario1 === Right []
       , scenario2 === Right []
       , scenario3 === Right []
-      , scenario4 === Right [DiscoverInstance (BuildPattern (Build "test") (Pattern "refs/heads/test")) (Ref "refs/heads/test") (Commit . T.strip . T.decodeUtf8 $ commit)]
+      , scenario4 === Right [
+            DiscoverInstance (Build "test-1") (Ref "refs/heads/test") (Commit . T.strip . T.decodeUtf8 $ commit)
+          , DiscoverInstance (Build "test-2") (Ref "refs/heads/test") (Commit . T.strip . T.decodeUtf8 $ commit)
+          ]
       ]
 
 flail :: IO ExitCode -> IO ()

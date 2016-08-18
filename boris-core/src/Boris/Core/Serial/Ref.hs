@@ -49,9 +49,10 @@ data BorisPatternConfigError =
     PatternConfigTomlParseError ParseError
   | PatternConfigMissingVersionError
   | PatternConfigUnknownVersionError Int64
-  | PatternConfigNoReference Build
+  | PatternConfigNoReference BuildNamePattern
   | PatternConfigInvalidCommand Build
   | PatternConfigBuildsTypeError
+  | PatternConfigBuildNamePatternParseError Text
     deriving (Eq, Show)
 
 parsePatternConfig :: Text -> Either BorisPatternConfigError [BuildPattern]
@@ -71,12 +72,10 @@ parseTomlConfig t =
 parseTomlConfigV1 :: Table -> Either BorisPatternConfigError [BuildPattern]
 parseTomlConfigV1 t =
   parseBuilds t >>= \builds ->
-    forM (M.keys builds) $ \k ->
-      let
-        build = Build k
-      in
-        BuildPattern build
-          <$> parseGit builds build
+    forM (M.keys builds) $ \k -> do
+      build <- first PatternConfigBuildNamePatternParseError $ parseBuildNamePattern k
+      BuildPattern build
+        <$> parseGit builds build
 
 parseBuilds :: Table -> Either BorisPatternConfigError Table
 parseBuilds doc =
@@ -87,10 +86,10 @@ parseBuilds doc =
       maybeToRight PatternConfigBuildsTypeError $
         tt ^? _NTable
 
-parseGit :: Table -> Build -> Either BorisPatternConfigError Pattern
+parseGit :: Table -> BuildNamePattern -> Either BorisPatternConfigError Pattern
 parseGit builds build =
   fmap Pattern . maybeToRight (PatternConfigNoReference build) $
-    builds ^? key (renderBuild build) . _NTable . key "git" . _NTValue . _VString
+    builds ^? key (renderBuildNamePattern build) . _NTable . key "git" . _NTValue . _VString
 
 renderBorisPatternConfigError :: BorisPatternConfigError -> Text
 renderBorisPatternConfigError err =
@@ -102,8 +101,10 @@ renderBorisPatternConfigError err =
     PatternConfigUnknownVersionError n ->
       mconcat ["Boris configuration contains an unkown version: ", T.pack . show $ n]
     PatternConfigNoReference b ->
-      mconcat ["Boris configuration does not contain a mandatory 'refs' for build: ", renderBuild b]
+      mconcat ["Boris configuration does not contain a mandatory 'refs' for build: ", renderBuildNamePattern b]
     PatternConfigInvalidCommand b ->
       mconcat ["Boris configuration contains an invalid 'command' for build: ", renderBuild b]
     PatternConfigBuildsTypeError ->
       mconcat ["Boris configuration should contain a top level table 'build'."]
+    PatternConfigBuildNamePatternParseError e ->
+      mconcat ["Boris configuration build name pattern could not be parsed, parse error: .", e]

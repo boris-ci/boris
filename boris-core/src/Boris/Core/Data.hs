@@ -5,6 +5,7 @@ module Boris.Core.Data (
     Environment (..)
   , Project (..)
   , Build (..)
+  , BuildNamePattern
   , BuildId (..)
   , Repository (..)
   , LocalRepository (..)
@@ -30,6 +31,9 @@ module Boris.Core.Data (
   , repositoryOfMirror
   , repositoryOfWorkingCopy
   , sortBuildIds
+  , renderBuildNamePattern
+  , parseBuildNamePattern
+  , matchesBuild
   ) where
 
 import qualified Data.List as L
@@ -40,6 +44,7 @@ import qualified Data.Map.Strict as M
 import           P
 
 import           System.FilePath (FilePath, (</>))
+import qualified System.FilePath.Glob as G
 
 newtype Environment =
   Environment {
@@ -55,6 +60,10 @@ newtype Build =
   Build {
       renderBuild :: Text
     } deriving (Eq, Show, Ord)
+
+newtype BuildNamePattern =
+  BuildNamePattern G.Pattern
+    deriving (Eq, Show)
 
 newtype BuildId =
   BuildId {
@@ -110,7 +119,7 @@ data Command =
 
 data BuildPattern =
   BuildPattern {
-      buildName :: Build
+      buildNamePattern :: BuildNamePattern
     , buildPattern :: Pattern
     } deriving (Eq, Show)
 
@@ -123,7 +132,7 @@ data BuildInstance =
 
 data DiscoverInstance =
   DiscoverInstance {
-      discoverBuildPattern :: BuildPattern
+      discoverBuild :: Build
     , discoverRef :: Ref
     , discoverCommit :: Commit
     } deriving (Eq, Show)
@@ -189,3 +198,29 @@ pathOf w =
 sortBuildIds :: [BuildId] -> [BuildId]
 sortBuildIds =
   fmap (BuildId . T.pack . show) . L.reverse . L.sort . catMaybes . fmap ((readMaybe :: [Char] -> Maybe Int) . T.unpack . renderBuildId)
+
+renderBuildNamePattern :: BuildNamePattern -> Text
+renderBuildNamePattern (BuildNamePattern g) =
+  T.pack . G.decompile $ g
+
+parseBuildNamePattern :: Text -> Either Text BuildNamePattern
+parseBuildNamePattern =
+  let
+    options =
+      G.CompOptions {
+          G.characterClasses = False
+        , G.characterRanges = False
+        , G.numberRanges = False
+        , G.wildcards = True
+        , G.recursiveWildcards = False
+        , G.pathSepInRanges = False
+        , G.errorRecovery = False
+        }
+  in
+    bimap T.pack BuildNamePattern . G.tryCompileWith options . T.unpack
+
+matchesBuild :: BuildNamePattern -> Build -> Bool
+matchesBuild (BuildNamePattern glob) build =
+  G.match
+    glob
+    (T.unpack $ renderBuild build)

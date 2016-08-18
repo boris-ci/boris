@@ -60,9 +60,9 @@ Additionally you can also follow the log locally by using `-t|--tail`.
 Examples:
 
 ```
-boris build example master
-boris build example topic topic/feature-1
-boris build -t example topic topic/feature-1
+boris build example dist-7-10
+boris build example branches-7-10 topic/feature-1
+boris build -t example branches-7-10 topic/feature-1
 ```
 
 
@@ -125,8 +125,8 @@ project and build.
 Examples:
 
 ```
-boris list example master
-boris list example topic
+boris list example dist-7-10
+boris list example branches-7-10
 ```
 
 #### status <build-id>
@@ -189,19 +189,19 @@ they can be applied to.
 This is probably a lot easier to understand by example. So, if we have
 a project for Boris to build, and it has two types of builds:
 
- 1. a "master" build that runs on the "master" branch; and
+ 1. "dist-*" wildcard that run any matching builds on the "master" branch; and
 
- 2. a "topic" build that can run on any branch starting with "topic/",
-    for example, "topic/my-feature".
+ 2. "branches-*" wildcard that runs any matching builds on any branch starting
+    with "topic/", for example, "topic/my-feature".
 
 ```toml
 [boris]
   version = 1
 
-[build.master]
+[build.dist-*]
   git = "refs/heads/master"
 
-[build.topic]
+[build.branches-*]
   git = "refs/heads/topic/*"
 
 ```
@@ -235,12 +235,12 @@ So our two build types require definition:
 [boris]
   version = 1
 
-[build.master]
+[build.dist-7-10]
   command = [
       ["./mafia", "build"]
     ]
 
-[build.topic]
+[build.branches-7-10]
   command = [
       ["./mafia", "build"]
     ]
@@ -257,13 +257,13 @@ If you want to run multiple commands, you can:
 [boris]
   version = 1
 
-[build.master]
+[build.dist-7-10]
   command = [
       ["./mafia", "build"]
     , ["./bin/upload", "dist/build/example/example"]
     ]
 
-[build.topic]
+[build.branches-7-10]
   command = [
       ["./mafia", "build"]
     ]
@@ -285,7 +285,7 @@ configuration:
 [boris]
   version = 1
 
-[build.master]
+[build.dist-7-10]
   pre = [
       ["github-cli", "update-commit", "starting"]
     ]
@@ -333,9 +333,9 @@ tools you may be able to simplify your config down to:
 [boris]
   version = 1
 
-[build.master]
+[build.dist-7-10]
 
-[build.topic]
+[build.branches-7-10]
 ```
 
 This implicitly expands to:
@@ -344,15 +344,15 @@ This implicitly expands to:
 [boris]
   version = 1
 
-[build.master]
+[build.dist-7-10]
   pre = [["tsar", "pre"]]
-  command = [["master", "build", "master"]
+  command = [["master", "build", "dist-7-10"]
   success = [["tsar", "success"]]
   failure = [["tsar", "failure"]]
 
-[build.topic]
+[build.branches-7-10]
   pre = [["tsar", "pre"]]
-  command = [["master", "build", "topic"]
+  command = [["master", "build", "branches-7-10"]
   success = [["tsar", "success"]]
   failure = [["tsar", "failure"]]
 ```

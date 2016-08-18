@@ -59,7 +59,7 @@ discover env e q w request = do
 
       forM_ discovered $ \d -> do
         let
-          build = buildName . discoverBuildPattern $ d
+          build = discoverBuild d
           commit = discoverCommit d
           ref = discoverRef d
 
