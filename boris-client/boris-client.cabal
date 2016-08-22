@@ -62,6 +62,7 @@ library
                     Boris.Client.Log
                     Boris.Client.Project
                     Boris.Client.Scoreboard
+                    Boris.Client.Validate
 
 executable boris
   ghc-options:
