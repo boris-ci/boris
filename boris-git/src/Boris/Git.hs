@@ -68,8 +68,17 @@ cat sout serr r ref f = do
 
 refs :: Out -> Out -> LocalRepository -> Pattern -> EitherT ExitCode IO [Ref]
 refs sout serr r pattern = do
+  let
+    -- Older versions of Git don't support recursive globs.
+    -- This is a hack to simulate the most common case of matching top-level and second-level branchesFor example.
+    -- For example matching both `master` and `topic/branch`.
+    patternRecursive =
+      if T.isSuffixOf "/**" (renderPattern pattern) then
+        [T.replace "/**" "/*/*" (renderPattern pattern)]
+      else
+        []
   (out, _, c) <- liftIO $ X.capture sout serr . X.inDirectory (T.unpack . renderLocalRepository $ r) =<<
-    X.xproc sout "git" ["for-each-ref", "--format=%(refname)", renderPattern pattern]
+    X.xproc sout "git" (["for-each-ref", "--format=%(refname)", renderPattern pattern] <> patternRecursive)
   X.hoistExit c
   pure $ fmap Ref . T.lines . T.decodeUtf8 $ out
 
