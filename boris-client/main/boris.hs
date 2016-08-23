@@ -5,14 +5,13 @@ import           BuildInfo_ambiata_boris_client
 import           DependencyInfo_ambiata_boris_client
 
 import           Boris.Core.Data
-import qualified Boris.Core.Serial.Command as S
-import qualified Boris.Core.Serial.Ref as S
 import           Boris.Store.Build (BuildData (..), LogData (..))
 import           Boris.Client.Http (renderBorisHttpClientError)
 import qualified Boris.Client.Build as B
 import qualified Boris.Client.Project as P
 import qualified Boris.Client.Log as L
 import           Boris.Queue (QueueSize (..))
+import qualified Boris.Client.Validate as V
 
 import           Control.Concurrent.Async (async, waitEitherCancel)
 import           Control.Concurrent (threadDelay)
@@ -44,7 +43,7 @@ import           System.Environment (lookupEnv)
 import           System.IO
 
 import           X.Options.Applicative
-import           X.Control.Monad.Trans.Either (EitherT, newEitherT, runEitherT)
+import           X.Control.Monad.Trans.Either (newEitherT, runEitherT)
 import           X.Control.Monad.Trans.Either.Exit (orDie)
 
 data Tail =
@@ -277,15 +276,7 @@ renderBuildData r i =
 
 
 local :: LocalCommand -> IO ()
-local c =
-  case c of
-    Validate g b -> orDie id $ do
-      let
-        xx :: (Text -> Either e a) -> Maybe FilePath -> EitherT e IO ()
-        xx f y = forM_ y $ \file ->
-          newEitherT $ f <$> T.readFile file
-      firstT S.renderBorisPatternConfigError $ xx S.parsePatternConfig g
-      firstT S.renderBorisConfigError $ xx S.parseConfig b
+local (Validate g b) = V.validate g b
 
 projectP :: Parser Project
 projectP =
@@ -336,7 +327,7 @@ boriscommandP =
   strOption . mconcat $ [
       long "boris-command"
     , metavar "FILEPATH"
-    , help "A boris command file, e.g. boris-toml."
+    , help "A boris command file, e.g. boris.toml."
     ]
 
 text :: String -> IO Text
