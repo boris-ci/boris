@@ -21,7 +21,7 @@ import           BMX (Template, renderPage, renderTemplate, templateFile)
 import           BMX (BMXValue (..), defaultState, usingContext)
 
 import           Boris.Core.Data (Project (..), Build (..), Commit (..), Ref (..), BuildId (..), BuildResult (..), sortBuildIds)
-import           Boris.Store.Build (BuildData (..))
+import           Boris.Store.Build (BuildData (..), BuildCancelled(..))
 import           Boris.Http.Airship (webT)
 import           Boris.Http.Data (ClientLocale (..))
 import           Boris.Queue (QueueSize (..))
@@ -133,9 +133,16 @@ build l b =
       , ("undecided", maybe (BMXBool True) (const $ BMXNull) $ buildDataResult b)
       , ("log", maybe BMXNull (const $ BMXBool True) $ buildDataLog b)
       , ("rebuild", case buildDataResult b of { Just (BuildKo) -> BMXBool True; _ -> BMXBool False })
+      , ("cancel", BMXBool ((isNothing . buildDataResult $ b) && (notCancelled (buildDataCancelled b))))
       ]
   in
     renderPage <$> renderTemplate (defaultState `usingContext` context) build'
+
+  where
+    notCancelled :: Maybe BuildCancelled -> Bool
+    notCancelled r = case r of
+                       Just BuildNotCancelled -> True
+                       _ -> False
 
 renderTime :: ClientLocale -> UTCTime -> Text
 renderTime (ClientLocale tz) t =
