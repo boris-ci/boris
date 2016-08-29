@@ -1,7 +1,7 @@
 #!/bin/sh -eux
 
 export AWS_DEFAULT_REGION=ap-southeast-2
-export BORIS_ENVIRONMENT=local
+export BORIS_ENVIRONMENT=cofarrell
 export BORIS_BUILD_QUEUE=boris-${BORIS_ENVIRONMENT}
 export BORIS_CONFIG_LOCATION=s3://ambiata-dev-view/boris/$(date '+%Y%m%d%H%M%S')-$$
 export PORT=10080

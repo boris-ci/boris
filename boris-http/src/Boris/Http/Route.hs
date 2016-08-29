@@ -35,6 +35,7 @@ boris l env e q c = do
   "project" </> var "project-name" </> "commit" </> var "commit-hash" #> Commit.item env e
   "build" </> var "build-id" #> Build.item l env e
   "build" </> var "build-id" </> "log" #> Log.item env e
+  "build" </> var "build-id" </> "cancel" #> Build.cancel env e
   "scoreboard" #> Scoreboard.scoreboard env e c
 
 borisReadonly :: Env -> Environment -> ConfigLocation -> RoutingSpec IO ()

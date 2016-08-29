@@ -4,6 +4,7 @@ module Boris.Http.Resource.Build (
     collection
   , item
   , ignore
+  , cancel
   ) where
 
 
@@ -141,13 +142,8 @@ item l env e =
     , deleteCompleted =
         pure False
 
-    , deleteResource = do
-        i <- getBuildId
-        d <- webT id . runAWST env renderError . firstT SB.renderFetchError $
-          SB.fetch e i
-        webT id . bimapEitherT renderError id . runAWS env $ do
-          SB.deindex e (buildDataProject d) (buildDataBuild d) i
-          SB.cancel e i
+    , deleteResource =
+        deleteBuild env e =<< getBuildId
     }
 
 getWithHeartbeatCheck :: Env -> Environment -> BuildId -> Webmachine IO BuildData
@@ -182,8 +178,33 @@ ignore env e =
           p <- getProject
           PutBuildIgnore i <- decodeJsonBody
           webT renderError . runAWS env $ SI.setBuildDisabled e p b i
-
     }
+
+cancel :: Env -> Environment -> Resource IO
+cancel env e =
+  defaultResource {
+      allowedMethods = pure [HTTP.methodPost]
+    , contentTypesProvided = pure [("text/html", pure . jsonResponse $ ())]
+    , processPost = processPostMedia . join $ [
+        [(,) "application/x-www-form-urlencoded" $ do
+            i <- getBuildId
+            a <- deleteBuild env e i
+            case a of
+              True -> do
+                setLocationAbsolute ["build", renderBuildId i]
+                halt HTTP.status302
+              False -> do
+                halt HTTP.status400
+        ]
+      ]
+    }
+
+deleteBuild :: Env -> Environment -> BuildId -> Webmachine IO Bool
+deleteBuild env e i = do
+  d <- webT id . runAWST env renderError . firstT SB.renderFetchError $ SB.fetch e i
+  webT id . bimapEitherT renderError id . runAWS env $ do
+    SB.deindex e (buildDataProject d) (buildDataBuild d) i
+    SB.cancel e i
 
 getBuild :: Webmachine IO Build
 getBuild =

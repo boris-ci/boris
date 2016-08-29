@@ -43,6 +43,14 @@
                 </form>
               {{/if}}
             </div>
+            <div>
+              {{#if cancel}}
+                <form action="/build/{{id}}/cancel" method="post">
+                  <button class="btn" type="submit">cancel</button>
+                </form>
+              {{/if}}
+            </div>
+
           </div>
         </div>
 
