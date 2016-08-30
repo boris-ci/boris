@@ -25,11 +25,11 @@
               {{/each}}
             </div>
             {{/if}}
-            {{#each refs as |key val|}}
+            {{#each refs}}
             <div>
-              <h4>{{key}}</h4>
+              <h4>{{this.name}}</h4>
               <div>
-              {{#each val}}
+              {{#each this.builds}}
                 <span>
                   <a href="/build/{{this}}">#{{this}}</a>
                 </span>
