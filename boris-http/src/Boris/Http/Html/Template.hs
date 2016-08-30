@@ -84,14 +84,18 @@ project p bs =
 builds :: Project -> Build -> [(Ref, [BuildId])] -> [BuildId] -> Either BMXError Text
 builds p b rs queued =
   let
-    prepped :: [(Text, BMXValue)]
-    prepped =
-      fmap (\(r, is) -> (renderRef r, BMXList $ (BMXString . renderBuildId) <$> sortBuildIds is)) rs
+    sorted =
+      reverse $ sortOn (\(_, is) -> head . sortBuildIds $ is) rs
+
+    toRef r is = [
+        ("name", BMXString $ renderRef r)
+      , ("builds", BMXList $ (BMXString . renderBuildId) <$> sortBuildIds is)
+      ]
 
     context = [
         ("project", BMXString (renderProject p))
       , ("build", BMXString (renderBuild b))
-      , ("refs", BMXContext prepped)
+      , ("refs", BMXList $ fmap (BMXContext . uncurry toRef) sorted)
       , ("queued", BMXList ((BMXString . renderBuildId) <$> sortBuildIds queued))
       ]
   in
