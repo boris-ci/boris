@@ -21,7 +21,7 @@ There are three main ways to interact with boris:
 
  - hipchat bot
 
- - web interface (read only)
+ - web interface
 
 
 ### command line
@@ -167,7 +167,8 @@ there.
 
 The [web interface](http://boris.ambiata.com) is a simple read-only
 view to help with those with out easy access to command line
-tooling. It is useful for discovering builds and viewing logs.
+tooling. It is useful for discovering builds, retrying failed builds, 
+cancelling builds and viewing logs.
 
 
 Telling Boris How To Build Your Project
