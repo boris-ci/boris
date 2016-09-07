@@ -2,32 +2,27 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Boris.Http.Resource.Static (
-    css
+    staticMiddleware
   ) where
 
 
-import           Airship (Resource (..), ResponseBody (..), defaultResource)
+import           Network.Wai.Application.Static (embeddedSettings, staticApp)
 
-import           Blaze.ByteString.Builder.ByteString (fromByteString)
+import           Data.FileEmbed (embedDir)
 
-import           Data.FileEmbed (embedFile)
-
-import qualified Network.HTTP.Types as HTTP
+import           Network.Wai (Application, Middleware, Request (..))
 
 import           P
 
-import           System.IO (IO)
 
+staticMiddleware :: Middleware
+staticMiddleware app req resp =
+  case isPrefixOf ["assets"] (pathInfo req) of
+    False ->
+      app req resp
+    True ->
+      assetsApp req { pathInfo = drop 1 $ pathInfo req } resp
 
-css :: Resource IO
-css =
-  defaultResource {
-      allowedMethods = pure [
-           HTTP.methodGet
-         ]
-
-    , contentTypesProvided = pure [
-          (,) "text/css" $ do
-             return . ResponseBuilder . fromByteString $ $(embedFile "css/boris.css")
-        ]
-    }
+assetsApp :: Application
+assetsApp =
+  staticApp $ embeddedSettings $(embedDir "assets")

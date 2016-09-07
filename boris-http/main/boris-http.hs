@@ -6,6 +6,7 @@ import           Agriculture (agriculture)
 
 import           Boris.Core.Data
 import           Boris.Http.Config
+import qualified Boris.Http.Resource.Static as Static
 import           Boris.Http.Route (boris)
 import qualified Boris.Store.Lifecycle as SL
 import           Boris.Queue (BuildQueue (..))
@@ -38,4 +39,5 @@ main = do
 
   runStopFile (lookupEnv "BORIS_HTTP_STOP") $ \pin -> do
     agriculture pin "boris-http" buildInfoVersion $ do
-      return $ resourceToWai defaultAirshipConfig (boris l env e q c) (resource404 ())
+      return . ($) Static.staticMiddleware $
+        resourceToWai defaultAirshipConfig (boris l env e q c) (resource404 ())
