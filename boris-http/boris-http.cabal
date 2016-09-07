@@ -43,6 +43,7 @@ library
                     , time                            >= 1.2        && < 1.6
                     , transformers                    == 0.4.*
                     , tz                              == 0.1.1.*
+                    , wai                             == 3.0.*
                     , wai-app-static                  == 3.1.*
 
   ghc-options:
