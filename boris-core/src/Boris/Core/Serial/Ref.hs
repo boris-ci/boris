@@ -22,7 +22,7 @@ import           P
 import           X.Text.Toml (_NTable, _NTValue, _VString, _VInteger, key)
 
 {--
-# example config file
+# example "boris-git.toml" config file
 
 [boris]
   version = 1
