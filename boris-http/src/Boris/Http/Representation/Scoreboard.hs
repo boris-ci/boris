@@ -37,5 +37,5 @@ scoreboardHtml bs = let
   in
     H.html $ do
       H.head $
-        H.meta ! HA.httpEquiv "refresh" ! HA.content "60"
+        H.meta ! HA.httpEquiv "refresh" ! HA.content "120"
       H.body ! HA.style ("background-color: " <> colour <> ";") $ ""
