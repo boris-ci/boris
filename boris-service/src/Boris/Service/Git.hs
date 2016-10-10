@@ -148,8 +148,8 @@ discovering sout serr workspace repository  = do
         specificationtext' <- liftIO . fmap rightToMaybe . runEitherT $
           Git.cat sout serr mirror (Ref . renderCommit $ commit) ("boris.toml")
         for specificationtext' $ \specificationtext -> do
-          specifications <- bimapEitherT ConfigParseError id . hoistEither $
-            parseConfig specificationtext
+          let
+            specifications = maybe [] id . rightToMaybe $ parseConfig specificationtext
           pure . fmap (\build -> DiscoverInstance build ref commit) . matchSpecifications pattern $ specifications
 
 matchSpecifications :: BuildPattern -> [Specification] -> [Build]

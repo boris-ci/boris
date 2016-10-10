@@ -238,6 +238,92 @@ prop_discovering i =
           ]
       ]
 
+prop_discovering_broken_branch i =
+  testIO . withSystemTempDirectory "workspace" $ \t -> do
+    let
+      o = CB.sinkHandle stdout
+      e = CB.sinkHandle stderr
+      repository = t </> "git"
+      path = WorkspacePath . T.pack . (</> "workspace") $ t
+
+    D.createDirectoryIfMissing True repository
+
+    setEnv "GIT_AUTHOR_DATE" "1970-01-01 00:00:00 +0000"
+    setEnv "GIT_AUTHOR_NAME" "quick"
+    setEnv "GIT_AUTHOR_EMAIL" "quick@email"
+    setEnv "GIT_COMMITTER_DATE" "1970-01-01 00:00:00 +0000"
+    setEnv "GIT_COMMITTER_NAME" "check"
+    setEnv "GIT_COMMITTER_EMAIL" "check@mail"
+
+    flail $
+      X.exec o e $ (proc "git" ["init"]) { cwd = Just repository }
+
+    T.writeFile (repository </> "README.md") "This is a test."
+
+    flail $
+      X.exec o e $ (proc "git" ["add", "-A", "README.md"]) { cwd = Just repository }
+
+    flail $
+      X.exec o e $ (proc "git" ["commit", "-m", "first"]) { cwd = Just repository }
+
+    T.writeFile (repository </> "boris-git.toml") "\
+      \[boris] \n\
+      \  version = 1 \n\
+      \\n\
+      \[build.test-*]\n\
+      \  git = \"refs/heads/test-*\"\n\
+      \\n"
+
+    flail $
+      X.exec o e $ (proc "git" ["add", "-A", "boris-git.toml"]) { cwd = Just repository }
+
+    flail $
+      X.exec o e $ (proc "git" ["commit", "-m", "boris-git"]) { cwd = Just repository }
+
+    flail $
+      X.exec o e $ (proc "git" ["checkout", "-b", "test-good", "master"]) { cwd = Just repository }
+
+    --
+    -- A good boris.toml file
+    --
+    T.writeFile (repository </> "boris.toml") "\
+      \[boris]\n\
+      \  version = 1\n\
+      \\n\
+      \[build.test-1]\n\
+      \  command = [[\"echo\", \"test 1\"]]\n\
+      \\n\
+      \\n"
+
+    flail $
+      X.exec o e $ (proc "git" ["add", "-A", "boris.toml"]) { cwd = Just repository }
+
+    flail $
+      X.exec o e $ (proc "git" ["commit", "-m", "test"]) { cwd = Just repository }
+
+    --
+    -- A broken boris.toml file
+    --
+    flail $
+      X.exec o e $ (proc "git" ["checkout", "-b", "test-bad", "master"]) { cwd = Just repository }
+
+    T.writeFile (repository </> "boris.toml") "bad"
+
+    flail $
+      X.exec o e $ (proc "git" ["add", "-A", "boris.toml"]) { cwd = Just repository }
+
+    flail $
+      X.exec o e $ (proc "git" ["commit", "-m", "test"]) { cwd = Just repository }
+
+    result <- runEitherT . withWorkspace path i $ \w -> do
+      Git.discovering o e w (Repository . T.pack $ repository)
+
+    (commit, _, _) <- X.capture o e $ (proc "git" ["rev-parse", "refs/heads/test-good"]) { cwd = Just repository }
+
+    pure $ result === Right [
+            DiscoverInstance (Build "test-1") (Ref "refs/heads/test-good") (Commit . T.strip . T.decodeUtf8 $ commit)
+          ]
+
 flail :: IO ExitCode -> IO ()
 flail cc =
   cc >>= \c -> case c of
