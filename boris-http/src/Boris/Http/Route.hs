@@ -15,6 +15,7 @@ import qualified Boris.Http.Resource.Dashboard as Dashboard
 import qualified Boris.Http.Resource.Log as Log
 import qualified Boris.Http.Resource.Project as Project
 import qualified Boris.Http.Resource.Scoreboard as Scoreboard
+import qualified Boris.Http.Resource.Status as Status
 import qualified Boris.Http.Resource.Queue as Queue
 import           Boris.Queue (BuildQueue (..))
 
@@ -24,7 +25,8 @@ import           System.IO (IO)
 
 boris :: ClientLocale -> Env -> Environment -> BuildQueue -> ConfigLocation -> RoutingSpec IO ()
 boris l env e q c = do
-  root #> Dashboard.dashboard env e q c
+  root #> Dashboard.dashboard env q
+  "status" #> Status.status env e c
   "queue" #> Queue.collection env q
   "project" #> Project.collection env c
   "project" </> var "project-name" #> Project.item env e q c

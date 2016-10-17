@@ -28,16 +28,21 @@
         <div id="content">
           <div class="content-wrapper">
             <p>
-              It would be wonderful if this provided some useful information, but for
-              now boris suggests the list of <a href="/project">projects</a> may be
-              more useful.
-            </p>
-            <p>
-              Current queue size: {{size}}
-            </p>
-            <p>
-              <a href="/status">Build Statuses</a>
-            </p>
+            {{#if builds}}
+             Builds that are currently borked:
+              {{#each builds as |b|}}
+                <div>
+                  <a href="/project/{{b.project}}">{{b.project}}</a>
+                  :
+                  <a href="/project/{{b.project}}/build/{{b.build}}">{{b.build}}</a>
+                  :
+                  <a href="/build/{{b.id}}">{{b.id}}</a>
+                </div>
+             {{/each}}
+           {{else}}
+             All builds are green.
+           {{/if}}
+           </p>
           </div>
         </div>
         <div id="footer">
