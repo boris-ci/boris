@@ -66,6 +66,7 @@ library
                     Boris.Http.Resource.Project
                     Boris.Http.Resource.Scoreboard
                     Boris.Http.Resource.Static
+                    Boris.Http.Resource.Status
                     Boris.Http.Resource.Queue
                     Boris.Http.Route
                     Boris.Http.Representation.Build

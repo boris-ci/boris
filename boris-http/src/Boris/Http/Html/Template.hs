@@ -4,6 +4,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Boris.Http.Html.Template (
     dashboard
+  , status
   , projects
   , project
   , builds
@@ -46,8 +47,17 @@ render t = do
   return . ResponseBuilder . fromByteString . T.encodeUtf8 $ c
 
 
-dashboard :: [BuildData] -> QueueSize -> Either BMXError Text
-dashboard bs s =
+dashboard :: QueueSize -> Either BMXError Text
+dashboard s =
+  let
+    context = [
+         (,) "size" $ BMXNum . fromIntegral . getQueueSize $ s
+      ]
+  in
+    renderPage <$> renderTemplate (defaultState `usingContext` context) dashboard'
+
+status :: [BuildData] -> Either BMXError Text
+status bs =
   let
     buildSort b = (buildDataProject b, buildDataBuild b)
     context = [
@@ -57,10 +67,9 @@ dashboard bs s =
             , (,) "build" (BMXString . renderBuild $ buildDataBuild b)
             , (,) "id" (BMXString . renderBuildId $ buildDataId b)
             ]
-       , (,) "size" $ BMXNum . fromIntegral . getQueueSize $ s
       ]
   in
-    renderPage <$> renderTemplate (defaultState `usingContext` context) dashboard'
+    renderPage <$> renderTemplate (defaultState `usingContext` context) status'
 
 projects :: [Project] -> Either BMXError Text
 projects p =
@@ -171,6 +180,10 @@ mapFromListGrouped =
 dashboard' :: Template
 dashboard' =
   $(templateFile "template/dashboard.hbs")
+
+status' :: Template
+status' =
+  $(templateFile "template/status.hbs")
 
 projects' :: Template
 projects' =
