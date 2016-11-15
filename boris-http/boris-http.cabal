@@ -28,6 +28,7 @@ library
                     , ambiata-p
                     , ambiata-x-aeson
                     , ambiata-x-eithert
+                    , async                           == 2.0.*
                     , blaze-html                      == 0.8.*
                     , blaze-builder                   == 0.4.*
                     , bytestring                      == 0.10.*
@@ -80,6 +81,7 @@ library
 executable boris-http
   ghc-options:
                     -Wall -threaded -O2
+                    -rtsopts -with-rtsopts "-T -N"
 
   hs-source-dirs:
                     gen
