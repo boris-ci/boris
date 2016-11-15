@@ -14,6 +14,7 @@ import           Boris.Http.Repository (ConfigError (..), list, renderConfigErro
 import qualified Boris.Store.Build as SB
 import qualified Boris.Store.Index as SI
 
+import           Control.Concurrent.Async (mapConcurrently)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Trans.Class (lift)
 
@@ -26,7 +27,7 @@ import           P
 
 import           System.IO (IO)
 
-import           X.Control.Monad.Trans.Either (EitherT, bimapEitherT)
+import           X.Control.Monad.Trans.Either (EitherT, bimapEitherT, newEitherT, runEitherT)
 
 
 data ScoreboardError =
@@ -39,7 +40,7 @@ fetchLatestMasterBuilds :: Env -> Environment -> ConfigLocation -> EitherT Score
 fetchLatestMasterBuilds env e c = do
   projects' <- bimapEitherT ScoreboardConfigError id $ list env c
   now <- liftIO getCurrentTime
-  runAWST env ScoreboardAwsError . fmap (catMaybes . mconcat) . forM projects' $ \p -> do
+  fmap (catMaybes . mconcat) . flip mapConcurrentlyE projects' $ \p -> runAWST env ScoreboardAwsError $ do
     builds <- lift $ SI.getProjects e p
     forM builds $ \b -> do
       -- We only care about master builds for scoreboard
@@ -83,6 +84,10 @@ isRecent now bd =
 filterM' :: Monad m => (a -> m Bool) -> Maybe a -> m (Maybe a)
 filterM' p =
   maybe (return Nothing) (\x -> p x >>= return . flip valueOrEmpty x)
+
+mapConcurrentlyE :: Traversable t => (a -> EitherT x IO b) -> t a -> EitherT x IO (t b)
+mapConcurrentlyE io =
+  newEitherT . fmap sequence . mapConcurrently (runEitherT . io)
 
 renderScoreboardError :: ScoreboardError -> Text
 renderScoreboardError se =
