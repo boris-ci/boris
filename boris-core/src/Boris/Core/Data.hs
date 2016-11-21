@@ -69,7 +69,14 @@ newtype BuildNamePattern =
 newtype BuildId =
   BuildId {
       renderBuildId :: Text
-    } deriving (Eq, Show, Ord)
+    } deriving (Eq, Show)
+
+instance Ord BuildId where
+  compare b1 b2 =
+    let
+      asInt = (readMaybe :: [Char] -> Maybe Int) . T.unpack . renderBuildId
+    in
+      asInt b1 `compare` asInt b2
 
 newtype Repository =
   Repository {
@@ -198,7 +205,7 @@ pathOf w =
 
 sortBuildIds :: [BuildId] -> [BuildId]
 sortBuildIds =
-  fmap (BuildId . T.pack . show) . L.reverse . L.sort . catMaybes . fmap ((readMaybe :: [Char] -> Maybe Int) . T.unpack . renderBuildId)
+  L.reverse . L.sort
 
 newBuild :: Text -> Maybe Build
 newBuild b =
