@@ -145,7 +145,6 @@ build l b =
       , ("ko", maybe BMXNull (BMXBool . (==) BuildKo) $ buildDataResult b)
       , ("undecided", maybe (BMXBool True) (const $ BMXNull) $ buildDataResult b)
       , ("log", maybe BMXNull (const $ BMXBool True) $ buildDataLog b)
-      , ("rebuild", case buildDataResult b of { Just (BuildKo) -> BMXBool True; _ -> BMXBool False })
       , ("cancel", BMXBool ((isNothing . buildDataResult $ b) && (notCancelled (buildDataCancelled b))))
       ]
   in
