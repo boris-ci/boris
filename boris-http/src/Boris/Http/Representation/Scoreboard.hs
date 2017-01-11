@@ -37,5 +37,5 @@ scoreboardHtml bs = let
   in
     H.html $ do
       H.head $
-        H.meta ! HA.httpEquiv "refresh" ! HA.content "120"
+        H.script ! HA.src "/assets/js/updateSelf.js" $ ""
       H.body ! HA.style ("background-color: " <> colour <> ";") $ ""
