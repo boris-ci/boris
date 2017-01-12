@@ -1,41 +1,24 @@
-var prettyDate, staleMsg, setStale, isStale, fetchNew;
+var staleMinutesSince, staleMsg, setStale, isStale, staleAt, fetchNew;
 
-prettyDate = function(d) {
-  var months, hours, minutes, day, monthIndex, year;
-  
-  months = [
-      "Jan"
-    , "Feb"
-    , "Mar"
-    , "Apr"
-    , "May"
-    , "Jun"
-    , "Jul"
-    , "Aug"
-    , "Sept"
-    , "Oct"
-    , "Nov"
-    , "Dev"
-  ];
-
-  hours = d.getHours();
-  minutes = d.getMinutes();
-  day = d.getDate();
-  monthIndex = d.getMonth();
-  year = d.getFullYear();
-
-  return hours + ':' + minutes + ', ' + day + ' ' + months[monthIndex] + ' ' + year;
+staleMinutesSince = function(d) {
+  return Math.floor((Math.abs(new Date() - d)/1000)/60);
 }
 
-staleMsg = function(t) {
-  return "<h1 class=\"stale\"> Stale as of " + t + "</h1>";
+staleMsg = function(x) {
+  return "<h1 class=\"stale\">Stale for " + x + " minutes</h1>";
 };
 
 setStale = function(elem) {
+  var staleFor;
   if (!isStale) {
     isStale = true;
-    return elem.innerHTML = staleMsg(prettyDate(new Date()));
+    staleAt = new Date();
   }
+  staleFor = staleMinutesSince(staleAt);
+  if (staleFor >= 5) {
+    elem.innerHTML = staleMsg(staleFor);
+  }
+  return elem;
 }
 
 fetchNew = function(){
@@ -46,11 +29,9 @@ fetchNew = function(){
   xhr.setRequestHeader('Accept', 'text/html');
   xhr.onload = function(){
     var elem = document.getElementsByTagName('body')[0];
-
     if (xhr.status !== 200) {
       return setStale(elem);
     }
-
     isStale = false;
     return elem.parentNode.replaceChild(this.responseXML.body, elem);
   };
@@ -61,4 +42,3 @@ fetchNew = function(){
   return xhr.send();
 };
 window.setInterval(fetchNew, 1000 * 120);
-
