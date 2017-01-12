@@ -36,6 +36,7 @@ scoreboardHtml bs = let
     True -> "green"
   in
     H.html $ do
-      H.head $
-        H.meta ! HA.httpEquiv "refresh" ! HA.content "120"
+      H.head $ do
+        H.link ! HA.rel "stylesheet" ! HA.type_ "text/css" ! HA.href "/assets/css/scoreboard.css"
+        H.script ! HA.src "/assets/js/updateSelf.js" $ ""
       H.body ! HA.style ("background-color: " <> colour <> ";") $ ""

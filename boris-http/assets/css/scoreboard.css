@@ -1,0 +1,7 @@
+h1.stale {
+  position: absolute; 
+  width: 100%;
+  bottom: 0;
+  color: white;
+  text-align: center;
+}
