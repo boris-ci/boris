@@ -1,50 +1,11 @@
 [boris]
   version = 1
 
-[build.dist-7-10-build]
+[build.dist-*]
   git = "refs/heads/master"
 
-[build.dist-7-10-client]
-  git = "refs/heads/master"
-
-[build.dist-7-10-core]
-  git = "refs/heads/master"
-
-[build.dist-7-10-git]
-  git = "refs/heads/master"
-
-[build.dist-7-10-http]
-  git = "refs/heads/master"
-
-[build.dist-7-10-queue]
-  git = "refs/heads/master"
-
-[build.dist-7-10-service]
-  git = "refs/heads/master"
-
-[build.dist-7-10-store]
-  git = "refs/heads/master"
-
-[build.branches-7-10-build]
+[build.branches-*]
   git = "refs/heads/topic/*"
 
-[build.branches-7-10-client]
-  git = "refs/heads/topic/*"
-
-[build.branches-7-10-core]
-  git = "refs/heads/topic/*"
-
-[build.branches-7-10-git]
-  git = "refs/heads/topic/*"
-
-[build.branches-7-10-http]
-  git = "refs/heads/topic/*"
-
-[build.branches-7-10-queue]
-  git = "refs/heads/topic/*"
-
-[build.branches-7-10-service]
-  git = "refs/heads/topic/*"
-
-[build.branches-7-10-store]
-  git = "refs/heads/topic/*"
+[build.all-*]
+  git = "refs/heads/**"
