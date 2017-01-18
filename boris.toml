@@ -80,3 +80,12 @@
   command = [
       ["master", "build", "branches-7-10", "-C", "boris-store"]
     ]
+
+[build.dist-validate]
+  command = [["validate-respect"]]
+
+[build.all-submodules]
+  command = [["dangling-refs"]]
+
+[build.all-rebased]
+  command = [["rebased"]]
