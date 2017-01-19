@@ -49,12 +49,10 @@
             <div>{{#if duration}}duration: {{duration}}{{/if}}</div>
             <div>{{#if result}}result: {{result}}{{/if}}</div>
             <div>
-              {{#if rebuild}}
-                <form action="/project/{{project}}/build/{{build}}" method="post">
-                  <button class="btn" type="submit">rebuild</button>
-                  {{#if ref}}<input type="hidden" name="ref" value="{{ref}}">{{/if}}
-                </form>
-              {{/if}}
+              <form action="/project/{{project}}/build/{{build}}" method="post">
+                <button class="btn" type="submit">build again</button>
+                {{#if ref}}<input type="hidden" name="ref" value="{{ref}}">{{/if}}
+              </form>
             </div>
             <div>
               {{#if cancel}}
