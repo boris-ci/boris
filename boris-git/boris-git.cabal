@@ -34,7 +34,6 @@ library
                     , semigroups                      == 0.16.*
                     , text                            == 1.2.*
                     , transformers                    == 0.4.*
-                    , ini                             == 0.3.3
 
   ghc-options:
                     -Wall

@@ -13,6 +13,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 import           Mismi (renderRegionError, discoverAWSEnv)
+import           Mismi.DynamoDB.Control (configureRetries)
 
 import           P
 
@@ -36,7 +37,9 @@ main = do
   queue <- BuildQueue <$> text "BORIS_BUILD_QUEUE"
   work <- WorkspacePath <$> text "BORIS_WORKSPACE_PATH"
   n <- intOr "BORIS_WORK_THREADS" 1
-  asyncs <- mapM async $ L.replicate n (run env environment queue work pin)
+  let
+    cenv = configureRetries env
+  asyncs <- mapM async $ L.replicate n (run cenv environment queue work pin)
   results <- forM asyncs $ waitCatch
   forM_ results $ \result -> case result of
     Left e ->

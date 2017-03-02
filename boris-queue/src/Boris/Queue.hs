@@ -77,7 +77,7 @@ newtype QueueSize =
 size :: BuildQueue -> AWS QueueSize
 size bq = do
   q <- Q.createQueue (Q.QueueName . renderBuildQueue $ bq) (Just 10)
-  r <- A.send $ A.getQueueAttributes (Q.unQueueUrl q)
+  r <- A.send $ A.getQueueAttributes (Q.renderQueueUrl q)
     & A.gqaAttributeNames .~ [A.ApproximateNumberOfMessages]
   pure . QueueSize . fromMaybe 0 . join $ r ^? A.gqarsAttributes . ix A.ApproximateNumberOfMessages . to T.unpack . to readMaybe
 

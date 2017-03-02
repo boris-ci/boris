@@ -20,7 +20,6 @@ library
                     , ambiata-jebediah
                     , ambiata-mismi-core
                     , ambiata-mismi-cloudwatch-logs
-                    , ambiata-mismi-s3
                     , ambiata-p
                     , ambiata-snooze
                     , ambiata-snooze-baton
@@ -47,7 +46,6 @@ library
                     , transformers                    == 0.4.*
                     , old-locale                      == 1.0.*
                     , unordered-containers            == 0.2.*
-                    , ini                             == 0.3.3
 
   ghc-options:
                     -Wall

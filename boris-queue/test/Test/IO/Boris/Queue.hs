@@ -9,7 +9,7 @@ import qualified Boris.Queue as Q
 
 import           Disorder.Core (failWith)
 
-import           Mismi.SQS (unQueueName)
+import           Mismi.SQS (renderQueueName)
 
 import           P
 
@@ -24,7 +24,7 @@ import           X.Control.Monad.Trans.Either (runEitherT)
 
 prop_queue qn r =
   testAWS . withQueue qn $ \_ ->  do
-    let bq = BuildQueue $ unQueueName qn
+    let bq = BuildQueue $ renderQueueName qn
     Q.put bq r
     candidate <- runEitherT $ Q.get bq
     pure $ case candidate of
@@ -35,7 +35,7 @@ prop_queue qn r =
 
 prop_queue_size qn r =
   testAWS . withQueue qn $ \_ ->  do
-    let bq = BuildQueue $ unQueueName qn
+    let bq = BuildQueue $ renderQueueName qn
     Q.put bq r
     size <- Q.size bq
     pure $ size === QueueSize 1

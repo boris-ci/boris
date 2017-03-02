@@ -30,7 +30,6 @@ library
                     , transformers                    == 0.4.*
                     , time-locale-compat              == 0.1.*
                     , unordered-containers            == 0.2.*
-                    , ini                             == 0.3.3
 
   ghc-options:
                     -Wall
