@@ -220,7 +220,7 @@ renderInitialiseError err =
     NoMatchingRef b s ->
       mconcat ["Boris build ref could not be found, there were no refs found in repository: build = ", renderBuild b, ", pattern = ", renderPattern . buildPattern $ s]
     AmbiguousRef b s rs ->
-      mconcat ["Boris build ref could not be determine, there were more than one refs found in repository: build = ", renderBuild b, ", pattern = ", renderPattern . buildPattern $ s, ", refs = [", T.intercalate ", " (renderRef <$> rs) ,"]"]
+      mconcat ["Boris build ref could not be determined, there were more than one refs found in repository: build = ", renderBuild b, ", pattern = ", renderPattern . buildPattern $ s, ", refs = [", T.intercalate ", " (renderRef <$> rs) ,"]"]
     MismatchedRef b s r rs ->
       mconcat ["Boris build ref mismatch, requested ref does not match allowed refs for this build: build = ", renderBuild b, ", pattern = ", renderPattern . buildPattern $ s, ", refs = [", T.intercalate ", " (renderRef <$> rs) ,"], requested = ", renderRef r]
     InitialiseCommitError b r c ->
