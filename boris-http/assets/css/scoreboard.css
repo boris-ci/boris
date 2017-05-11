@@ -10,6 +10,13 @@ body.stale h1 {
 }
 
 body.stale {
-  /* !important because it needs to beat out style="..." on <body> itself: */
-  background-color: #999 !important;
+  background-color: #999;
+}
+
+body.ok {
+  background-color: green;
+}
+
+body.notOk {
+  background-color: red;
 }

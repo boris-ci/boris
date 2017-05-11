@@ -31,12 +31,12 @@ instance ToJSON GetScoreboard where
 scoreboardHtml :: [BuildData] -> Html
 scoreboardHtml bs = let
   allOk = all (maybe True (== BuildOk) . buildDataResult) bs
-  colour = case allOk of
-    False -> "red"
-    True -> "green"
+  buildClass = case allOk of
+    False -> "notOk"
+    True -> "ok"
   in
     H.html $ do
       H.head $ do
         H.link ! HA.rel "stylesheet" ! HA.type_ "text/css" ! HA.href "/assets/css/scoreboard.css"
         H.script ! HA.src "/assets/js/updateSelf.js" $ ""
-      H.body ! HA.style ("background-color: " <> colour <> ";") $ ""
+      H.body ! HA.class_ buildClass $ ""
