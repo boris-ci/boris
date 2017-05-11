@@ -5,7 +5,7 @@ staleMinutesSince = function(d) {
 }
 
 staleMsg = function(x) {
-  return "<h1>Stale for " + (x == 1 ? "1 minute" : (x + " minutes")) + ".</h1>";
+  return "<h1>Stale for " + x + " minutes.</h1>";
 };
 
 setStale = function(elem) {
