@@ -1,7 +1,15 @@
-h1.stale {
-  position: absolute; 
+body.stale h1 {
+  position: absolute;
   width: 100%;
-  bottom: 0;
+  bottom: 10px;
   color: white;
   text-align: center;
+  font-size: 3em;
+  font-family: sans-serif;
+  letter-spacing: 1px;
+}
+
+body.stale {
+  /* !important because it needs to beat out style="..." on <body> itself: */
+  background-color: #999 !important;
 }
