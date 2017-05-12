@@ -99,6 +99,7 @@ executable boris-http
                     , ambiata-clerk
                     , ambiata-charlotte
                     , ambiata-mismi-core
+                    , ambiata-mismi-dynamodb
                     , ambiata-mismi-s3
                     , ambiata-p
                     , ambiata-twine
@@ -127,6 +128,7 @@ executable boris-http-readonly
                     , ambiata-clerk
                     , ambiata-charlotte
                     , ambiata-mismi-core
+                    , ambiata-mismi-dynamodb
                     , ambiata-mismi-s3
                     , ambiata-p
                     , ambiata-x-eithert
