@@ -5,7 +5,7 @@ staleMinutesSince = function(d) {
 }
 
 staleMsg = function(x) {
-  return "<h1 class=\"stale\">Stale for " + x + " minutes</h1>";
+  return "<h1>Stale for " + x + " minutes.</h1>";
 };
 
 setStale = function(elem) {
@@ -16,6 +16,7 @@ setStale = function(elem) {
   }
   staleFor = staleMinutesSince(staleAt);
   if (staleFor >= 5) {
+    elem.className = 'stale';
     elem.innerHTML = staleMsg(staleFor);
   }
   return elem;
