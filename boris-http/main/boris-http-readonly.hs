@@ -17,6 +17,7 @@ import           Charlotte.Airship (resource404)
 import           Clerk.QuickStop (runStopFile)
 
 import           Mismi (runAWS, discoverAWSEnv, renderRegionError, renderError)
+import           Mismi.DynamoDB.Control (configureRetries)
 
 import           P
 
@@ -32,9 +33,11 @@ main = do
     <$> (Environment <$> text "BORIS_ENVIRONMENT")
     <*> (ConfigLocation <$> addr "BORIS_CONFIG_LOCATION")
   env <- orDie renderRegionError discoverAWSEnv
-  orDie renderError $ runAWS env $ SL.initialise e
+  let
+    cenv = configureRetries env
+  orDie renderError $ runAWS cenv $ SL.initialise e
 
   runStopFile (lookupEnv "BORIS_HTTP_STOP") $ \pin -> do
     agriculture pin "boris-http-readonly" buildInfoVersion $
       return . ($) Static.staticMiddleware $
-        resourceToWai defaultAirshipConfig (borisReadonly env e c) (resource404 ())
+        resourceToWai defaultAirshipConfig (borisReadonly cenv e c) (resource404 ())
