@@ -66,7 +66,7 @@ instance ToJSON GetBuild where
       , "completed" .= buildDataEndTime b
       , "heartbeat" .= buildDataHeartbeatTime b
       , "result" .= (flip fmap (buildDataResult b) $ \bb -> case bb of BuildOk -> True; BuildKo -> False)
-      , "log" .= (flip fmap (buildDataLog b) $ \l -> object ["group" .= (logGroup . SB.logGroup) l, "stream" .= (logStream . SB.logStream) l])
+      , "log" .= (flip fmap (buildDataLog b) $ \l -> object ["group" .= (logGroup . SB.logDataGroup) l, "stream" .= (logStream . SB.logDataStream) l])
       , "cancelled" .= (flip fmap (buildDataCancelled b) $ \bb -> case bb of BuildCancelled -> True; BuildNotCancelled -> False)
       ]
 

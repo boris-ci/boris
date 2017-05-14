@@ -58,3 +58,6 @@
 [submodule "lib/bmx.hs"]
 	path = lib/bmx.hs
 	url = git@github.com:ambiata/bmx.hs
+[submodule "lib/spine"]
+	path = lib/spine
+	url = git@github.com:ambiata/spine
