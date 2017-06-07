@@ -23,6 +23,7 @@ module Boris.Core.Data (
   , Acknowledge (..)
   , WorkspacePath (..)
   , Workspace (..)
+  , renderBuildResult
   , renderRegistration
   , parseRegistration
   , pathOf
@@ -165,6 +166,14 @@ data BuildResult =
     BuildOk
   | BuildKo
     deriving (Eq, Show)
+
+renderBuildResult :: BuildResult -> Text
+renderBuildResult r =
+  case r of
+    BuildOk ->
+      "ok"
+    BuildKo ->
+      "ko"
 
 data Acknowledge =
     Accept
