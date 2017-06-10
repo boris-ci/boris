@@ -44,12 +44,17 @@ data Result =
     , resultBuildResult :: !BuildResult
     } deriving (Eq, Show)
 
+instance Ord Result where
+  compare r1 r2 =
+    resultBuildId r1 `compare` resultBuildId r2
+
 master :: Ref
 master =
   Ref "refs/heads/master"
 
--- The idea here is to calculate what results we can drop from the
--- store.
+-- Calculate what results we can drop from the store. Drop all the
+-- non-latest view of a (project, build, ref) grouping as well as any
+-- successfully builds.
 --
 --   Given the store:
 --     10 p dist refs/heads/master Ok
@@ -59,7 +64,6 @@ master =
 --     6 x dist refs/heads/master Ko
 --
 --   Will be compressed into:
---     10 p dist refs/heads/master Ok
 --     6 x dist refs/heads/master Ko
 --
 calculateDrops :: [Result] -> [Result]
@@ -80,14 +84,24 @@ calculateDrops rs =
         Just (top, rest) ->
           case M.null rest of
             True ->
-              -- Filter master ref
-              if r == master then
-                []
-              else
+              -- Drop non-master refs
+              if r /= master then
                 [Result (fst top) p b r (snd top)]
+              -- Drop ok builds
+              else if (snd top) == BuildOk then
+                [Result (fst top) p b r (snd top)]
+              else
+                []
+
             False ->
-              with (M.toList rest) $ \(i, br) ->
-                Result i p b r br
+              let
+                restDrops = with (M.toList rest) $ \(i, br) ->
+                  Result i p b r br
+              in
+                if (snd top) == BuildOk then
+                  Result (fst top) p b r (snd top) : restDrops
+                else
+                  restDrops
   in
     groups
 
