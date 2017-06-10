@@ -17,7 +17,7 @@ import           Boris.Store.Schema
 import           Control.Lens ((.~), (^.))
 import           Control.Monad.Trans.Class (lift)
 
-import           Data.Aeson (Value (..), object, withObject, (.=), (.:))
+import           Data.Aeson (Value (..), object, withObject, (.=), (.:), (.:?))
 import           Data.Aeson.Types (Parser)
 import qualified Data.Map.Strict as M
 import qualified Data.HashMap.Strict as H
@@ -40,7 +40,7 @@ data Result =
       resultBuildId :: !BuildId
     , resultProject :: !Project
     , resultBuild :: !Build
-    , resultRef :: !Ref
+    , resultRef :: !(Maybe Ref)
     , resultBuildResult :: !BuildResult
     } deriving (Eq, Show, Ord)
 
@@ -86,8 +86,9 @@ calculateDrops rs =
             restDrops = with (M.toList rest) $ \(i, br) ->
               Result i p b r br
           in
-            -- Drop non-master refs
-            if r /= master then
+            -- Drop non-master refs, this includes build that failed
+            -- before a ref could be selected.
+            if r /= Just master then
               Result (fst top) p b r (snd top) : restDrops
             -- Drop ok builds
             else if (snd top) == BuildOk then
@@ -134,7 +135,7 @@ fromResult r =
     , "id" .= (renderBuildId . resultBuildId) r
     , "project" .= (renderProject . resultProject) r
     , "build" .= (renderBuild . resultBuild) r
-    , "ref" .= (renderRef . resultRef) r
+    , "ref" .= (fmap renderRef . resultRef) r
     , "result" .= (renderBuildResult . resultBuildResult) r
     ]
 
@@ -147,7 +148,7 @@ toResult =
           <$> (BuildId <$> o .: "id")
           <*> (Project <$> o .: "project")
           <*> (Build <$> o .: "build")
-          <*> (Ref <$> o .: "ref")
+          <*> ((fmap . fmap) Ref $ o .:? "ref")
           <*> (o .: "result" >>= \t -> case t of
             "ok" ->
               pure BuildOk

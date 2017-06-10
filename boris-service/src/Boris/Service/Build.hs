@@ -138,9 +138,9 @@ builder env e w request = do
 
         runAWST env BuildAwsError $ do
           liftIO . T.putStrLn $ "complete: " <> renderBuildId buildId
-          lift $ SB.complete e buildId result
+          r <- lift $ SB.complete e buildId result
           firstT BuildResultError $
-            SR.add e (SR.Result buildId project build (Ref "TODO" {- mref -}) result)
+            SR.add e (SR.Result buildId project build r result)
 
       (AlreadyRunning, BuildCancelled) ->
         pure ()
@@ -150,9 +150,9 @@ builder env e w request = do
 
       (Accept, BuildCancelled) ->
         runAWST env BuildAwsError $ do
-          lift $ SB.complete e buildId BuildKo
+          r <- lift $ SB.complete e buildId BuildKo
           firstT BuildResultError $
-            SR.add e (SR.Result buildId project build (Ref "TODO" {- mref -}) BuildKo)
+            SR.add e (SR.Result buildId project build r BuildKo)
 
 
 lifecycle :: X.Out -> Env -> Environment -> WorkspacePath -> Project -> Build -> Repository -> Maybe Ref -> BuildId -> EitherT LifecycleError IO (Either BuildError ())

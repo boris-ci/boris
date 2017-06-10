@@ -23,7 +23,7 @@ import           Boris.Core.Data
 import           Boris.Store.Schema
 import           Boris.Store.Index
 
-import           Control.Lens (_Just, ix, to, (.~), (^?))
+import           Control.Lens (_Just, ix, to, (.~), (^?), (^.))
 import           Control.Exception.Lens (handling)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Trans.Class (lift)
@@ -44,7 +44,7 @@ import qualified Network.AWS.DynamoDB as D
 
 import           P
 
-import           Spine.Data (TableName (..), renderKey, toEncoding, toItemEncoding)
+import           Spine.Data (TableName (..), renderKey, toEncoding, toItemEncoding, fromEncoding_)
 
 import           X.Control.Monad.Trans.Either (EitherT, newEitherT)
 
@@ -193,10 +193,10 @@ acknowledge e i g s = do
       ]
     & D.uiConditionExpression .~ (Just . mconcat $ ["attribute_not_exists(", kStartTime, ")"])
 
-complete :: Environment -> BuildId -> BuildResult -> AWS ()
+complete :: Environment -> BuildId -> BuildResult -> AWS (Maybe Ref)
 complete e i r = do
   now <- liftIO getCurrentTime
-  void . A.send $ D.updateItem (renderTableName $ tBuild e)
+  z <- A.send $ D.updateItem (renderTableName $ tBuild e)
     & D.uiKey .~ H.fromList [
         toItemEncoding iBuildId (renderBuildId i)
       ]
@@ -205,10 +205,12 @@ complete e i r = do
       , kEndTime, " = ", renderKey $ kVal "t", ", "
       , renderKey kBuildResult, " = ", renderKey $ kVal "r"
       ])
+    & D.uiReturnValues .~ Just D.AllNew
     & D.uiExpressionAttributeValues .~ H.fromList [
         toEncoding (kTime "t") now
       , toEncoding (kBool "r") (case r of BuildOk -> True; BuildKo -> False)
       ]
+  pure $ Ref <$> fromEncoding_ kRef (z ^. D.uirsAttributes)
 
 heartbeat :: Environment -> BuildId -> AWS BuildCancelled
 heartbeat e i = do

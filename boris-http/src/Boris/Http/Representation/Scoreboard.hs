@@ -32,7 +32,7 @@ fromResult r =
       "build_id" .= (renderBuildId . resultBuildId) r
     , "project" .= (renderProject . resultProject) r
     , "build" .= (renderBuild . resultBuild) r
-    , "ref" .= (renderRef . resultRef) r
+    , "ref" .= (fmap renderRef . resultRef) r
     , "result" .= (renderBuildResult . resultBuildResult) r
     ]
 

@@ -31,8 +31,8 @@ prop_add_fetch i p b r br =
 prop_add_compress_fetch p b r br =
   once . testAWS . withClean environment (Store.deleteItem environment) $ do
     _ <- runEitherT $ Store.add environment (Result (BuildId "10") p b master BuildKo)
-    _ <- runEitherT $ Store.add environment (Result (BuildId "9") p b r br)
-    z <- runEitherT $ Store.addWithCompressLimit environment 2 (Result (BuildId "8") p b r br)
+    _ <- runEitherT $ Store.add environment (Result (BuildId "9") p b (Just r) br)
+    z <- runEitherT $ Store.addWithCompressLimit environment 2 (Result (BuildId "8") p b (Just r) br)
     l <- runEitherT $ Store.fetch environment
     pure $ (z, l) === (Right (), Right [Result (BuildId "10") p b master BuildKo])
 
@@ -45,14 +45,14 @@ prop_add_compress i p b r br =
 
 prop_add_compress_no_master i p b br =
   once . testAWS . withClean environment (Store.deleteItem environment) $ do
-    _ <- runEitherT $ Store.add environment (Result i p b (Ref "refs/heads/topic/foo") br)
+    _ <- runEitherT $ Store.add environment (Result i p b (Just $ Ref "refs/heads/topic/foo") br)
     l <- runEitherT $ Store.compress environment
     z <- runEitherT $ Store.fetch environment
     pure $ (l, z) === (Right [], Right [])
 
-master :: Ref
+master :: Maybe Ref
 master =
-  Ref "refs/heads/master"
+  Just $ Ref "refs/heads/master"
 
 return []
 tests = $quickCheckAll
