@@ -6,10 +6,10 @@ module Boris.Http.Representation.Scoreboard (
   ) where
 
 import           Boris.Core.Data
-import           Boris.Store.Build (BuildData (..))
-import           Boris.Http.Representation.Build
+import           Boris.Store.Results (Result (..))
 
 import           Data.Aeson (ToJSON (..), object, (.=))
+import           Data.Aeson.Types (Value)
 
 import           P
 
@@ -17,20 +17,29 @@ import           Text.Blaze.Html (Html, (!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as HA
 
-
 data GetScoreboard =
-  GetScoreboard [BuildData]
+  GetScoreboard [Result]
 
 instance ToJSON GetScoreboard where
-  toJSON (GetScoreboard bs) =
+  toJSON (GetScoreboard rs) =
     object [
-        "builds" .= fmap GetBuild bs
+        "builds" .= fmap fromResult rs
       ]
 
+fromResult :: Result -> Value
+fromResult r =
+  object [
+      "build_id" .= (renderBuildId . resultBuildId) r
+    , "project" .= (renderProject . resultProject) r
+    , "build" .= (renderBuild . resultBuild) r
+    , "ref" .= (renderRef . resultRef) r
+    , "result" .= (renderBuildResult . resultBuildResult) r
+    ]
 
-scoreboardHtml :: [BuildData] -> Html
-scoreboardHtml bs = let
-  allOk = all (maybe True (== BuildOk) . buildDataResult) bs
+
+scoreboardHtml :: [Result] -> Html
+scoreboardHtml rs = let
+  allOk = all ((== BuildOk) . resultBuildResult) rs
   buildClass = case allOk of
     False -> "notOk"
     True -> "ok"

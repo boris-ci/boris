@@ -23,6 +23,7 @@ import           BMX (BMXValue (..), defaultState, usingContext)
 
 import           Boris.Core.Data (Project (..), Build (..), Commit (..), Ref (..), BuildId (..), BuildResult (..), sortBuildIds, renderBuildResult)
 import           Boris.Store.Build (BuildData (..), BuildCancelled(..))
+import           Boris.Store.Results (Result (..))
 import           Boris.Http.Airship (webT)
 import           Boris.Http.Data (ClientLocale (..))
 import           Boris.Queue (QueueSize (..))
@@ -56,16 +57,16 @@ dashboard s =
   in
     renderPage <$> renderTemplate (defaultState `usingContext` context) dashboard'
 
-status :: [BuildData] -> Either BMXError Text
+status :: [Result] -> Either BMXError Text
 status bs =
   let
-    buildSort b = (buildDataProject b, buildDataBuild b)
+    buildSort b = (resultProject b, resultBuild b)
     context = [
         (,) "builds" $ BMXList . flip fmap (sortOn buildSort bs) $ \b ->
           BMXContext [
-              (,) "project" (BMXString . renderProject $ buildDataProject b)
-            , (,) "build" (BMXString . renderBuild $ buildDataBuild b)
-            , (,) "id" (BMXString . renderBuildId $ buildDataId b)
+              (,) "project" (BMXString . renderProject $ resultProject b)
+            , (,) "build" (BMXString . renderBuild $ resultBuild b)
+            , (,) "id" (BMXString . renderBuildId $ resultBuildId b)
             ]
       ]
   in
