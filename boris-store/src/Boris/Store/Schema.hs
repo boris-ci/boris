@@ -10,6 +10,13 @@ module Boris.Store.Schema (
   , tProject
   , tProjectCommits
   , kTick
+  , iContext
+  , iBuildId
+  , iProject
+  , iBuild
+  , iProjectBuild
+  , iRef
+  , iCommit
   , kContext
   , kProject
   , kProjectBuild
@@ -35,41 +42,29 @@ module Boris.Store.Schema (
   , kLogGroup
   , kLogStream
   , kVal
+  , kInt
+  , kBool
+  , kValL
+  , kValSet
+  , kTime
   , vGlobal
-  , vProject
-  , vProjectBuild
-  , vBuild
-  , vBuildId
-  , vBuildResult
-  , vRef
-  , vCommit
-  , vRefOf
-  , vCommitOf
-  , vLogGroup
-  , vLogStream
-  , vTime
-  , vBool
-  , vInt
-  , vStrings
+  , renderProjectBuild
   ) where
 
 import           Boris.Core.Data
 
-import           Control.Lens ((.~))
-
-import           Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Text as T
-import           Data.Time (UTCTime, formatTime)
-import           Jebediah.Data (LogGroup (..), LogStream (..))
-import           Data.Time.Locale.Compat (defaultTimeLocale)
+import           Data.Time (UTCTime)
 
 import qualified Network.AWS.DynamoDB as D
 
 import           P
 
-table :: Environment -> Text -> Text
+import           Spine.Data
+
+table :: Environment -> Text -> TableName
 table e n =
-  T.intercalate "." $ ["boris", renderEnvironment e, n]
+  TableName . T.intercalate "." $ ["boris", renderEnvironment e, n]
 
 -- |
 -- Build id state.
@@ -80,7 +75,7 @@ table e n =
 -- Attributes:
 --  kTick :: Int
 --
-tTick :: Environment -> Text
+tTick :: Environment -> TableName
 tTick e =
   table e "tick"
 
@@ -104,7 +99,7 @@ tTick e =
 --  kLogGroup :: String
 --  kLogStream :: String
 --
-tBuild :: Environment -> Text
+tBuild :: Environment -> TableName
 tBuild e =
   table e "build"
 
@@ -122,7 +117,7 @@ tBuild e =
 --  kRefs :: [String]
 --  kQueued :: [String]
 --
-tBuilds :: Environment -> Text
+tBuilds :: Environment -> TableName
 tBuilds e =
   table e "project.build"
 
@@ -136,7 +131,7 @@ tBuilds e =
 -- Attributes:
 --  kBuildIds :: [String]
 --
-tRefs :: Environment -> Text
+tRefs :: Environment -> TableName
 tRefs e =
   table e "project.build.refs"
 
@@ -150,7 +145,7 @@ tRefs e =
 -- Attributes:
 --  kBuilds :: [String]
 --
-tProjectRefs :: Environment -> Text
+tProjectRefs :: Environment -> TableName
 tProjectRefs e =
   table e "project.refs"
 
@@ -164,7 +159,7 @@ tProjectRefs e =
 --  kBuilds :: [String]
 --  kCommits :: [String]
 --
-tProject :: Environment -> Text
+tProject :: Environment -> TableName
 tProject e =
   table e "project"
 
@@ -179,29 +174,57 @@ tProject e =
 --  kBuilds :: [String] -- NOTE: this is build-ids not build names...
 --  kSeen :: [String] -- Build names that have been triggered against this commit
 --
-tProjectCommits :: Environment -> Text
+tProjectCommits :: Environment -> TableName
 tProjectCommits e =
   table e "project.commit"
 
-kContext :: Text
+iContext :: ItemKey Text
+iContext =
+  ItemStringKey "context"
+
+iBuildId :: ItemKey Text
+iBuildId =
+  ItemStringKey "build_id"
+
+iProject :: ItemKey Text
+iProject =
+  ItemStringKey "project"
+
+iBuild :: ItemKey Text
+iBuild =
+  ItemStringKey "build"
+
+iProjectBuild :: ItemKey Text
+iProjectBuild =
+  ItemStringKey "project_build"
+
+iRef :: ItemKey Text
+iRef =
+  ItemStringKey "refx" -- ref is now a reserved keyword
+
+iCommit :: ItemKey Text
+iCommit =
+  ItemStringKey "commitx"
+
+kContext :: Key Text
 kContext =
-  "context"
+  StringKey "context"
 
-kTick :: Text
+kTick :: Key Int
 kTick =
-  "tick"
+  IntKey "tick"
 
-kProject :: Text
+kProject :: Key Text
 kProject =
-  "project"
+  StringKey "project"
 
-kBuild :: Text
+kBuild :: Key Text
 kBuild =
-  "build"
+  StringKey "build"
 
-kProjectBuild :: Text
+kProjectBuild :: Key Text
 kProjectBuild =
-  "project_build"
+  StringKey "project_build"
 
 kBuildId :: Text
 kBuildId =
@@ -219,9 +242,9 @@ kBuildIdState :: Text
 kBuildIdState =
   "build_id_ticker"
 
-kQueueTime :: Text
+kQueueTime :: Key UTCTime
 kQueueTime =
-  "queue_time"
+  TimeKey "queue_time"
 
 kEndTime :: Text
 kEndTime =
@@ -251,9 +274,9 @@ kDiscovered :: Text
 kDiscovered =
   "discovered"
 
-kRef :: Text
+kRef :: Key Text
 kRef =
-  "refx" -- ref is now a reserved keyword
+  StringKey "refx" -- ref is now a reserved keyword
 
 kRefs :: Text
 kRefs =
@@ -263,9 +286,9 @@ kDisabled :: Text
 kDisabled =
   "disabled"
 
-kCommit :: Text
+kCommit :: Key Text
 kCommit =
-  "commitx"
+  StringKey "commitx"
 
 kCommits :: Text
 kCommits =
@@ -283,106 +306,46 @@ kLogStream :: Text
 kLogStream =
   "log_stream"
 
-kVal :: Text -> Text
+kVal :: Text -> Key Text
 kVal =
-  (<>) ":"
+  StringKey . (<>) ":"
+
+kInt :: Text -> Key Int
+kInt =
+  IntKey . (<>) ":"
+
+kBool :: Text -> Key Bool
+kBool =
+  BoolKey . (<>) ":"
+
+kValL :: Text -> Key [Text]
+kValL =
+  StringListKey . (<>) ":"
+
+kValSet :: Text -> Key [Text]
+kValSet =
+  StringSetKey . (<>) ":"
+
+kTime :: Text -> Key UTCTime
+kTime =
+  TimeKey . (<>) ":"
 
 vGlobal :: (Text, D.AttributeValue)
 vGlobal =
-  (kContext, D.attributeValue & D.avS .~ Just "global")
+  toEncoding kContext "global"
 
-vProject :: Project -> (Text, D.AttributeValue)
-vProject p =
-  (kProject, D.attributeValue & D.avS .~ Just (renderProject p))
+renderProjectBuild :: Project -> Build -> Text
+renderProjectBuild p b =
+  mconcat [renderProject p, ".", renderBuild b]
 
-vProjectBuild :: Project -> Build -> (Text, D.AttributeValue)
-vProjectBuild p b =
-  (kProjectBuild, D.attributeValue & D.avS .~ Just (mconcat [renderProject p, ".", renderBuild b]))
-
-vBuild :: Build -> (Text, D.AttributeValue)
-vBuild b =
-  (kBuild, D.attributeValue & D.avS .~ Just (renderBuild b))
-
-vBuildId :: BuildId -> (Text, D.AttributeValue)
-vBuildId i =
-  (kBuildId, D.attributeValue & D.avS .~ Just (renderBuildId i))
-
-vBuildResult :: Text -> BuildResult -> (Text, D.AttributeValue)
-vBuildResult k v =
-  (k, D.attributeValue & D.avBOOL .~ Just (case v of BuildOk -> True; BuildKo -> False))
-
-vRef :: Ref -> (Text, D.AttributeValue)
-vRef =
-  vRefOf kRef
-
-vCommit :: Commit -> (Text, D.AttributeValue)
-vCommit =
-  vCommitOf kCommit
-
-vRefOf :: Text -> Ref -> (Text, D.AttributeValue)
-vRefOf k r =
-  (k, D.attributeValue & D.avS .~ Just (renderRef r))
-
-vCommitOf :: Text -> Commit -> (Text, D.AttributeValue)
-vCommitOf k c =
-  (k, D.attributeValue & D.avS .~ Just (renderCommit c))
-
-vLogGroup :: Text -> LogGroup -> (Text, D.AttributeValue)
-vLogGroup k r =
-  (k, D.attributeValue & D.avS .~ Just (logGroup r))
-
-vLogStream :: Text -> LogStream -> (Text, D.AttributeValue)
-vLogStream k r =
-  (k, D.attributeValue & D.avS .~ Just (logStream r))
-
-vTime :: Text -> UTCTime -> (Text, D.AttributeValue)
-vTime k v =
-  (k, D.attributeValue & D.avS .~ Just (T.pack $ formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S" v))
-
-vBool :: Text -> Bool -> (Text, D.AttributeValue)
-vBool k v =
-  (k, D.attributeValue & D.avBOOL .~ Just v)
-
-vInt :: Text -> Int -> (Text, D.AttributeValue)
-vInt k v =
-  (k, D.attributeValue & D.avN .~ Just (T.pack . show $ v))
-
-vStrings :: Text -> [Text] -> (Text, D.AttributeValue)
-vStrings k v =
-  (k, D.attributeValue & D.avSS .~ v)
-
-schema ::  Environment -> [D.CreateTable]
-schema e = [
-    D.createTable (tTick e) (D.keySchemaElement kContext D.Hash :| []) (D.provisionedThroughput 2 5)
-      & D.ctAttributeDefinitions .~ [
-          D.attributeDefinition kContext D.S
-        ]
-  , D.createTable (tBuild e) (D.keySchemaElement kBuildId D.Hash :| []) (D.provisionedThroughput 2 5)
-      & D.ctAttributeDefinitions .~ [
-          D.attributeDefinition kBuildId D.S
-        ]
-  , D.createTable (tBuilds e) (D.keySchemaElement kProject D.Hash :| [D.keySchemaElement kBuild D.Range]) (D.provisionedThroughput 2 5)
-      & D.ctAttributeDefinitions .~ [
-          D.attributeDefinition kProject D.S
-        , D.attributeDefinition kBuild D.S
-        ]
-  , D.createTable (tRefs e) (D.keySchemaElement kProjectBuild D.Hash :| [D.keySchemaElement kRef D.Range]) (D.provisionedThroughput 2 5)
-      & D.ctAttributeDefinitions .~ [
-          D.attributeDefinition kProjectBuild D.S
-        , D.attributeDefinition kRef D.S
-        ]
-  , D.createTable (tProject e) (D.keySchemaElement kProject D.Hash :| []) (D.provisionedThroughput 2 5)
-      & D.ctAttributeDefinitions .~ [
-          D.attributeDefinition kProject D.S
-        ]
-  , D.createTable (tProjectRefs e) (D.keySchemaElement kProject D.Hash :| [D.keySchemaElement kRef D.Range]) (D.provisionedThroughput 2 5)
-      & D.ctAttributeDefinitions .~ [
-          D.attributeDefinition kProject D.S
-        , D.attributeDefinition kRef D.S
-        ]
-  , D.createTable (tProjectCommits e) (D.keySchemaElement kProject D.Hash :| [D.keySchemaElement kCommit D.Range]) (D.provisionedThroughput 2 5)
-      & D.ctAttributeDefinitions .~ [
-          D.attributeDefinition kProject D.S
-        , D.attributeDefinition kCommit D.S
-        ]
-  ]
+schema ::  Environment -> Schema
+schema e =
+  Schema [
+      Table (tTick e) iContext Nothing (Throughput (ThroughputRange 2 20) (ThroughputRange 5 50))
+    , Table (tBuild e) iBuildId Nothing (Throughput (ThroughputRange 2 200) (ThroughputRange 5 20))
+    , Table (tBuilds e) iProject (Just iBuild) (Throughput (ThroughputRange 2 50) (ThroughputRange 5 20))
+    , Table (tRefs e) iProjectBuild (Just iRef) (Throughput (ThroughputRange 2 50) (ThroughputRange 5 20))
+    , Table (tProject e) iProject Nothing (Throughput (ThroughputRange 2 50) (ThroughputRange 5 50))
+    , Table (tProjectRefs e) iProject (Just iRef) (Throughput (ThroughputRange 2 50) (ThroughputRange 5 50))
+    , Table (tProjectCommits e) iProject (Just iCommit) (Throughput (ThroughputRange 2 50) (ThroughputRange 5 10))
+    ]

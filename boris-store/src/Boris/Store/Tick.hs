@@ -9,7 +9,7 @@ module Boris.Store.Tick (
 import           Boris.Core.Data
 import           Boris.Store.Schema
 
-import           Control.Lens ((.~), (^?), ix, to, _Just)
+import           Control.Lens ((.~), (^.))
 import           Control.Monad.Trans.Class (lift)
 
 import qualified Data.HashMap.Strict as H
@@ -22,6 +22,8 @@ import qualified Network.AWS.DynamoDB as D
 
 import           P
 
+import           Spine.Data (TableName (..), renderKey, toEncoding, fromEncoding_)
+
 import           X.Control.Monad.Trans.Either (EitherT, left)
 
 
@@ -31,17 +33,17 @@ data TickError =
 
 next :: Environment -> Project -> Build -> EitherT TickError AWS BuildId
 next e p b = do
-  r <- lift . A.send $ D.updateItem (tTick e)
+  r <- lift . A.send $ D.updateItem (renderTableName $ tTick e)
     & D.uiKey .~ H.fromList [
         vGlobal
       ]
-    & D.uiUpdateExpression .~ Just (mconcat ["ADD ", kTick, kVal "v"])
+    & D.uiUpdateExpression .~ Just (mconcat ["ADD ", renderKey kTick, renderKey $ kInt "v"])
     & D.uiReturnValues .~ Just D.UpdatedNew
     & D.uiExpressionAttributeValues .~ H.fromList [
-        vInt (kVal "v") 1
+        toEncoding (kInt "v") 1
       ]
   fromMaybeM (left $ BuildIdCouldNotBeGenerated e p b) $
-    r ^? D.uirsAttributes . ix kTick . D.avN . _Just . to BuildId
+    (BuildId . renderIntegral) <$> fromEncoding_ kTick (r ^. D.uirsAttributes)
 
 renderTickError :: TickError -> Text
 renderTickError err =

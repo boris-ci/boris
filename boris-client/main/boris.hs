@@ -168,7 +168,7 @@ run e c = case c of
               pure x
 
         taillog env l =
-          L.source' env (logGroup l) (logStream l) $$
+          L.source' env (logDataGroup l) (logDataStream l) $$
             CL.mapM_ (liftIO . T.putStrLn)
 
       l <- orDie renderBorisHttpClientError waitForLog

@@ -46,144 +46,146 @@ import qualified Network.AWS.DynamoDB as D
 
 import           P
 
+import           Spine.Data (TableName (..), renderKey, toEncoding)
+
 
 addProject :: Environment -> Project -> Build -> AWS ()
 addProject e p b = do
-  void . A.send $ D.updateItem (tProject e)
+  void . A.send $ D.updateItem (renderTableName $ tProject e)
     & D.uiKey .~ H.fromList [
-        vProject p
+        toEncoding kProject (renderProject p)
       ]
     & D.uiUpdateExpression .~
-      Just (mconcat ["ADD ", kBuilds, " ", kVal "v"])
+      Just (mconcat ["ADD ", kBuilds, " ", renderKey $ kValSet "v"])
     & D.uiExpressionAttributeValues .~ H.fromList [
-        vStrings (kVal "v") [renderBuild b]
+        toEncoding (kValSet "v") [renderBuild b]
       ]
 
 
 addProjectRef :: Environment -> Project -> Ref -> Build -> AWS ()
 addProjectRef e p r b = do
-  void . A.send $ D.updateItem (tProjectRefs e)
+  void . A.send $ D.updateItem (renderTableName $ tProjectRefs e)
     & D.uiKey .~ H.fromList [
-        vProject p
-      , vRef r
+        toEncoding kProject (renderProject p)
+      , toEncoding kRef (renderRef r)
       ]
     & D.uiUpdateExpression .~
-      Just (mconcat ["ADD ", kBuilds, " ", kVal "v"])
+      Just (mconcat ["ADD ", kBuilds, " ", renderKey $ kValSet "v"])
     & D.uiExpressionAttributeValues .~ H.fromList [
-        vStrings (kVal "v") [renderBuild b]
+        toEncoding (kValSet "v") [renderBuild b]
       ]
 
 addBuildId :: Environment -> Project -> Build -> Ref -> BuildId -> AWS ()
 addBuildId e p b r i = do
-  void . A.send $ D.updateItem (tRefs e)
+  void . A.send $ D.updateItem (renderTableName $ tRefs e)
     & D.uiKey .~ H.fromList [
-        vProjectBuild p b
-      , vRef r
+        toEncoding kProjectBuild (renderProjectBuild p b)
+      , toEncoding kRef (renderRef r)
       ]
     & D.uiUpdateExpression .~
-      Just (mconcat ["ADD ", kBuildIds, " ", kVal "v"])
+      Just (mconcat ["ADD ", kBuildIds, " ", renderKey $ kValSet "v"])
     & D.uiExpressionAttributeValues .~ H.fromList [
-        vStrings (kVal "v") [renderBuildId i]
+        toEncoding (kValSet "v") [renderBuildId i]
       ]
 
 addQueued :: Environment -> Project -> Build -> BuildId -> AWS ()
 addQueued e p b i = do
-  void . A.send $ D.updateItem (tBuilds e)
+  void . A.send $ D.updateItem (renderTableName $ tBuilds e)
     & D.uiKey .~ H.fromList [
-        vProject p
-      , vBuild b
+        toEncoding kProject (renderProject p)
+      , toEncoding kBuild (renderBuild b)
       ]
     & D.uiUpdateExpression .~
-      Just (mconcat ["ADD ", kQueued, " ", kVal "v"])
+      Just (mconcat ["ADD ", kQueued, " ", renderKey $ kValSet "v"])
     & D.uiExpressionAttributeValues .~ H.fromList [
-        vStrings (kVal "v") [renderBuildId i]
+        toEncoding (kValSet "v") [renderBuildId i]
       ]
 
 addBuildRef :: Environment -> Project -> Build -> Ref -> AWS ()
 addBuildRef e p b r = do
-  void . A.send $ D.updateItem (tBuilds e)
+  void . A.send $ D.updateItem (renderTableName $ tBuilds e)
     & D.uiKey .~ H.fromList [
-        vProject p
-      , vBuild b
+        toEncoding kProject (renderProject p)
+      , toEncoding kBuild (renderBuild b)
       ]
     & D.uiUpdateExpression .~
       Just (T.intercalate " " [
-          "ADD", kRefs, kVal "v"
+          "ADD", kRefs, renderKey $ kValSet "v"
         , "REMOVE", kDisabled
         ])
     & D.uiExpressionAttributeValues .~ H.fromList [
-        vStrings (kVal "v") [renderRef r]
+        toEncoding (kValSet "v") [renderRef r]
       ]
 
 addProjectCommit :: Environment -> Project -> Commit -> AWS ()
 addProjectCommit e p c = do
-  void . A.send $ D.updateItem (tProject e)
+  void . A.send $ D.updateItem (renderTableName $ tProject e)
     & D.uiKey .~ H.fromList [
-        vProject p
+        toEncoding kProject (renderProject p)
       ]
     & D.uiUpdateExpression .~
-      Just (mconcat ["ADD ", kCommits, " ", kVal "v"])
+      Just (mconcat ["ADD ", kCommits, " ", renderKey $ kValSet "v"])
     & D.uiExpressionAttributeValues .~ H.fromList [
-        vStrings (kVal "v") [renderCommit c]
+        toEncoding (kValSet "v") [renderCommit c]
       ]
 
 addProjectCommitBuildId :: Environment -> Project -> Commit -> BuildId -> AWS ()
 addProjectCommitBuildId e p c i = do
-  void . A.send $ D.updateItem (tProjectCommits e)
+  void . A.send $ D.updateItem (renderTableName $ tProjectCommits e)
     & D.uiKey .~ H.fromList [
-        vProject p
-      , vCommit c
+        toEncoding kProject (renderProject p)
+      , toEncoding kCommit (renderCommit c)
       ]
     & D.uiUpdateExpression .~
-      Just (mconcat ["ADD ", kBuilds, " ", kVal "v"])
+      Just (mconcat ["ADD ", kBuilds, " ", renderKey $ kValSet "v"])
     & D.uiExpressionAttributeValues .~ H.fromList [
-        vStrings (kVal "v") [renderBuildId i]
+        toEncoding (kValSet "v") [renderBuildId i]
       ]
 
 addProjectCommitSeen :: Environment -> Project -> Commit -> Build -> AWS ()
 addProjectCommitSeen e p c b = do
-  void . A.send $ D.updateItem (tProjectCommits e)
+  void . A.send $ D.updateItem (renderTableName $ tProjectCommits e)
     & D.uiKey .~ H.fromList [
-        vProject p
-      , vCommit c
+        toEncoding kProject (renderProject p)
+      , toEncoding kCommit (renderCommit c)
       ]
     & D.uiUpdateExpression .~
-      Just (mconcat ["ADD ", kSeen, " ", kVal "v"])
+      Just (mconcat ["ADD ", kSeen, " ", renderKey $ kValSet "v"])
     & D.uiExpressionAttributeValues .~ H.fromList [
-        vStrings (kVal "v") [renderBuild b]
+        toEncoding (kValSet "v") [renderBuild b]
       ]
 
 addProjectCommitDiscovered :: Environment -> Project -> Commit -> Build -> AWS ()
 addProjectCommitDiscovered e p c b = do
-  void . A.send $ D.updateItem (tProjectCommits e)
+  void . A.send $ D.updateItem (renderTableName $ tProjectCommits e)
     & D.uiKey .~ H.fromList [
-        vProject p
-      , vCommit c
+        toEncoding kProject (renderProject p)
+      , toEncoding kCommit (renderCommit c)
       ]
     & D.uiUpdateExpression .~
-      Just (mconcat ["ADD ", kDiscovered, " ", kVal "v"])
+      Just (mconcat ["ADD ", kDiscovered, " ", renderKey $ kValSet "v"])
     & D.uiExpressionAttributeValues .~ H.fromList [
-        vStrings (kVal "v") [renderBuild b]
+        toEncoding (kValSet "v") [renderBuild b]
       ]
 
 clearQueued :: Environment -> Project -> Build -> BuildId -> AWS ()
 clearQueued e p b i = do
-  void . A.send $ D.updateItem (tBuilds e)
+  void . A.send $ D.updateItem (renderTableName $ tBuilds e)
     & D.uiKey .~ H.fromList [
-        vProject p
-      , vBuild b
+        toEncoding kProject (renderProject p)
+      , toEncoding kBuild (renderBuild b)
       ]
     & D.uiUpdateExpression .~
-      Just (mconcat ["DELETE ", kQueued, " ", kVal "v"])
+      Just (mconcat ["DELETE ", kQueued, " ", renderKey $ kValSet "v"])
     & D.uiExpressionAttributeValues .~ H.fromList [
-        vStrings (kVal "v") [renderBuildId i]
+        toEncoding (kValSet "v") [renderBuildId i]
       ]
 
 getProjects :: Environment -> Project -> AWS [Build]
 getProjects e p = do
-  res <- A.send $ D.getItem (tProject e)
+  res <- A.send $ D.getItem (renderTableName $ tProject e)
     & D.giKey .~ H.fromList [
-        vProject p
+        toEncoding kProject (renderProject p)
       ]
     & D.giConsistentRead .~
       Just False
@@ -191,9 +193,9 @@ getProjects e p = do
 
 getProjectCommits :: Environment -> Project -> AWS [Commit]
 getProjectCommits e p = do
-  res <- A.send $ D.getItem (tProject e)
+  res <- A.send $ D.getItem (renderTableName $ tProject e)
     & D.giKey .~ H.fromList [
-        vProject p
+        toEncoding kProject (renderProject p)
       ]
     & D.giConsistentRead .~
       Just False
@@ -201,10 +203,10 @@ getProjectCommits e p = do
 
 getProjectRefs :: Environment -> Project -> Ref -> AWS [Build]
 getProjectRefs e p r = do
-  res <- A.send $ D.getItem (tProjectRefs e)
+  res <- A.send $ D.getItem (renderTableName $ tProjectRefs e)
     & D.giKey .~ H.fromList [
-        vProject p
-      , vRef r
+        toEncoding kProject (renderProject p)
+      , toEncoding kRef (renderRef r)
       ]
     & D.giConsistentRead .~
       Just False
@@ -212,10 +214,10 @@ getProjectRefs e p r = do
 
 getProjectCommitBuildIds :: Environment -> Project -> Commit -> AWS [BuildId]
 getProjectCommitBuildIds e p c = do
-  res <- A.send $ D.getItem (tProjectCommits e)
+  res <- A.send $ D.getItem (renderTableName $ tProjectCommits e)
     & D.giKey .~ H.fromList [
-        vProject p
-      , vCommit c
+        toEncoding kProject (renderProject p)
+      , toEncoding kCommit (renderCommit c)
       ]
     & D.giConsistentRead .~
       Just False
@@ -223,10 +225,10 @@ getProjectCommitBuildIds e p c = do
 
 getProjectCommitSeen :: Environment -> Project -> Commit -> AWS [Build]
 getProjectCommitSeen e p c = do
-  res <- A.send $ D.getItem (tProjectCommits e)
+  res <- A.send $ D.getItem (renderTableName $ tProjectCommits e)
     & D.giKey .~ H.fromList [
-        vProject p
-      , vCommit c
+        toEncoding kProject (renderProject p)
+      , toEncoding kCommit (renderCommit c)
       ]
     & D.giConsistentRead .~
       Just False
@@ -234,10 +236,10 @@ getProjectCommitSeen e p c = do
 
 getProjectCommitDiscovered :: Environment -> Project -> Commit -> AWS [Build]
 getProjectCommitDiscovered e p c = do
-  res <- A.send $ D.getItem (tProjectCommits e)
+  res <- A.send $ D.getItem (renderTableName $ tProjectCommits e)
     & D.giKey .~ H.fromList [
-        vProject p
-      , vCommit c
+        toEncoding kProject (renderProject p)
+      , toEncoding kCommit (renderCommit c)
       ]
     & D.giConsistentRead .~
       Just False
@@ -245,10 +247,10 @@ getProjectCommitDiscovered e p c = do
 
 getBuildIds :: Environment -> Project -> Build -> Ref -> AWS [BuildId]
 getBuildIds e p b r = do
-  res <- A.send $ D.getItem (tRefs e)
+  res <- A.send $ D.getItem (renderTableName $ tRefs e)
     & D.giKey .~ H.fromList [
-        vProjectBuild p b
-      , vRef r
+        toEncoding kProjectBuild (renderProjectBuild p b)
+      , toEncoding kRef (renderRef r)
       ]
     & D.giConsistentRead .~
       Just False
@@ -256,10 +258,10 @@ getBuildIds e p b r = do
 
 getQueued :: Environment -> Project -> Build -> AWS [BuildId]
 getQueued e p b = do
-  res <- A.send $ D.getItem (tBuilds e)
+  res <- A.send $ D.getItem (renderTableName $ tBuilds e)
     & D.giKey .~ H.fromList [
-        vProject p
-      , vBuild b
+        toEncoding kProject (renderProject p)
+      , toEncoding kBuild (renderBuild b)
       ]
     & D.giConsistentRead .~
       Just False
@@ -267,10 +269,10 @@ getQueued e p b = do
 
 getBuildRefs :: Environment -> Project -> Build -> AWS [Ref]
 getBuildRefs e p b = do
-  res <- A.send $ D.getItem (tBuilds e)
+  res <- A.send $ D.getItem (renderTableName $ tBuilds e)
     & D.giKey .~ H.fromList [
-        vProject p
-      , vBuild b
+        toEncoding kProject (renderProject p)
+      , toEncoding kBuild (renderBuild b)
       ]
     & D.giConsistentRead .~
       Just False
@@ -278,23 +280,23 @@ getBuildRefs e p b = do
 
 setBuildDisabled :: Environment -> Project -> Build -> Bool -> AWS ()
 setBuildDisabled e p b d = do
-  void . A.send $ D.updateItem (tBuilds e)
+  void . A.send $ D.updateItem (renderTableName $ tBuilds e)
     & D.uiKey .~ H.fromList [
-        vProject p
-      , vBuild b
+        toEncoding kProject (renderProject p)
+      , toEncoding kBuild (renderBuild b)
       ]
     & D.uiUpdateExpression .~
-      Just (mconcat ["SET ", kDisabled, " = ", kVal "v"])
+      Just (mconcat ["SET ", kDisabled, " = ", renderKey $ kBool "v"])
     & D.uiExpressionAttributeValues .~ H.fromList [
-        vBool (kVal "v") d
+        toEncoding (kBool "v") d
       ]
 
 isBuildDisabled :: Environment -> Project -> Build -> AWS Bool
 isBuildDisabled e p b = do
-  res <- A.send $ D.getItem (tBuilds e)
+  res <- A.send $ D.getItem (renderTableName $ tBuilds e)
     & D.giKey .~ H.fromList [
-        vProject p
-      , vBuild b
+        toEncoding kProject (renderProject p)
+      , toEncoding kBuild (renderBuild b)
       ]
     & D.giConsistentRead .~
       Just False
@@ -303,47 +305,47 @@ isBuildDisabled e p b = do
 
 deleteProjects :: Environment -> Project -> AWS ()
 deleteProjects e p =
-  void . A.send $ D.deleteItem (tProject e)
+  void . A.send $ D.deleteItem (renderTableName $ tProject e)
     & D.diKey .~ H.fromList [
-        vProject p
+        toEncoding kProject (renderProject p)
       ]
 
 deleteProjectRefs :: Environment -> Project -> Ref -> AWS ()
 deleteProjectRefs e p r =
-  void . A.send $ D.deleteItem (tProjectRefs e)
+  void . A.send $ D.deleteItem (renderTableName $ tProjectRefs e)
     & D.diKey .~ H.fromList [
-        vProject p
-      , vRef r
+        toEncoding kProject (renderProject p)
+      , toEncoding kRef (renderRef r)
       ]
 
 deleteBuildIds :: Environment -> Project -> Build -> Ref -> AWS ()
 deleteBuildIds e p b r =
-  void . A.send $ D.deleteItem (tRefs e)
+  void . A.send $ D.deleteItem (renderTableName $ tRefs e)
     & D.diKey .~ H.fromList [
-        vProjectBuild p b
-      , vRef r
+        toEncoding kProjectBuild (renderProjectBuild p b)
+      , toEncoding kRef (renderRef r)
       ]
 
 deleteQueued :: Environment -> Project -> Build -> AWS ()
 deleteQueued e p b =
-  void . A.send $ D.deleteItem (tBuilds e)
+  void . A.send $ D.deleteItem (renderTableName $ tBuilds e)
     & D.diKey .~ H.fromList [
-        vProject p
-      , vBuild b
+        toEncoding kProject (renderProject p)
+      , toEncoding kBuild (renderBuild b)
       ]
 
 deleteBuildRefs :: Environment -> Project -> Build -> AWS ()
 deleteBuildRefs e p b =
-  void . A.send $ D.deleteItem (tBuilds e)
+  void . A.send $ D.deleteItem (renderTableName $ tBuilds e)
     & D.diKey .~ H.fromList [
-        vProject p
-      , vBuild b
+        toEncoding kProject (renderProject p)
+      , toEncoding kBuild (renderBuild b)
       ]
 
 deleteProjectCommit :: Environment -> Project -> Commit -> AWS ()
 deleteProjectCommit e p c =
-  void . A.send $ D.deleteItem (tProjectCommits e)
+  void . A.send $ D.deleteItem (renderTableName $ tProjectCommits e)
     & D.diKey .~ H.fromList [
-        vProject p
-      , vCommit c
+        toEncoding kProject (renderProject p)
+      , toEncoding kCommit (renderCommit c)
       ]

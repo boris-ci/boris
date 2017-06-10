@@ -44,6 +44,8 @@ import qualified Network.AWS.DynamoDB as D
 
 import           P
 
+import           Spine.Data (TableName (..), renderKey, toEncoding, toItemEncoding)
+
 import           X.Control.Monad.Trans.Either (EitherT, newEitherT)
 
 
@@ -62,8 +64,8 @@ data FetchError =
 
 data LogData =
   LogData {
-      logGroup :: LogGroup
-    , logStream :: LogStream
+      logDataGroup :: LogGroup
+    , logDataStream :: LogStream
     } deriving (Eq, Show)
 
 data BuildCancelled =
@@ -89,18 +91,18 @@ data BuildData =
 
 fetch :: Environment -> BuildId -> EitherT FetchError AWS BuildData
 fetch e i = newEitherT $ do
-  res <- A.send $ D.getItem (tBuild e)
+  res <- A.send $ D.getItem (renderTableName $ tBuild e)
     & D.giKey .~ H.fromList [
-        vBuildId i
+        toItemEncoding iBuildId (renderBuildId i)
       ]
     & D.giConsistentRead .~
       Just False
   pure $ BuildData i
-    <$> (maybe (Left $ MissingProject i) Right $ res ^? D.girsItem . ix kProject . D.avS . _Just . to Project)
-    <*> (maybe (Left $ MissingBuild i) Right $ res ^? D.girsItem . ix kBuild . D.avS . _Just . to Build)
-    <*> (Right $ res ^? D.girsItem . ix kRef . D.avS . _Just . to Ref)
-    <*> (Right $ res ^? D.girsItem . ix kCommit . D.avS . _Just . to Commit)
-    <*> (forM (res ^? D.girsItem . ix kQueueTime . D.avS . _Just) $ fromMaybeM (Left $ InvalidQueueTime i) . blat)
+    <$> (maybe (Left $ MissingProject i) Right $ res ^? D.girsItem . ix (renderKey kProject) . D.avS . _Just . to Project)
+    <*> (maybe (Left $ MissingBuild i) Right $ res ^? D.girsItem . ix (renderKey kBuild) . D.avS . _Just . to Build)
+    <*> (Right $ res ^? D.girsItem . ix (renderKey kRef) . D.avS . _Just . to Ref)
+    <*> (Right $ res ^? D.girsItem . ix (renderKey kCommit) . D.avS . _Just . to Commit)
+    <*> (forM (res ^? D.girsItem . ix (renderKey kQueueTime) . D.avS . _Just) $ fromMaybeM (Left $ InvalidQueueTime i) . blat)
     <*> (forM (res ^? D.girsItem . ix kStartTime . D.avS . _Just) $ fromMaybeM (Left $ InvalidStartTime i) . blat)
     <*> (forM (res ^? D.girsItem . ix kEndTime . D.avS . _Just) $ fromMaybeM (Left $ InvalidEndTime i) . blat)
     <*> (forM (res ^? D.girsItem . ix kHeartbeatTime . D.avS . _Just) $ fromMaybeM (Left $ InvalidHeartbeatTime i) . blat)
@@ -115,14 +117,20 @@ blat =
 register :: Environment -> Project -> Build -> BuildId -> EitherT RegisterError AWS ()
 register e p b i = do
   now <- liftIO getCurrentTime
-  newEitherT $ handling D._ConditionalCheckFailedException (const . pure . Left $ BuildIdAlreadyRegistered e p b i) . fmap (const $ Right ()) $ A.send $ D.putItem (tBuild e)
+  newEitherT $ handling D._ConditionalCheckFailedException (const . pure . Left $ BuildIdAlreadyRegistered e p b i) . fmap (const $ Right ()) $ A.send $ D.putItem (renderTableName $ tBuild e)
     & D.piItem .~ H.fromList [
-        vBuildId i
-      , vTime kQueueTime now
-      , vProject p
-      , vBuild b
+        toItemEncoding iBuildId (renderBuildId i)
+      , toEncoding kQueueTime now
+      , toEncoding kProject (renderProject p)
+      , toEncoding kBuild (renderBuild b)
       ]
-    & D.piConditionExpression .~ (Just . mconcat $ ["attribute_not_exists(", kProjectBuild, ") AND attribute_not_exists(", kBuildId, ")"])
+    & D.piConditionExpression .~ (Just . mconcat $ [
+        "attribute_not_exists("
+      , renderKey kProjectBuild
+      , ") AND attribute_not_exists("
+      , kBuildId
+      , ")"
+      ])
   lift $ addQueued e p b i
 
 index :: Environment -> Project -> Build -> BuildId -> Ref -> Commit -> AWS ()
@@ -147,14 +155,18 @@ index e p b i r c = do
   liftIO . T.putStrLn $ "add-project-commit-seen"
   addProjectCommitSeen e p c b
   liftIO . T.putStrLn $ "add-set-ref"
-  void . A.send $ D.updateItem (tBuild e)
+  void . A.send $ D.updateItem (renderTableName $ tBuild e)
     & D.uiKey .~ H.fromList [
-        vBuildId i
+        toItemEncoding iBuildId (renderBuildId i)
       ]
-    & D.uiUpdateExpression .~ Just (mconcat ["SET ", kRef, " = ", kVal "r", ", ", kCommit, " = ", kVal "c"])
+    & D.uiUpdateExpression .~ Just (mconcat [
+        "SET "
+        , renderKey kRef, " = ", renderKey $ kVal "r", ", "
+        , renderKey kCommit, " = ", renderKey $ kVal "c"
+      ])
     & D.uiExpressionAttributeValues .~ H.fromList [
-        vRefOf (kVal "r") r
-      , vCommitOf (kVal "c") c
+        toEncoding (kVal "r") (renderRef r)
+      , toEncoding (kVal "c") (renderCommit c)
       ]
 
 deindex :: Environment -> Project -> Build -> BuildId -> AWS ()
@@ -164,50 +176,54 @@ deindex e p b i = do
 acknowledge :: Environment -> BuildId -> LogGroup -> LogStream -> AWS Acknowledge
 acknowledge e i g s = do
   now <- liftIO getCurrentTime
-  handling D._ConditionalCheckFailedException (const . pure $ AlreadyRunning) . fmap (const Accept) $ A.send $ D.updateItem (tBuild e)
+  handling D._ConditionalCheckFailedException (const . pure $ AlreadyRunning) . fmap (const Accept) $ A.send $ D.updateItem (renderTableName $ tBuild e)
     & D.uiKey .~ H.fromList [
-        vBuildId i
+        toItemEncoding iBuildId (renderBuildId i)
       ]
     & D.uiUpdateExpression .~ Just (mconcat [
         "SET "
-      , kStartTime, " = ", kVal "s", ", "
-      , kLogGroup, " = ", kVal "lg", ", "
-      , kLogStream, " = ", kVal "ls"
+      , kStartTime, " = ", renderKey $ kVal "s", ", "
+      , kLogGroup, " = ", renderKey $ kVal "lg", ", "
+      , kLogStream, " = ", renderKey $ kVal "ls"
       ])
     & D.uiExpressionAttributeValues .~ H.fromList [
-        vTime (kVal "s") now
-      , vLogGroup (kVal "lg") g
-      , vLogStream (kVal "ls") s
+        toEncoding (kTime "s") now
+      , toEncoding (kVal "lg") (logGroup g)
+      , toEncoding (kVal "ls") (logStream s)
       ]
     & D.uiConditionExpression .~ (Just . mconcat $ ["attribute_not_exists(", kStartTime, ")"])
 
 complete :: Environment -> BuildId -> BuildResult -> AWS ()
 complete e i r = do
   now <- liftIO getCurrentTime
-  void . A.send $ D.updateItem (tBuild e)
+  void . A.send $ D.updateItem (renderTableName $ tBuild e)
     & D.uiKey .~ H.fromList [
-        vBuildId i
+        toItemEncoding iBuildId (renderBuildId i)
       ]
-    & D.uiUpdateExpression .~ Just (mconcat ["SET ", kEndTime, " = ", kVal "t", ", ", kBuildResult, " = ", kVal "r"])
+    & D.uiUpdateExpression .~ Just (mconcat [
+        "SET "
+      , kEndTime, " = ", renderKey $ kVal "t", ", "
+      , kBuildResult, " = ", renderKey $ kVal "r"
+      ])
     & D.uiExpressionAttributeValues .~ H.fromList [
-        vTime (kVal "t") now
-      , vBuildResult (kVal "r") r
+        toEncoding (kTime "t") now
+      , toEncoding (kBool "r") (case r of BuildOk -> True; BuildKo -> False)
       ]
 
 heartbeat :: Environment -> BuildId -> AWS BuildCancelled
 heartbeat e i = do
   now <- liftIO getCurrentTime
-  void . A.send $ D.updateItem (tBuild e)
+  void . A.send $ D.updateItem (renderTableName $ tBuild e)
     & D.uiKey .~ H.fromList [
-        vBuildId i
+        toItemEncoding iBuildId (renderBuildId i)
       ]
-    & D.uiUpdateExpression .~ Just (mconcat ["SET ", kHeartbeatTime, " = ", kVal "t"])
+    & D.uiUpdateExpression .~ Just (mconcat ["SET ", kHeartbeatTime, " = ", renderKey $ kTime "t"])
     & D.uiExpressionAttributeValues .~ H.fromList [
-        vTime (kVal "t") now
+        toEncoding (kTime "t") now
       ]
-  res <- A.send $ D.getItem (tBuild e)
+  res <- A.send $ D.getItem (renderTableName $ tBuild e)
     & D.giKey .~ H.fromList [
-        vBuildId i
+        toItemEncoding iBuildId (renderBuildId i)
       ]
     & D.giConsistentRead .~
       Just False
@@ -216,21 +232,21 @@ heartbeat e i = do
 cancel :: Environment -> BuildId -> AWS Bool
 cancel e i = do
   handling D._ConditionalCheckFailedException (const . pure $ False) . fmap (const True) $
-    A.send $ D.updateItem (tBuild e)
+    A.send $ D.updateItem (renderTableName $ tBuild e)
       & D.uiKey .~ H.fromList [
-          vBuildId i
+          toItemEncoding iBuildId (renderBuildId i)
         ]
-      & D.uiUpdateExpression .~ Just (mconcat ["SET ", kCancelled, " = ", kVal "c"])
+      & D.uiUpdateExpression .~ Just (mconcat ["SET ", kCancelled, " = ", renderKey $ kBool "c"])
       & D.uiExpressionAttributeValues .~ H.fromList [
-          vBool (kVal "c") True
+          toEncoding (kBool "c") True
         ]
       & D.uiConditionExpression .~ (Just . mconcat $ ["attribute_exists(", kBuildId, ")"])
 
 delete :: Environment -> BuildId -> AWS ()
 delete e i =
-  void . A.send $ D.deleteItem (tBuild e)
+  void . A.send $ D.deleteItem (renderTableName $ tBuild e)
     & D.diKey .~ H.fromList [
-        vBuildId i
+        toItemEncoding iBuildId (renderBuildId i)
       ]
 
 renderRegisterError :: RegisterError -> Text

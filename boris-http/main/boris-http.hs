@@ -17,7 +17,7 @@ import           BuildInfo_ambiata_boris_http (buildInfoVersion)
 import           Charlotte.Airship (resource404)
 import           Clerk.QuickStop (runStopFile)
 
-import           Mismi (runAWS, discoverAWSEnv, renderRegionError, renderError)
+import           Mismi (runAWST, discoverAWSEnv, renderRegionError, renderError)
 import           Mismi.DynamoDB.Control (configureRetries)
 
 import           P
@@ -38,7 +38,7 @@ main = do
   env <- orDie renderRegionError discoverAWSEnv
   let
     cenv = configureRetries env
-  orDie renderError $ runAWS cenv $ SL.initialise e
+  orDie id $ runAWST cenv renderError $ SL.initialise e
 
   runStopFile (lookupEnv "BORIS_HTTP_STOP") $ \pin -> do
     agriculture pin "boris-http" buildInfoVersion $ do
