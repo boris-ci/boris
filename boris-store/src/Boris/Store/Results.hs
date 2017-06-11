@@ -42,11 +42,7 @@ data Result =
     , resultBuild :: !Build
     , resultRef :: !Ref
     , resultBuildResult :: !BuildResult
-    } deriving (Eq, Show)
-
-instance Ord Result where
-  compare r1 r2 =
-    resultBuildId r1 `compare` resultBuildId r2
+    } deriving (Eq, Show, Ord)
 
 master :: Ref
 master =
@@ -74,34 +70,26 @@ calculateDrops rs =
       ((p, b, r), M.singleton i br)
 
     -- Flatten into latest id
-    latest = flip M.fromListWith groupd $ \new current ->
-      M.union new current
+    latest = M.fromListWith M.union groupd
 
     groups = join . with (M.toList latest) $ \((p, b, r), m) ->
       case M.maxViewWithKey m of
         Nothing ->
           []
         Just (top, rest) ->
-          case M.null rest of
-            True ->
-              -- Drop non-master refs
-              if r /= master then
-                [Result (fst top) p b r (snd top)]
-              -- Drop ok builds
-              else if (snd top) == BuildOk then
-                [Result (fst top) p b r (snd top)]
-              else
-                []
-
-            False ->
-              let
-                restDrops = with (M.toList rest) $ \(i, br) ->
-                  Result i p b r br
-              in
-                if (snd top) == BuildOk then
-                  Result (fst top) p b r (snd top) : restDrops
-                else
-                  restDrops
+          let
+            restDrops = with (M.toList rest) $ \(i, br) ->
+              Result i p b r br
+          in
+            -- Drop non-master refs
+            if r /= master then
+              Result (fst top) p b r (snd top) : restDrops
+            -- Drop ok builds
+            else if (snd top) == BuildOk then
+              Result (fst top) p b r (snd top) : restDrops
+            -- Drop the views that are not the latest
+            else
+              restDrops
   in
     groups
 

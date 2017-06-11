@@ -7,6 +7,7 @@ module Test.Boris.Store.Results where
 import           Boris.Core.Data
 import           Boris.Store.Results
 
+import qualified Data.List as L
 import qualified Data.Set as Set
 
 import           P
@@ -30,7 +31,7 @@ prop_ok =
     let
       real = ordNub input
     in
-      sortOn resultBuildId (calculateDrops real) === sortOn resultBuildId real
+      L.sort (calculateDrops real) === L.sort real
 
 prop_ko =
   forAll genResultKo $ \input ->

@@ -165,7 +165,7 @@ data Registration =
 data BuildResult =
     BuildOk
   | BuildKo
-    deriving (Eq, Show)
+    deriving (Eq, Show, Ord)
 
 renderBuildResult :: BuildResult -> Text
 renderBuildResult r =
