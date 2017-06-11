@@ -26,16 +26,15 @@ import           X.Control.Monad.Trans.Either (EitherT)
 
 data ScoreboardError =
     ScoreboardAwsError Error
-  | ScoreboardResultError Text
+  | ScoreboardResultError SR.JsonError
 
 
 fetchLatestMasterBuilds :: Env -> Environment -> EitherT ScoreboardError IO [SR.Result]
 fetchLatestMasterBuilds env e =
   runAWST env ScoreboardAwsError $ do
     rs <- firstT ScoreboardResultError $
-      SR.fetch e
+      SR.compress e
 
-    -- TODO sort ?
     flip filterM rs $ \(SR.Result _ p b _ _) ->
       lift . fmap not $ SI.isBuildDisabled e p b
 
@@ -51,4 +50,4 @@ renderScoreboardError se =
     ScoreboardAwsError e ->
       renderError e
     ScoreboardResultError e ->
-      "Error fetching results: " <> e
+      "Error fetching results: " <> SR.jsonError e

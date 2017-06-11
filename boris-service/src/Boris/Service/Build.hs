@@ -40,7 +40,7 @@ import           X.Control.Monad.Trans.Either (EitherT, newEitherT, runEitherT)
 
 data BuilderError =
     BuildAwsError Error
-  | BuildResultError Text
+  | BuildResultError SR.JsonError
 
 data LifecycleError =
     LifecycleAwsError Error
@@ -213,7 +213,7 @@ renderBuilderError err =
     BuildAwsError e ->
       mconcat ["An AWS error occurred trying to obtain a build to run: ", renderError e]
     BuildResultError e ->
-      mconcat ["Error decoding results: ", e]
+      mconcat ["Error decoding results: ", SR.jsonError e]
 
 renderLifecycleError :: LifecycleError -> Text
 renderLifecycleError err =

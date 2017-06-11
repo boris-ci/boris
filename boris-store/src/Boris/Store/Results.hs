@@ -8,6 +8,7 @@ module Boris.Store.Results (
   , deleteItem
 
   , Result (..)
+  , JsonError (..)
   , calculateDrops
   ) where
 
@@ -46,7 +47,7 @@ data Result =
 
 newtype JsonError =
   JsonError {
-      _jsonError :: Text
+      jsonError :: Text
     } deriving (Eq, Show)
 
 master :: Ref
