@@ -26,7 +26,7 @@ import           System.IO (IO)
 boris :: ClientLocale -> Env -> Environment -> BuildQueue -> ConfigLocation -> RoutingSpec IO ()
 boris l env e q c = do
   root #> Dashboard.dashboard env q
-  "status" #> Status.status env e c
+  "status" #> Status.status env e
   "queue" #> Queue.collection env q
   "project" #> Project.collection env c
   "project" </> var "project-name" #> Project.item env e q c
@@ -36,8 +36,8 @@ boris l env e q c = do
   "build" </> var "build-id" #> Build.item l env e
   "build" </> var "build-id" </> "log" #> Log.item env e
   "build" </> var "build-id" </> "cancel" #> Build.cancel env e
-  "scoreboard" #> Scoreboard.scoreboard env e c
+  "scoreboard" #> Scoreboard.scoreboard env e
 
-borisReadonly :: Env -> Environment -> ConfigLocation -> RoutingSpec IO ()
-borisReadonly env e c = do
-  "scoreboard" #> Scoreboard.scoreboard env e c
+borisReadonly :: Env -> Environment -> RoutingSpec IO ()
+borisReadonly env e =
+  "scoreboard" #> Scoreboard.scoreboard env e

@@ -27,7 +27,7 @@ prop_store i p b r =
     once . testAWS . withClean environment (SB.delete environment i >> SB.deindex environment p b i) $ do
       void . runEitherT $ SB.register environment p b i
       a <- SB.acknowledge environment i (LogGroup l) (LogStream l)
-      SB.complete environment i r
+      void $ SB.complete environment i r
       pure $ a === Accept
 
 prop_store_heartbeat i p b =

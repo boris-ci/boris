@@ -15,9 +15,9 @@ import           P
 import           Test.Boris.Core.Arbitrary ()
 import           Test.QuickCheck (Gen, quickCheckAll, (===), forAll, listOf, arbitrary)
 
-master :: Ref
+master :: Maybe Ref
 master =
-  Ref "refs/heads/master"
+  Just $ Ref "refs/heads/master"
 
 prop_subset =
   forAll (listOf genResult) $ \input ->
@@ -58,7 +58,7 @@ prop_latest_build_id p b =
 
 prop_ref_master p b br =
   let
-    nr = Ref "refs/heads/topic/foo"
+    nr = Just $ Ref "refs/heads/topic/foo"
     input = [
         Result (BuildId "10") p b nr br
       , Result (BuildId "9") p b master BuildKo
@@ -71,7 +71,7 @@ prop_ref_master p b br =
 
 prop_ref_no_master p b br =
   let
-    nr = Ref "refs/heads/topic/foo"
+    nr = Just $ Ref "refs/heads/topic/foo"
     input = [
         Result (BuildId "10") p b nr br
       ]

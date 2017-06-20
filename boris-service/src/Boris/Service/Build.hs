@@ -13,6 +13,7 @@ import           Boris.Service.Log
 import           Boris.Service.Workspace
 import           Boris.Store.Build (BuildCancelled (..))
 import qualified Boris.Store.Build as SB
+import qualified Boris.Store.Results as SR
 import           Boris.Queue (RequestBuild (..))
 
 import           Control.Concurrent.Async (async, waitEitherCancel)
@@ -39,6 +40,7 @@ import           X.Control.Monad.Trans.Either (EitherT, newEitherT, runEitherT)
 
 data BuilderError =
     BuildAwsError Error
+  | BuildResultError SR.JsonError
 
 data LifecycleError =
     LifecycleAwsError Error
@@ -134,9 +136,11 @@ builder env e w request = do
             X.xPutStrLn out $ "| boris:ok |"
             pure $ BuildOk
 
-        runAWST env BuildAwsError . lift $ do
+        runAWST env BuildAwsError $ do
           liftIO . T.putStrLn $ "complete: " <> renderBuildId buildId
-          SB.complete e buildId result
+          r <- lift $ SB.complete e buildId result
+          firstT BuildResultError $
+            SR.add e (SR.Result buildId project build r result)
 
       (AlreadyRunning, BuildCancelled) ->
         pure ()
@@ -145,8 +149,10 @@ builder env e w request = do
         pure ()
 
       (Accept, BuildCancelled) ->
-        runAWST env BuildAwsError . lift $ do
-          SB.complete e buildId BuildKo
+        runAWST env BuildAwsError $ do
+          r <- lift $ SB.complete e buildId BuildKo
+          firstT BuildResultError $
+            SR.add e (SR.Result buildId project build r BuildKo)
 
 
 lifecycle :: X.Out -> Env -> Environment -> WorkspacePath -> Project -> Build -> Repository -> Maybe Ref -> BuildId -> EitherT LifecycleError IO (Either BuildError ())
@@ -162,7 +168,7 @@ lifecycle out env e w project build repository mref buildId =
 
       -- FIX inherit list should be defined externally
       context = [
-        InheritEnv "AWS_DEFAULT_REGION"
+          InheritEnv "AWS_DEFAULT_REGION"
         , InheritEnv "AMBIATA_ARTEFACTS_MASTER"
         , InheritEnv "AMBIATA_HADDOCK"
         , InheritEnv "AMBIATA_DOWNLOAD"
@@ -201,12 +207,13 @@ lifecycle out env e w project build repository mref buildId =
     liftIO . runEitherT $
       runBuild out out workspace specification context
 
-
 renderBuilderError :: BuilderError -> Text
 renderBuilderError err =
   case err of
     BuildAwsError e ->
       mconcat ["An AWS error occurred trying to obtain a build to run: ", renderError e]
+    BuildResultError e ->
+      mconcat ["Error decoding results: ", SR.jsonError e]
 
 renderLifecycleError :: LifecycleError -> Text
 renderLifecycleError err =

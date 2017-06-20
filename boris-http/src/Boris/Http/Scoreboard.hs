@@ -9,16 +9,10 @@ module Boris.Http.Scoreboard (
 
 
 import           Boris.Core.Data
-import           Boris.Http.Data
-import           Boris.Http.Repository (ConfigError (..), list, renderConfigError)
-import qualified Boris.Store.Build as SB
+import qualified Boris.Store.Results as SR
 import qualified Boris.Store.Index as SI
 
-import           Control.Concurrent.Async (mapConcurrently)
-import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Trans.Class (lift)
-
-import           Data.Time (UTCTime, getCurrentTime, diffUTCTime)
 
 import           Mismi (Error, runAWST, renderError)
 import           Mismi.Amazonka (Env)
@@ -27,74 +21,33 @@ import           P
 
 import           System.IO (IO)
 
-import           X.Control.Monad.Trans.Either (EitherT, bimapEitherT, newEitherT, runEitherT)
+import           X.Control.Monad.Trans.Either (EitherT)
 
 
 data ScoreboardError =
-    ScoreboardConfigError ConfigError
-  | ScoreboardFetchError SB.FetchError
-  | ScoreboardAwsError Error
+    ScoreboardAwsError Error
+  | ScoreboardResultError SR.JsonError
 
 
-fetchLatestMasterBuilds :: Env -> Environment -> ConfigLocation -> EitherT ScoreboardError IO [SB.BuildData]
-fetchLatestMasterBuilds env e c = do
-  projects' <- bimapEitherT ScoreboardConfigError id $ list env c
-  now <- liftIO getCurrentTime
-  fmap (catMaybes . mconcat) . flip mapConcurrentlyE projects' $ \p -> runAWST env ScoreboardAwsError $ do
-    builds <- lift $ SI.getProjects e p
-    forM builds $ \b -> do
-      -- We only care about master builds for scoreboard
-      buildIds <- lift $ SI.getBuildIds e p b (Ref "refs/heads/master")
-      bd <- bimapEitherT ScoreboardFetchError id
-        -- Find the first build with a result
-        . findMapM (fmap (find (\bd -> hasResult bd && isRecent now bd) . Just) . fmap updateDataResult . SB.fetch e)
-        . sortBuildIds
-        $ buildIds
-      lift . filterM' (\_ -> fmap not $ SI.isBuildDisabled e p b) $ bd
+fetchLatestMasterBuilds :: Env -> Environment -> EitherT ScoreboardError IO [SR.Result]
+fetchLatestMasterBuilds env e =
+  runAWST env ScoreboardAwsError $ do
+    rs <- firstT ScoreboardResultError $
+      SR.compress e
 
-fetchBrokenMasterBuilds :: Env -> Environment -> ConfigLocation -> EitherT ScoreboardError IO [SB.BuildData]
-fetchBrokenMasterBuilds env e c =
-  filter ((==) (Just BuildKo) . SB.buildDataResult)
-    <$> fetchLatestMasterBuilds env e c
+    flip filterM rs $ \(SR.Result _ p b _ _) ->
+      lift . fmap not $ SI.isBuildDisabled e p b
 
-hasResult :: SB.BuildData -> Bool
-hasResult =
-  isJust . SB.buildDataResult
 
-updateDataResult :: SB.BuildData -> SB.BuildData
-updateDataResult b =
-  if SB.buildDataCancelled b == Just SB.BuildCancelled then
-    b { SB.buildDataResult = Just . fromMaybe BuildKo . SB.buildDataResult $ b }
-  else
-    b
-
-isRecent :: UTCTime -> SB.BuildData -> Bool
-isRecent now bd =
-  let
-    lastTwoWeeks d = diffUTCTime now d < 60 * 60 * 24 * 14
-  in
-    case SB.buildDataEndTime bd of
-      Just d ->
-        lastTwoWeeks d
-      Nothing ->
-        -- Builds that have timed out don't have an end-time
-        -- Only use the start-time if we're actually finished
-        hasResult bd && maybe False lastTwoWeeks (SB.buildDataStartTime bd)
-
-filterM' :: Monad m => (a -> m Bool) -> Maybe a -> m (Maybe a)
-filterM' p =
-  maybe (return Nothing) (\x -> p x >>= return . flip valueOrEmpty x)
-
-mapConcurrentlyE :: Traversable t => (a -> EitherT x IO b) -> t a -> EitherT x IO (t b)
-mapConcurrentlyE io =
-  newEitherT . fmap sequence . mapConcurrently (runEitherT . io)
+fetchBrokenMasterBuilds :: Env -> Environment -> EitherT ScoreboardError IO [SR.Result]
+fetchBrokenMasterBuilds env e =
+  filter ((==) BuildKo . SR.resultBuildResult)
+    <$> fetchLatestMasterBuilds env e
 
 renderScoreboardError :: ScoreboardError -> Text
 renderScoreboardError se =
   case se of
-    ScoreboardConfigError e ->
-      renderConfigError e
-    ScoreboardFetchError e ->
-      SB.renderFetchError e
     ScoreboardAwsError e ->
       renderError e
+    ScoreboardResultError e ->
+      "Error fetching results: " <> SR.jsonError e
