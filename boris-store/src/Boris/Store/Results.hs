@@ -44,6 +44,11 @@ data Result =
     , resultBuildResult :: !BuildResult
     } deriving (Eq, Show, Ord)
 
+newtype JsonError =
+  JsonError {
+      _jsonError :: Text
+    } deriving (Eq, Show)
+
 master :: Ref
 master =
   Ref "refs/heads/master"
@@ -93,11 +98,11 @@ calculateDrops rs =
   in
     groups
 
-add :: Environment -> Result -> EitherT Text AWS ()
+add :: Environment -> Result -> EitherT JsonError AWS ()
 add e r =
   addWithCompressLimit e 100 r
 
-addWithCompressLimit :: Environment -> Int -> Result -> EitherT Text AWS ()
+addWithCompressLimit :: Environment -> Int -> Result -> EitherT JsonError AWS ()
 addWithCompressLimit e limit r = do
   x <- lift . A.send $ D.updateItem (renderTableName $ tResults e)
       & D.uiKey .~ H.fromList [
@@ -118,7 +123,7 @@ addWithCompressLimit e limit r = do
     False ->
       pure ()
     True -> do
-      rs <- hoistEither $ forM results $ \t ->
+      rs <- firstT JsonError . hoistEither $ forM results $ \t ->
         asWith toResult t
       void $ compressResults e rs
 
@@ -153,7 +158,7 @@ toResult =
       _ ->
         fail $ "Unknown result version: " <> ver
 
-fetch :: Environment -> EitherT Text AWS [Result]
+fetch :: Environment -> EitherT JsonError AWS [Result]
 fetch e = do
   r <- lift . A.send $ D.getItem (renderTableName $ tResults e)
     & D.giKey .~ H.fromList [
@@ -166,15 +171,15 @@ fetch e = do
   let
     attrs = r ^. D.girsItem
     results = maybe [] id $ fromEncoding_ kResults attrs
-  hoistEither $ forM results $ \t ->
+  firstT JsonError . hoistEither $ forM results $ \t ->
     asWith toResult t
 
-compress :: Environment -> EitherT Text AWS [Result]
+compress :: Environment -> EitherT JsonError AWS [Result]
 compress e = do
   rs <- fetch e
   compressResults e rs
 
-compressResults :: Environment -> [Result] -> EitherT Text AWS [Result]
+compressResults :: Environment -> [Result] -> EitherT JsonError AWS [Result]
 compressResults e rs = do
   let
     actions = calculateDrops rs
@@ -196,7 +201,7 @@ compressResults e rs = do
           ]
       let
         results = maybe [] id $ fromEncoding_ kResults (x ^. D.uirsAttributes)
-      hoistEither $ forM results $ \t ->
+      firstT JsonError . hoistEither $ forM results $ \t ->
         asWith toResult t
 
 deleteItem :: Environment -> AWS ()

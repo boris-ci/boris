@@ -1,5 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PackageImports #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Boris.Core.Data (
     Environment (..)
@@ -46,7 +47,7 @@ import qualified Data.Map.Strict as M
 import           P
 
 import           System.FilePath (FilePath, (</>))
-import qualified System.FilePath.Glob as G
+import qualified "Glob" System.FilePath.Glob as G
 
 newtype Environment =
   Environment {
