@@ -1,5 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PackageImports #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Boris.Core.Data (
     Environment (..)
@@ -23,6 +24,7 @@ module Boris.Core.Data (
   , Acknowledge (..)
   , WorkspacePath (..)
   , Workspace (..)
+  , renderBuildResult
   , renderRegistration
   , parseRegistration
   , pathOf
@@ -45,7 +47,7 @@ import qualified Data.Map.Strict as M
 import           P
 
 import           System.FilePath (FilePath, (</>))
-import qualified System.FilePath.Glob as G
+import qualified "Glob" System.FilePath.Glob as G
 
 newtype Environment =
   Environment {
@@ -164,7 +166,15 @@ data Registration =
 data BuildResult =
     BuildOk
   | BuildKo
-    deriving (Eq, Show)
+    deriving (Eq, Show, Ord)
+
+renderBuildResult :: BuildResult -> Text
+renderBuildResult r =
+  case r of
+    BuildOk ->
+      "ok"
+    BuildKo ->
+      "ko"
 
 data Acknowledge =
     Accept

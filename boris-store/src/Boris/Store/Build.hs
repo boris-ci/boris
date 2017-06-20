@@ -106,7 +106,7 @@ fetch e i = newEitherT $ do
     <*> (forM (res ^? D.girsItem . ix kStartTime . D.avS . _Just) $ fromMaybeM (Left $ InvalidStartTime i) . blat)
     <*> (forM (res ^? D.girsItem . ix kEndTime . D.avS . _Just) $ fromMaybeM (Left $ InvalidEndTime i) . blat)
     <*> (forM (res ^? D.girsItem . ix kHeartbeatTime . D.avS . _Just) $ fromMaybeM (Left $ InvalidHeartbeatTime i) . blat)
-    <*> (Right . fmap (bool BuildKo BuildOk) $ res ^? D.girsItem . ix kBuildResult . D.avBOOL . _Just)
+    <*> (Right . fmap (bool BuildKo BuildOk) $ res ^? D.girsItem . ix (renderKey kBuildResult) . D.avBOOL . _Just)
     <*> (Right $ LogData <$> res ^? D.girsItem . ix kLogGroup . D.avS . _Just . to LogGroup <*> res ^? D.girsItem . ix kLogStream . D.avS . _Just . to LogStream)
     <*> (Right . fmap (bool BuildNotCancelled BuildCancelled) $ res ^? D.girsItem . ix kCancelled . D.avBOOL . _Just)
 
@@ -203,7 +203,7 @@ complete e i r = do
     & D.uiUpdateExpression .~ Just (mconcat [
         "SET "
       , kEndTime, " = ", renderKey $ kVal "t", ", "
-      , kBuildResult, " = ", renderKey $ kVal "r"
+      , renderKey kBuildResult, " = ", renderKey $ kVal "r"
       ])
     & D.uiExpressionAttributeValues .~ H.fromList [
         toEncoding (kTime "t") now

@@ -21,7 +21,7 @@ import           BMX (BMXError, renderBMXError)
 import           BMX (Template, renderPage, renderTemplate, templateFile)
 import           BMX (BMXValue (..), defaultState, usingContext)
 
-import           Boris.Core.Data (Project (..), Build (..), Commit (..), Ref (..), BuildId (..), BuildResult (..), sortBuildIds)
+import           Boris.Core.Data (Project (..), Build (..), Commit (..), Ref (..), BuildId (..), BuildResult (..), sortBuildIds, renderBuildResult)
 import           Boris.Store.Build (BuildData (..), BuildCancelled(..))
 import           Boris.Http.Airship (webT)
 import           Boris.Http.Data (ClientLocale (..))
@@ -163,14 +163,6 @@ renderTime (ClientLocale tz) t =
 renderDuration :: UTCTime -> UTCTime -> Text
 renderDuration s e =
   mconcat [T.pack . show $ ((round (diffUTCTime e s)) :: Integer), "s"]
-
-renderBuildResult :: BuildResult -> Text
-renderBuildResult r =
-  case r of
-    BuildOk ->
-      "ok"
-    BuildKo ->
-      "ko"
 
 mapFromListGrouped :: Ord a => [(a, b)] -> Map a [b]
 mapFromListGrouped =

@@ -9,6 +9,7 @@ module Boris.Store.Schema (
   , tProjectRefs
   , tProject
   , tProjectCommits
+  , tResults
   , kTick
   , iContext
   , iBuildId
@@ -41,18 +42,23 @@ module Boris.Store.Schema (
   , kQueueTime
   , kLogGroup
   , kLogStream
+  , kResults
+  , vResults
   , kVal
   , kInt
   , kBool
   , kValL
   , kValSet
   , kTime
+  , kMap
   , vGlobal
+  , vErrors
   , renderProjectBuild
   ) where
 
 import           Boris.Core.Data
 
+import qualified Data.HashMap.Strict as H
 import qualified Data.Text as T
 import           Data.Time (UTCTime)
 
@@ -178,6 +184,19 @@ tProjectCommits :: Environment -> TableName
 tProjectCommits e =
   table e "project.commit"
 
+-- |
+-- A compressed log of current build results.
+--
+-- Key:
+--  kBuildId :: String
+--
+-- Attributes:
+--  kResults :: [String]
+--
+tResults :: Environment -> TableName
+tResults e =
+  table e "results"
+
 iContext :: ItemKey Text
 iContext =
   ItemStringKey "context"
@@ -258,9 +277,9 @@ kCancelled :: Text
 kCancelled =
   "cancelled"
 
-kBuildResult :: Text
+kBuildResult :: Key Bool
 kBuildResult =
-  "build_result"
+  BoolKey "build_result"
 
 kBuilds :: Text
 kBuilds =
@@ -306,6 +325,14 @@ kLogStream :: Text
 kLogStream =
   "log_stream"
 
+kResults :: Key [Text]
+kResults =
+  StringSetKey "results"
+
+vResults :: (Text, D.AttributeValue)
+vResults =
+  toEncoding kContext "results"
+
 kVal :: Text -> Key Text
 kVal =
   StringKey . (<>) ":"
@@ -330,9 +357,17 @@ kTime :: Text -> Key UTCTime
 kTime =
   TimeKey . (<>) ":"
 
+kMap :: Text -> Key (H.HashMap Text D.AttributeValue)
+kMap =
+  MapKey . (<>) ":"
+
 vGlobal :: (Text, D.AttributeValue)
 vGlobal =
   toEncoding kContext "global"
+
+vErrors :: (Text, D.AttributeValue)
+vErrors =
+  toEncoding kContext "errors"
 
 renderProjectBuild :: Project -> Build -> Text
 renderProjectBuild p b =
@@ -348,4 +383,5 @@ schema e =
     , Table (tProject e) iProject Nothing (Throughput (ThroughputRange 2 50) (ThroughputRange 5 50))
     , Table (tProjectRefs e) iProject (Just iRef) (Throughput (ThroughputRange 2 50) (ThroughputRange 5 50))
     , Table (tProjectCommits e) iProject (Just iCommit) (Throughput (ThroughputRange 2 50) (ThroughputRange 5 10))
+    , Table (tResults e) iContext Nothing (Throughput (ThroughputRange 2 50) (ThroughputRange 5 50))
     ]
