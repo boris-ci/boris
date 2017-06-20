@@ -52,7 +52,6 @@ module Boris.Store.Schema (
   , kTime
   , kMap
   , vGlobal
-  , vErrors
   , renderProjectBuild
   ) where
 
@@ -364,10 +363,6 @@ kMap =
 vGlobal :: (Text, D.AttributeValue)
 vGlobal =
   toEncoding kContext "global"
-
-vErrors :: (Text, D.AttributeValue)
-vErrors =
-  toEncoding kContext "errors"
 
 renderProjectBuild :: Project -> Build -> Text
 renderProjectBuild p b =
