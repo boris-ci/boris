@@ -4,12 +4,14 @@ module Boris.Client.Scoreboard (
     scoreboard
   ) where
 
-import           Boris.Client.Build
+import           Boris.Core.Data
 import           Boris.Client.Http (BorisHttpClientError (..))
 import qualified Boris.Client.Http as H
-import           Boris.Store.Build (BuildData (..))
+import           Boris.Store.Results (Result (..))
 
-import           Data.Aeson (FromJSON (..), withObject, (.:))
+import           Data.Aeson (FromJSON (..), withObject, (.:), (.:?))
+import           Data.Aeson.Types (Value, Parser)
+import qualified Data.Text as T
 
 import           P
 
@@ -19,17 +21,28 @@ import           System.IO (IO)
 
 import           X.Control.Monad.Trans.Either (EitherT)
 
-scoreboard :: BalanceConfig -> EitherT BorisHttpClientError IO [BuildData]
+scoreboard :: BalanceConfig -> EitherT BorisHttpClientError IO [Result]
 scoreboard c =
-  fmap (maybe [] getBuilds) $
+  fmap (maybe [] getResults) $
     H.get c ["scoreboard"]
 
 newtype GetScoreboard =
   GetScoreboard {
-      getBuilds :: [BuildData]
+      getResults :: [Result]
     } deriving (Eq, Show)
 
 instance FromJSON GetScoreboard where
   parseJSON =
     withObject "GetScoreboard" $ \o ->
-      GetScoreboard . fmap getBuild <$> o .: "builds"
+      fmap GetScoreboard $ o .: "builds" >>= mapM toResult
+
+
+toResult :: Value -> Parser Result
+toResult =
+  withObject "Result" $ \o ->
+    Result
+      <$> (fmap BuildId $ o .: "build_id")
+      <*> (fmap Project $ o .: "project")
+      <*> (fmap Build $ o .: "build")
+      <*> ((fmap . fmap) Ref $ o .:? "ref")
+      <*> (o .: "result" >>= \u -> fromMaybeM (fail $ "Unknown BuildResult: " <> T.unpack u) $ parseBuildResult u)
