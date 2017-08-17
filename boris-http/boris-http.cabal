@@ -102,6 +102,7 @@ executable boris-http
                     , airship
                     , text
                     , transformers
+                    , warp
 
 executable boris-http-readonly
   ghc-options:
@@ -127,6 +128,7 @@ executable boris-http-readonly
                     , airship
                     , text
                     , transformers
+                    , warp
 
 test-suite test
   type:
