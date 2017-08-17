@@ -8,9 +8,7 @@ module Boris.Http.Resource.Build (
   ) where
 
 
-import           Airship (Resource (..), Webmachine, defaultResource, lookupParam, putResponseBody, appendRequestPath, halt)
-
-import           Boom.Airship (notfound)
+import           Airship (Resource (..), Webmachine, defaultResource, lookupParam, putResponseBody, halt)
 
 import           Boris.Core.Data
 import           Boris.Http.Airship
@@ -26,12 +24,6 @@ import qualified Boris.Store.Index as SI
 import qualified Boris.Store.Tick as ST
 import           Boris.Queue (BuildQueue (..), Request (..), RequestBuild (..))
 import qualified Boris.Queue as Q
-
-import qualified Data.ByteString.Builder as BB
-import qualified Data.ByteString.Lazy as BL
-
-import           Charlotte.Airship (PostHandler (..), withVersionJson)
-import           Charlotte.Airship (processPostMedia, jsonResponse, setResponseHeader, decodeJsonBody)
 
 import           Control.Monad.IO.Class (liftIO)
 
@@ -217,11 +209,3 @@ getProject =
 getBuildId :: Webmachine IO BuildId
 getBuildId =
   BuildId <$> lookupParam "build-id"
-
-setLocation :: [Text] -> Webmachine IO ()
-setLocation p =
-  appendRequestPath p >>= setResponseHeader . (,) HTTP.hLocation
-
-setLocationAbsolute :: [Text] -> Webmachine IO ()
-setLocationAbsolute =
-  setResponseHeader . (,) HTTP.hLocation . BL.toStrict . BB.toLazyByteString . HTTP.encodePathSegments

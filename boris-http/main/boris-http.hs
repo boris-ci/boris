@@ -2,27 +2,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 import           Airship (defaultAirshipConfig, resourceToWai)
 
-import           Agriculture (agriculture)
-
 import           Boris.Core.Data
+import           Boris.Http.Airship
 import           Boris.Http.Config
 import qualified Boris.Http.Resource.Static as Static
 import           Boris.Http.Route (boris)
 import qualified Boris.Store.Lifecycle as SL
 import           Boris.Queue (BuildQueue (..))
 
-import           BuildInfo_ambiata_boris_http (buildInfoVersion)
-
-
-import           Charlotte.Airship (resource404)
-import           Clerk.QuickStop (runStopFile)
-
 import           Mismi (runAWST, discoverAWSEnv, renderRegionError, renderError)
 import           Mismi.DynamoDB.Control (configureRetries)
 
+import           Network.Wai.Handler.Warp (runEnv)
+
 import           P
 
-import           System.Environment (lookupEnv)
 import           System.IO (IO)
 
 import           X.Control.Monad.Trans.Either.Exit (orDie)
@@ -40,7 +34,5 @@ main = do
     cenv = configureRetries env
   orDie id $ runAWST cenv renderError $ SL.initialise e
 
-  runStopFile (lookupEnv "BORIS_HTTP_STOP") $ \pin -> do
-    agriculture pin "boris-http" buildInfoVersion $ do
-      return . ($) Static.staticMiddleware $
-        resourceToWai defaultAirshipConfig (boris l cenv e q c) (resource404 ())
+  runEnv 10080 . Static.staticMiddleware $
+    resourceToWai defaultAirshipConfig (boris l cenv e q c) (resource404 ())

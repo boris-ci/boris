@@ -15,8 +15,6 @@ import qualified Boris.Store.Build as SB
 
 import           Blaze.ByteString.Builder (fromByteString)
 
-import           Charlotte.Airship (Versioned, withVersion')
-
 import           Data.Conduit (Source, (=$=), runConduit)
 import qualified Data.Conduit.List as CL
 
