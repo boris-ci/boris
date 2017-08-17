@@ -8,8 +8,6 @@ module Boris.Http.Resource.Project (
 
 import           Airship (Resource (..), Webmachine, defaultResource, lookupParam, halt)
 
-import           Boom.Airship (notfound)
-
 import           Boris.Core.Data
 import           Boris.Http.Airship
 import           Boris.Http.Data
@@ -21,10 +19,6 @@ import qualified Boris.Store.Index as SI
 import qualified Boris.Store.Tick as ST
 import           Boris.Queue (BuildQueue (..), Request (..), RequestDiscover (..))
 import qualified Boris.Queue as Q
-
-import           Charlotte.Airship (withVersionJson)
-import           Charlotte.Airship (jsonResponse)
-import           Charlotte.Airship (processPostMedia)
 
 import           Mismi (runAWS, runAWST, renderError)
 import           Mismi.Amazonka (Env)

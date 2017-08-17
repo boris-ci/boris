@@ -15,9 +15,6 @@ import           Boris.Http.Version
 import qualified Boris.Store.Build as SB
 import qualified Boris.Store.Index as SI
 
-import           Charlotte.Airship (withVersionJson)
-import           Charlotte.Airship (jsonResponse)
-
 import           Mismi (runAWS, runAWST, renderError)
 import           Mismi.Amazonka (Env)
 

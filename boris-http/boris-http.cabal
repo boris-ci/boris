@@ -16,11 +16,9 @@ library
                     , aeson                           == 0.8.*
                     , airship
                     , ambiata-bmx
-                    , ambiata-boom
                     , ambiata-boris-core
                     , ambiata-boris-store
                     , ambiata-boris-queue
-                    , ambiata-charlotte
                     , ambiata-jebediah
                     , ambiata-mismi-core
                     , ambiata-mismi-cloudwatch-logs
@@ -91,13 +89,10 @@ executable boris-http
 
   build-depends:
                       base
-                    , ambiata-agriculture
                     , ambiata-boris-core
                     , ambiata-boris-http
                     , ambiata-boris-store
                     , ambiata-boris-queue
-                    , ambiata-clerk
-                    , ambiata-charlotte
                     , ambiata-mismi-core
                     , ambiata-mismi-dynamodb
                     , ambiata-mismi-s3
@@ -107,6 +102,7 @@ executable boris-http
                     , airship
                     , text
                     , transformers
+                    , warp
 
 executable boris-http-readonly
   ghc-options:
@@ -120,13 +116,10 @@ executable boris-http-readonly
 
   build-depends:
                       base
-                    , ambiata-agriculture
                     , ambiata-boris-core
                     , ambiata-boris-http
                     , ambiata-boris-store
                     , ambiata-boris-queue
-                    , ambiata-clerk
-                    , ambiata-charlotte
                     , ambiata-mismi-core
                     , ambiata-mismi-dynamodb
                     , ambiata-mismi-s3
@@ -135,6 +128,7 @@ executable boris-http-readonly
                     , airship
                     , text
                     , transformers
+                    , warp
 
 test-suite test
   type:

@@ -13,8 +13,6 @@ import           Boris.Http.Version
 import           Boris.Queue (BuildQueue (..))
 import qualified Boris.Queue as Q
 
-import           Charlotte.Airship (withVersionJson, jsonResponse)
-
 import           Mismi (runAWS, renderError)
 import           Mismi.Amazonka (Env)
 

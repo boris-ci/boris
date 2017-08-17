@@ -4,7 +4,7 @@ module Boris.Http.Version (
     ApiVersion (..)
   ) where
 
-import           Charlotte (Versioned (..))
+import           Boris.Http.Airship
 
 import           P
 

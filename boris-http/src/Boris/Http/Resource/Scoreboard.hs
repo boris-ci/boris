@@ -13,8 +13,6 @@ import           Boris.Http.Representation.Scoreboard
 import           Boris.Http.Scoreboard
 import qualified Boris.Store.Results as SR
 
-import           Charlotte.Airship (jsonResponse)
-
 import           Mismi.Amazonka (Env)
 
 import qualified Network.HTTP.Types as HTTP
