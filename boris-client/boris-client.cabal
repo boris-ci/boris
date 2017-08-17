@@ -22,7 +22,6 @@ library
                     , ambiata-mismi-cloudwatch-logs
                     , ambiata-p
                     , ambiata-snooze
-                    , ambiata-snooze-baton
                     , ambiata-twine
                     , ambiata-x-aeson
                     , ambiata-x-eithert
@@ -81,7 +80,6 @@ executable boris
                     , ambiata-mismi-core
                     , ambiata-p
                     , ambiata-snooze
-                    , ambiata-snooze-baton
                     , ambiata-x-optparse
                     , ambiata-x-eithert
                     , async
