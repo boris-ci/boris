@@ -375,7 +375,7 @@ schema e =
     , Table (tBuild e) iBuildId Nothing (Throughput (ThroughputRange 2 200) (ThroughputRange 5 20))
     , Table (tBuilds e) iProject (Just iBuild) (Throughput (ThroughputRange 2 50) (ThroughputRange 5 20))
     , Table (tRefs e) iProjectBuild (Just iRef) (Throughput (ThroughputRange 2 50) (ThroughputRange 5 20))
-    , Table (tProject e) iProject Nothing (Throughput (ThroughputRange 2 50) (ThroughputRange 5 50))
+    , Table (tProject e) iProject Nothing (Throughput (ThroughputRange 2 50) (ThroughputRange 5 100))
     , Table (tProjectRefs e) iProject (Just iRef) (Throughput (ThroughputRange 2 50) (ThroughputRange 5 50))
     , Table (tProjectCommits e) iProject (Just iCommit) (Throughput (ThroughputRange 2 50) (ThroughputRange 5 10))
     , Table (tResults e) iContext Nothing (Throughput (ThroughputRange 2 50) (ThroughputRange 5 50))
