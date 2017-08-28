@@ -31,4 +31,4 @@ main = do
   orDie id $ runAWST cenv renderError $ SL.initialise e
 
   runEnv 10080 . Static.staticMiddleware $
-    resourceToWai defaultAirshipConfig (borisReadonly cenv e) (resource404 ())
+    resourceToWai defaultAirshipConfig (borisReadonly cenv e) resource404

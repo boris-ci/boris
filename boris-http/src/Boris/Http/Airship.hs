@@ -20,9 +20,9 @@ module Boris.Http.Airship (
 
 import           Airship (ResponseBody (..), Webmachine, PostResponse (..))
 import           Airship (halt, putResponseBody, request, pathInfo)
-import           Airship (requestHeaders, appendRequestPath, modifyResponseHeaders)
+import           Airship (appendRequestPath, modifyResponseHeaders)
 import           Airship (entireRequestBody)
-import           Airship (Resource (..), defaultResource)
+import qualified Airship as A
 
 import           Blaze.ByteString.Builder (toByteString)
 import           Blaze.ByteString.Builder.ByteString (fromByteString)
@@ -32,11 +32,12 @@ import           Control.Monad.IO.Class (MonadIO (..))
 import           Data.Aeson (FromJSON, ToJSON, encode, object, (.=), eitherDecode)
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.List as List
+import qualified Data.Map as M
 import           Data.String (fromString)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
-import           Network.HTTP.Media (MediaType, mapContentMedia)
+import           Network.HTTP.Media (MediaType)
 import qualified Network.HTTP.Types as HTTP
 
 import           P
@@ -113,28 +114,20 @@ withVersion' r =
 
 processPostMedia :: Monad m => [(MediaType, Webmachine m PostHandler)] -> Webmachine m (PostResponse m)
 processPostMedia handlers = do
-  s <- (List.lookup HTTP.hContentType . requestHeaders) <$> request
-  case (s >>= mapContentMedia handlers) of
-    Nothing ->
-      halt HTTP.status415
-    Just w ->
-      w >>= \p -> pure $ case p of
-        PostResponseLocationWithBody t b ->
-          PostProcess $ do
-            setLocation t
-            putResponseBody b
-        PostResponseLocation t ->
-          PostProcess $
-            setLocation t
-        PostResponseAbsoluteLocationWithBody t b ->
-          PostProcess $ do
-            setLocationAbsolute t
-            putResponseBody b
-        PostResponseAbsoluteLocation t ->
-          PostProcess $
-            setLocationAbsolute t
-        PostResponseSecure ->
-          PostProcess $ pure ()
+  pure . PostProcess . flip fmap handlers $ \(mt, w) ->
+    (,) mt $ w >>= \p -> case p of
+      PostResponseLocationWithBody t b -> do
+        setLocation t
+        putResponseBody b
+      PostResponseLocation t ->
+        setLocation t
+      PostResponseAbsoluteLocationWithBody t b -> do
+        setLocationAbsolute t
+        putResponseBody b
+      PostResponseAbsoluteLocation t ->
+        setLocationAbsolute t
+      PostResponseSecure ->
+        pure ()
 
 data PostHandler =
     PostResponseLocation [Text]
@@ -162,9 +155,8 @@ decodeJsonBody =
     =<< entireRequestBody
     =<< request
 
-resource404 :: (Monad m, ToJSON a) => a -> Resource m
-resource404 a = defaultResource
-  { resourceExists = pure False
-  , contentTypesProvided =
-      pure [("application/json", pure $ jsonResponse a)]
-  }
+resource404 :: MonadIO m => M.Map HTTP.Status [(MediaType, A.Webmachine m A.ResponseBody)]
+resource404 =
+  M.fromList [
+      (HTTP.status404, [("application/json", pure $ jsonResponse ())])
+    ]
