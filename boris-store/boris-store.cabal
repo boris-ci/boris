@@ -98,6 +98,7 @@ test-suite test-io
                     , ambiata-p
                     , ambiata-spine-test
                     , ambiata-x-eithert
+                    , retry
                     , text
                     , QuickCheck                      >= 2.7        && < 2.10
                     , quickcheck-instances            == 0.3.*
