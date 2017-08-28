@@ -37,7 +37,7 @@ prop_add_compress_fetch p b r br =
     _ <- runEitherT $ Store.add environment (Result (BuildId "10") p b master BuildKo)
     _ <- runEitherT $ Store.add environment (Result (BuildId "9") p b (Just r) br)
     z <- runEitherT $ Store.addWithCompressLimit environment 2 (Result (BuildId "8") p b (Just r) br)
-    l <- runEitherT . retryOn null $ Store.fetch environment
+    l <- runEitherT . retryOn ((==) 1 . length) $ Store.fetch environment
     pure $ (z, l) === (Right (), Right [Result (BuildId "10") p b master BuildKo])
 
 prop_add_compress i p b r br =
@@ -51,7 +51,7 @@ prop_add_compress_no_master i p b br =
   once . testAWS . withClean environment (Store.deleteItem environment) $ do
     _ <- runEitherT $ Store.add environment (Result i p b (Just $ Ref "refs/heads/topic/foo") br)
     l <- runEitherT $ Store.compress environment
-    z <- runEitherT $ Store.fetch environment
+    z <- runEitherT . retryOn (not . null) $ Store.fetch environment
     pure $ (l, z) === (Right [], Right [])
 
 master :: Maybe Ref
