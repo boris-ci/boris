@@ -28,7 +28,7 @@ prop_add i p b r br =
 prop_add_fetch i p b r br =
   once . testAWS . withClean environment (Store.deleteItem environment) $ do
     _ <- runEitherT $ Store.add environment (Result i p b r br)
-    l <- runEitherT . waitFor (not . null) $
+    l <- runEitherT . retryOn null $
       Store.fetch environment
     pure $ l === Right [Result i p b r br]
 
@@ -37,14 +37,14 @@ prop_add_compress_fetch p b r br =
     _ <- runEitherT $ Store.add environment (Result (BuildId "10") p b master BuildKo)
     _ <- runEitherT $ Store.add environment (Result (BuildId "9") p b (Just r) br)
     z <- runEitherT $ Store.addWithCompressLimit environment 2 (Result (BuildId "8") p b (Just r) br)
-    l <- runEitherT . waitFor (not . null) $ Store.fetch environment
+    l <- runEitherT . retryOn null $ Store.fetch environment
     pure $ (z, l) === (Right (), Right [Result (BuildId "10") p b master BuildKo])
 
 prop_add_compress i p b r br =
   once . testAWS . withClean environment (Store.deleteItem environment) $ do
     _ <- runEitherT $ Store.add environment (Result i p b master BuildKo)
     _ <- runEitherT $ Store.add environment (Result i p b r br)
-    l <- runEitherT . waitFor (not . null) $ Store.compress environment
+    l <- runEitherT . retryOn null $ Store.compress environment
     pure $ l === Right [Result i p b master BuildKo]
 
 prop_add_compress_no_master i p b br =
@@ -58,8 +58,8 @@ master :: Maybe Ref
 master =
   Just $ Ref "refs/heads/master"
 
-waitFor :: MonadIO m => (b -> Bool) -> m b -> m b
-waitFor condition action =
+retryOn :: MonadIO m => (b -> Bool) -> m b -> m b
+retryOn condition action =
   Retry.retrying policy (const $ pure . condition) (const action)
 
 policy :: Retry.RetryPolicy
