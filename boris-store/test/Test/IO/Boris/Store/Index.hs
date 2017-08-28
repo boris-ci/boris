@@ -83,13 +83,13 @@ prop_queued p b i1 i2 = once . testAWS . withClean environment (SI.deleteQueued 
   res1 <- retryOn null $
     SI.getQueued environment p b
   SI.addQueued environment p b i2
-  res2 <- retryOn null $
+  res2 <- retryOn ((==) 2 . length) $
     SI.getQueued environment p b
   SI.clearQueued environment p b i2
   res3 <- retryOn null $
     SI.getQueued environment p b
   SI.clearQueued environment p b i1
-  res4 <- retryOn null $
+  res4 <- retryOn (not . null) $
     SI.getQueued environment p b
   pure $ [res1, L.sort res2, res3, res4] === [[i1], L.sort [i1, i2], [i1], []]
 
