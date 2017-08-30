@@ -56,4 +56,4 @@ policy =
   Retry.constantDelay 200000 <> Retry.limitRetries 5
 
 return []
-tests = $quickCheckAll
+tests = $forAllProperties $ quickCheckWithResult (stdArgs { maxSuccess = 5 })
