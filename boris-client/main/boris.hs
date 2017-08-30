@@ -352,7 +352,7 @@ mkBalanceConfig = do
   mgr <- newManager ms
   h <- Host <$> text "HOST"
   p <- Port <$> intOr "PORT" 11111
-  t <- balanceTableStatic . BalanceTable (BalanceEntry h p) $ []
+  t <- balanceTableStatic $ BalanceTable [BalanceEntry h p]
   pure $ BalanceConfig t mempty mgr
 
 socksProxyKey :: String

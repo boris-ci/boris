@@ -4,11 +4,11 @@
   sha1 = "0a9e91a8c3373a402c5f2c4fc8d9aabb210c03b3"
 
 [build.dist]
-  GHC_VERSION="7.10.2"
+  GHC_VERSION="8.0.1"
   CABAL_VERSION = "1.24.0.0"
 
-[build.dist-7-10]
-  GHC_VERSION = "7.10.2"
+[build.dist-8-0]
+  GHC_VERSION = "8.0.1"
   CABAL_VERSION = "1.24.0.0"
   CACHE = "true"
   HADDOCK = "true"
@@ -17,8 +17,8 @@
   PUBLISH_S3 = "$AMBIATA_ARTEFACTS_MASTER"
   PUBLISH_EXECUTABLES = "boris"
 
-[build.branches-7-10]
-  GHC_VERSION = "7.10.2"
+[build.branches-8-0]
+  GHC_VERSION = "8.0.1"
   CABAL_VERSION = "1.24.0.0"
   CACHE = "true"
   HADDOCK = "true"
