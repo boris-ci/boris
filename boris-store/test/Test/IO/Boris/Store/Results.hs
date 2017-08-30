@@ -37,7 +37,7 @@ prop_add_compress_fetch p b r br =
     _ <- runEitherT $ Store.add environment (Result (BuildId "10") p b master BuildKo)
     _ <- runEitherT $ Store.add environment (Result (BuildId "9") p b (Just r) br)
     z <- runEitherT $ Store.addWithCompressLimit environment 2 (Result (BuildId "8") p b (Just r) br)
-    l <- runEitherT . retryOn ((==) 1 . length) $ Store.fetch environment
+    l <- runEitherT . retryOn ((/=) 1 . length) $ Store.fetch environment
     pure $ (z, l) === (Right (), Right [Result (BuildId "10") p b master BuildKo])
 
 prop_add_compress i p b r br =
