@@ -35,6 +35,7 @@ boris list <project>
 boris list <project> <build>
 boris status <build-id>
 boris log <build-id>
+boris ignore <project> <build>
 ```
 
 #### build
@@ -154,6 +155,16 @@ boris log 72 | grep INTERESTING
 boris log 72 | less
 ```
 
+#### ignore <project> <build>
+
+Ignore any outstanding failures for a specific build.
+
+Examples:
+
+```
+boris ignore example dist-7-10
+```
+
 ### the bot
 
 The bot is largely designed to mimic the command line interface, and
@@ -167,7 +178,7 @@ there.
 
 The [web interface](http://boris.ambiata.com) is a simple read-only
 view to help with those with out easy access to command line
-tooling. It is useful for discovering builds, retrying failed builds, 
+tooling. It is useful for discovering builds, retrying failed builds,
 cancelling builds and viewing logs.
 
 
