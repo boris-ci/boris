@@ -48,6 +48,7 @@
             <div>{{#if heartbeat}}heartbeat at: {{heartbeat}}{{/if}}</div>
             <div>{{#if duration}}duration: {{duration}}{{/if}}</div>
             <div>{{#if result}}result: {{result}}{{/if}}</div>
+            <div class="version hidden">version: ???</div>
             <div>
               <form action="/project/{{project}}/build/{{build}}" method="post">
                 <button class="btn" type="submit">build again</button>
@@ -67,5 +68,28 @@
 
         <div id="footer">
         </div>
+        {{#if log}}
+        <script type="text/javascript">
+          var xhr;
+          xhr = new XMLHttpRequest();
+          xhr.open('GET', '/build/{{id}}/log');
+          xhr.setRequestHeader('Accept', 'text/plain');
+          xhr.onload = function() {
+            var regexp = /aws s3.*cp.*dist\/build\/.*\/(\d\.\d\.\d-\d{14}-[0-9a-f]{7})\//g;
+            var match = regexp.exec(this.responseText);
+
+            if (match === null)
+              return;
+
+            var version = 'version: ' + match[1];
+
+            document.querySelectorAll('.version').forEach(function(div) {
+              div.innerText = version;
+              div.classList.remove('hidden');
+            });
+          };
+          xhr.send();
+        </script>
+        {{/if}}
     </body>
 </html>
