@@ -70,3 +70,7 @@ div#footer {
     border: 2px dashed #16CC55;
     color: #16CC55;
 }
+
+.hidden {
+    display: none;
+}
