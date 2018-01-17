@@ -31,15 +31,14 @@ import           System.IO (IO)
 import           X.Control.Monad.Trans.Either (EitherT, eitherTFromMaybe)
 
 
-configLocation :: Text -> EitherT HttpConfigError IO ConfigLocation
+configLocation :: Text -> EitherT HttpConfigError IO ConfigurationMode
 configLocation =
-  fmap ConfigLocation . addr
+  fmap GlobalS3WhitelistMode . addr
 
 clientLocale :: Text -> EitherT HttpConfigError IO ClientLocale
 clientLocale tze =
   ClientLocale
     <$> timeZoneOrLocal tze
-
 
 data HttpConfigError =
     MissingEnvironmentVariableHttpConfigError Text
@@ -53,9 +52,8 @@ renderHttpConfigError = \case
     x <> " is a required environment variable to start boris-http."
   InvalidAddressHttpConfigError x ->
     x <> " is not a valid s3 address."
-  UnknownLocationHttpConfigError x -> 
+  UnknownLocationHttpConfigError x ->
     "Unknown location: " <> x
-
 
 text :: Text -> EitherT HttpConfigError IO Text
 text =
@@ -63,7 +61,7 @@ text =
 
 addr :: Text -> EitherT HttpConfigError IO Address
 addr =
-  text >=> 
+  text >=>
     uncurry eitherTFromMaybe . (InvalidAddressHttpConfigError &&& return . addressFromText)
 
 timeZone :: Text -> EitherT HttpConfigError IO (Maybe TZ)

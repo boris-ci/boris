@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module Boris.Http.Data (
-    ConfigLocation (..)
+    ConfigurationMode (..)
   , ClientLocale (..)
   ) where
 
@@ -11,12 +11,11 @@ import           Mismi.S3 (Address)
 import           P
 
 
-newtype ConfigLocation =
-  ConfigLocation {
-      configLocationAddress :: Address
-    } deriving (Eq, Show)
+data ConfigurationMode =
+    GlobalS3WhitelistMode Address
+    deriving (Eq, Show)
 
-data ClientLocale =
+newtype ClientLocale =
   ClientLocale {
       clientLocaleTZ :: TZ
     } deriving (Eq, Show)

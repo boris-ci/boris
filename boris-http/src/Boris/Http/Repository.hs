@@ -30,44 +30,48 @@ import           System.IO (IO)
 import           X.Control.Monad.Trans.Either (EitherT, mapEitherT, left)
 
 data ConfigError =
-    ConfigFileNotFoundError ConfigLocation
+    ConfigFileNotFoundError ConfigurationMode
   | ConfigAwsError Error
   | ConfigParseError Text
 
-pick :: Env -> ConfigLocation -> Project -> EitherT ConfigError IO (Maybe Repository)
-pick env location project = do
-  registration <- runAWST env ConfigAwsError $ do
-    attempt <- lift $ S3.read' (configLocationAddress location)
-    source <- fromMaybeM (left $ ConfigFileNotFoundError location) $
-      attempt
-    mapEitherT (liftIO . runResourceT) $ (hoist lift $ source)
-      $=+ CT.decodeUtf8
-      $=+ CT.lines
-      $=+ CL.mapM (\t -> fromMaybeM (left $ ConfigParseError t) $ parseRegistration t)
-      $=+ CL.filter ((==) project . registrationProject)
-      $$+- CL.head
+pick :: Env -> ConfigurationMode -> Project -> EitherT ConfigError IO (Maybe Repository)
+pick env mode project =
+  case mode of
+    GlobalS3WhitelistMode location -> do
+      registration <- runAWST env ConfigAwsError $ do
+        attempt <- lift $ S3.read' location
+        source <- fromMaybeM (left $ ConfigFileNotFoundError mode) $
+          attempt
+        mapEitherT (liftIO . runResourceT) $ (hoist lift $ source)
+          $=+ CT.decodeUtf8
+          $=+ CT.lines
+          $=+ CL.mapM (\t -> fromMaybeM (left $ ConfigParseError t) $ parseRegistration t)
+          $=+ CL.filter ((==) project . registrationProject)
+          $$+- CL.head
 
-  pure $ registrationRepository <$> registration
+      pure $ registrationRepository <$> registration
 
 
-list :: Env -> ConfigLocation -> EitherT ConfigError IO [Project]
-list env location =
-  runAWST env ConfigAwsError $ do
-    attempt <- lift $ S3.read' (configLocationAddress location)
-    source <- fromMaybeM (left $ ConfigFileNotFoundError location) $
-      attempt
-    mapEitherT (liftIO . runResourceT) $ (hoist lift $ source)
-      $=+ CT.decodeUtf8
-      $=+ CT.lines
-      $=+ CL.mapM (\t -> fromMaybeM (left $ ConfigParseError t) $ parseRegistration t)
-      $=+ CL.map registrationProject
-      $$+- CL.consume
+list :: Env -> ConfigurationMode -> EitherT ConfigError IO [Project]
+list env mode =
+  case mode of
+    GlobalS3WhitelistMode location ->
+      runAWST env ConfigAwsError $ do
+        attempt <- lift $ S3.read' location
+        source <- fromMaybeM (left $ ConfigFileNotFoundError mode) $
+          attempt
+        mapEitherT (liftIO . runResourceT) $ (hoist lift $ source)
+          $=+ CT.decodeUtf8
+          $=+ CT.lines
+          $=+ CL.mapM (\t -> fromMaybeM (left $ ConfigParseError t) $ parseRegistration t)
+          $=+ CL.map registrationProject
+          $$+- CL.consume
 
 renderConfigError :: ConfigError -> Text
 renderConfigError err =
   case err of
-    ConfigFileNotFoundError l ->
-      mconcat ["Service is mis-configured, repository configuration could not be found: ", S3.addressToText . configLocationAddress $ l]
+    ConfigFileNotFoundError (GlobalS3WhitelistMode l) ->
+      mconcat ["Service is mis-configured, repository configuration could not be found: ", S3.addressToText l]
     ConfigAwsError e ->
       mconcat ["Service could not retrieve repository configuration: ", renderError e]
     ConfigParseError t ->
