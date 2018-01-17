@@ -23,7 +23,7 @@ import           Mismi.Amazonka (Env)
 
 import           System.IO (IO)
 
-boris :: ClientLocale -> Env -> Environment -> BuildQueue -> ConfigLocation -> RoutingSpec IO ()
+boris :: ClientLocale -> Env -> Environment -> BuildQueue -> ConfigurationMode ->  RoutingSpec IO ()
 boris l env e q c = do
   root #> Dashboard.dashboard env q
   "status" #> Status.status env e

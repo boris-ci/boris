@@ -43,7 +43,7 @@ import           System.IO (IO)
 import           X.Control.Monad.Trans.Either (bimapEitherT)
 
 
-collection :: Env -> Environment -> BuildQueue -> ConfigLocation -> Resource IO
+collection :: Env -> Environment -> BuildQueue -> ConfigurationMode -> Resource IO
 collection env e q c =
   defaultResource {
       allowedMethods = pure [HTTP.methodGet, HTTP.methodPost]
@@ -98,7 +98,7 @@ collection env e q c =
       ]
     }
 
-buildPost :: Env -> Environment -> BuildQueue -> ConfigLocation -> Build -> Project -> Maybe Ref -> Webmachine IO BuildId
+buildPost :: Env -> Environment -> BuildQueue -> ConfigurationMode -> Build -> Project -> Maybe Ref -> Webmachine IO BuildId
 buildPost env e q c b p r = do
   repository <- webT renderConfigError (pick env c p) >>= notfound
   i <- webT id . runAWST env renderError . bimapEitherT ST.renderTickError id $ ST.next e p b

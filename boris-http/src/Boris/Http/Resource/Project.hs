@@ -32,7 +32,7 @@ import           System.IO (IO)
 import           X.Control.Monad.Trans.Either (bimapEitherT)
 
 
-collection :: Env -> ConfigLocation -> Resource IO
+collection :: Env -> ConfigurationMode -> Resource IO
 collection env c =
   defaultResource {
       allowedMethods = pure [HTTP.methodGet]
@@ -52,7 +52,7 @@ collection env c =
         ]
     }
 
-item :: Env -> Environment -> BuildQueue -> ConfigLocation -> Resource IO
+item :: Env -> Environment -> BuildQueue -> ConfigurationMode -> Resource IO
 item env e q c =
   defaultResource {
       allowedMethods = pure [HTTP.methodGet, HTTP.methodPost]
