@@ -2,6 +2,8 @@
 module Boris.Http.Data (
     ErrorId (..)
   , newErrorId
+  , GithubClient (..)
+  , GithubSecret (..)
   ) where
 
 import qualified Crypto.Random.Entropy as Entropy
@@ -23,3 +25,13 @@ newErrorId :: IO ErrorId
 newErrorId =
   ErrorId <$>
     Text.decodeUtf8 . Base16.encode <$> Entropy.getEntropy 16
+
+newtype GithubClient =
+  GithubClient {
+      githubClient :: Text
+    } deriving (Eq, Ord, Show)
+
+newtype GithubSecret =
+  GithubSecret {
+      githubSecret :: Text
+    } deriving (Eq, Ord, Show)
