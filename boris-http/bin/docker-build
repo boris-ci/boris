@@ -1,0 +1,4 @@
+#!/bin/sh
+
+ROOT="$(git rev-parse --show-toplevel)"
+docker build -f "$ROOT/boris-http/Dockerfile" "$ROOT"

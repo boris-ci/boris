@@ -1,0 +1,13 @@
+#!/bin/sh -eux
+
+: ${DOCKER_REPOSITORY:?"Please set DOCKER_REPOSITORY."}
+
+ROOT="$(git rev-parse --show-toplevel)"
+
+docker build -t boris-build -f "$ROOT/deploy/docker/Dockerfile.build" "$ROOT/deploy/docker"
+docker tag boris-build:latest "markhibberd/boris-build:clean"
+docker push "markhibberd/boris-build:clean"
+
+docker build -t boris-build -f "$ROOT/deploy/docker/Dockerfile.build-smaller" "$ROOT/deploy/docker"
+docker tag boris-build:latest "markhibberd/boris-build"
+docker push "markhibberd/boris-build"
