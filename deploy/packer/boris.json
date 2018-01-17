@@ -1,0 +1,48 @@
+{
+  "variables": {
+    "ami": "ami-532cde31",
+    "vpc_id": "",
+    "subnet_id": "",
+    "security_group_id": ""
+  },
+  "builders": [
+    {
+      "type": "amazon-ebs",
+      "access_key": "{{user `aws_access_key`}}",
+      "secret_key": "{{user `aws_secret_key`}}",
+      "instance_type": "t2.large",
+      "ssh_username": "admin",
+      "ssh_pty": true,
+      "ami_name": "boris {{isotime | clean_ami_name}}",
+      "run_tags": {
+        "Name": "Packer builder"
+      },
+      "tags": {
+        "Purpose": "boris",
+        "Description": "boris http image"
+      },
+      "ssh_timeout": "10m",
+      "region": "ap-southeast-2",
+      "vpc_id": "{{user `vpc_id`}}",
+      "subnet_id": "{{user `subnet_id`}}",
+      "security_group_id": "{{user `security_group_id`}}",
+      "associate_public_ip_address" : true,
+      "source_ami": "{{user `ami`}}",
+      "ami_users": [
+        "132501241866"
+      ]
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "script": "scripts/setup.sh"
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "/usr/local/bin/goss -g /tmp/goss.yaml validate --format documentation"
+      ]
+    }
+  ]
+}
