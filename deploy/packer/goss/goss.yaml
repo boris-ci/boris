@@ -1,0 +1,4 @@
+service:
+  chrony:
+    running: true
+    enabled: true

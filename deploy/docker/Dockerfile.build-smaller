@@ -1,0 +1,26 @@
+FROM debian:stretch as builder
+
+ENV LANG C.UTF-8
+
+RUN apt-get update && \
+  apt-get install -y gnupg && \
+  echo 'deb http://ppa.launchpad.net/hvr/ghc/ubuntu xenial main' > /etc/apt/sources.list.d/ghc.list && \
+  apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F6F88286 && \
+  apt-get update && \
+  apt-get install -y \
+    git \
+    curl \
+    xz-utils \
+    libgmp-dev \
+    build-essential \
+    libz-dev \
+    cabal-install-1.24 \
+    ghc-8.0.2
+
+ENV PATH /root/.cabal/bin:/root/.local/bin:/opt/cabal/1.24/bin:/opt/ghc/8.0.2/bin:$PATH
+
+WORKDIR /mafia
+RUN curl -O https://raw.githubusercontent.com/markhibberd/mafia/master/script/mafia && \
+  chmod +x mafia && \
+  ./mafia upgrade && \
+  cp /root/.mafia/versions/mafia /usr/local/bin/mafia
