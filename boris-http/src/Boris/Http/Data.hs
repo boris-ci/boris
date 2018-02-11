@@ -1,21 +1,25 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module Boris.Http.Data (
-    ConfigurationMode (..)
-  , ClientLocale (..)
+    ErrorId (..)
+  , newErrorId
   ) where
 
-import           Data.Time.Zones (TZ)
+import qualified Crypto.Random.Entropy as Entropy
 
-import           Mismi.S3 (Address)
+import qualified Data.ByteString.Base16 as Base16
+import           Data.Text (Text)
+import qualified Data.Text.Encoding as Text
 
 import           P
 
+import           System.IO (IO)
 
-data ConfigurationMode =
-    GlobalS3WhitelistMode Address
-    deriving (Eq, Show)
+newtype ErrorId =
+  ErrorId {
+    errorId :: Text
+  } deriving (Eq, Ord, Show)
 
-newtype ClientLocale =
-  ClientLocale {
-      clientLocaleTZ :: TZ
-    } deriving (Eq, Show)
+newErrorId :: IO ErrorId
+newErrorId =
+  ErrorId <$>
+    Text.decodeUtf8 . Base16.encode <$> Entropy.getEntropy 16

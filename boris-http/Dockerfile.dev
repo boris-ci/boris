@@ -1,0 +1,11 @@
+FROM markhibberd/boris-build:latest as builder
+
+ENV LANG C.UTF-8
+
+COPY . /build/
+
+WORKDIR /build/boris-http
+
+RUN MAFIA_LOCK=../boris-store/boris-store.lock-8.0.2 ./mafia lock
+
+CMD "/bin/sh"

@@ -11,11 +11,15 @@ export BORIS_MODE=development
 export BORIS_AUTHENTICATION=none
 
 export BORIS_BUILD_SERVICE=local
+export BORIS_BUILD_SERVICE_NOTIFICATION=http
 
-export BORIS_LOG_SERVICE=null
+export BORIS_DISCOVER_SERVICE=local
+export BORIS_DISCOVER_SERVICE_NOTIFICATION=http
+
+export BORIS_LOG_SERVICE=std
 
 export BORIS_PROJECT_MODE=single
-export BORIS_SINGLE_PROJECT_NAME=local
+export BORIS_SINGLE_PROJECT_NAME=demo
 export BORIS_SINGLE_PROJECT_REPOSITORY="$LOCAL_GIT"
 
 export BORIS_STORE=postgres
@@ -57,11 +61,4 @@ EOF
 
 (cd "$LOCAL_GIT" && git init && git add -A . && git commit -m "first") || exit $?
 
-LOCAL_BORIS_CONFIG="$LOCAL_TMP/conf"
-cat > "$LOCAL_BORIS_CONFIG" <<EOF
-demo=$(cd "$LOCAL_GIT" >/dev/null 2>&1 && pwd)
-EOF
-
-aws s3 cp "$LOCAL_BORIS_CONFIG" "$BORIS_CONFIG_LOCATION"
-
-$(dirname $0)/../dist/build/boris-http/boris-http
+./mafia quick -p test/test.hs
