@@ -1,5 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Boris.Service.Discover (
     DiscoverError (..)
   , discover
@@ -7,25 +8,12 @@ module Boris.Service.Discover (
   ) where
 
 import           Boris.Core.Data
+import qualified Boris.Client.Http as Http
+import qualified Boris.Client.Discover as Discover
+import           Boris.Service.Boot
 import           Boris.Service.Git
 import           Boris.Service.Log
 import           Boris.Service.Workspace
-import qualified Boris.Store.Index as SI
-import           Boris.Store.Build (RegisterError, renderRegisterError)
-import qualified Boris.Store.Build as SB
-import           Boris.Store.Tick (TickError, renderTickError)
-import qualified Boris.Store.Tick as ST
-import           Boris.Queue (BuildQueue (..), Request (..), RequestBuild (..), RequestDiscover (..))
-import qualified Boris.Queue as Q
-
-import           Control.Monad.Trans.Class (lift)
-
-import qualified Data.List as L
-
-import           Jebediah.Data (LogGroup (..), LogStream (..))
-
-import           Mismi (Error, runAWST, renderError)
-import           Mismi.Amazonka (Env)
 
 import           P
 
@@ -33,78 +21,41 @@ import           System.IO (IO)
 
 import qualified Tine.Conduit as X
 
-import           X.Control.Monad.Trans.Either (EitherT, runEitherT, newEitherT, bimapEitherT)
+import           X.Control.Monad.Trans.Either (EitherT, runEitherT, newEitherT, bimapEitherT, joinEitherE)
 
 data DiscoverError =
-    DiscoverAwsError Error
-  | DiscoverInitialiseError InitialiseError
-  | DiscoverTickError TickError
-  | DiscoverRegisterError RegisterError
+    DiscoverInitialiseError InitialiseError
+  | DiscoverLogError LogError
+  | DiscoverHttpError Http.BorisHttpClientError
 
-discover :: Env -> Environment -> BuildQueue -> WorkspacePath -> RequestDiscover -> EitherT DiscoverError IO ()
-discover env e q w request = do
-  let
-    buildId = requestDiscoverId request
-    project = requestDiscoverProject request
-    repository = requestDiscoverRepository request
-    gname = LogGroup $ mconcat ["boris.discover.", renderEnvironment e]
-    sname = LogStream $ mconcat [renderProject project, ".", renderBuildId buildId]
-
-  runAWST env DiscoverAwsError . newEitherT . withLogger gname sname $ \out -> runEitherT $
-    withWorkspace w buildId $ \workspace -> do
+discover :: LogService -> DiscoverService ->  WorkspacePath -> BuildId -> Project -> Repository -> EitherT DiscoverError IO ()
+discover logs discovers w buildid project repository = do
+  joinEitherE join . newEitherT . firstT DiscoverLogError . withLogger logs project buildid  $ \out -> runEitherT $
+    withWorkspace w buildid $ \workspace -> do
       X.xPutStrLn out . mconcat $ ["[boris:discover] ", renderProject project]
 
       discovered <- bimapEitherT DiscoverInitialiseError id $
         discovering out out workspace repository
 
-      forM_ discovered $ \d -> do
-        let
-          build = discoverBuild d
-          commit = discoverCommit d
-          ref = discoverRef d
-
-        current <- runAWST env DiscoverAwsError . lift $
-          SI.getProjectCommitSeen e project commit
-
-        already <- runAWST env DiscoverAwsError . lift $
-          SI.getProjectCommitDiscovered e project commit
-
-        if L.elem build current || L.elem build already
-          then do
-            X.xPutStrLn out $ mconcat [
-                "Already seen"
-              , ": project = ", renderProject project
-              , ", build = ", renderBuild build
-              , ", ref = ", renderRef ref
-              , ", commit = ", renderCommit commit
-              ]
-            pure ()
-          else do
-            runAWST env DiscoverAwsError . lift $
-              SI.addProjectCommitDiscovered e project commit build
-            newId <- runAWST env DiscoverAwsError . bimapEitherT DiscoverTickError id $
-              ST.next e project build
-            _ <- runAWST env DiscoverAwsError . bimapEitherT DiscoverRegisterError id $
-              SB.register e project build newId
-            X.xPutStrLn out $ mconcat [
-                "New commit, triggering build"
-              , ": project = ", renderProject project
-              , ", build = ", renderBuild build
-              , ", ref = ", renderRef ref
-              , ", commit = ", renderCommit commit
-              , ", build-id ", renderBuildId newId
-              ]
-            runAWST env DiscoverAwsError . lift $
-              Q.put q (RequestBuild' $ RequestBuild newId project repository build (Just ref))
+      case discovers of
+        PushDiscover config -> do
+          firstT DiscoverHttpError $
+            Discover.complete config buildid project discovered
+        LogDiscover -> do
+           X.xPutStrLn out . mconcat $ ["project = ", renderProject project]
+           X.xPutStrLn out . mconcat $ ["repository = ", renderRepository repository]
+           for_ discovered $ \(DiscoverInstance b r c) -> do
+             X.xPutStrLn out . mconcat $ ["  build = ", renderBuild b]
+             X.xPutStrLn out . mconcat $ ["  ref = ", renderRef r]
+             X.xPutStrLn out . mconcat $ ["  commit = ", renderCommit c]
+             X.xPutStrLn out . mconcat $ [""]
 
 renderDiscoverError :: DiscoverError -> Text
 renderDiscoverError err =
   case err of
-    DiscoverAwsError e ->
-      mconcat ["An AWS error occurred trying to discover builds: ", renderError e]
     DiscoverInitialiseError e ->
       mconcat ["A git initialisation error has occurred trying to discover builds: ", renderInitialiseError e]
-    DiscoverTickError e ->
-      mconcat ["An error has occurred trying to generate an id for a discovered build: ", renderTickError e]
-    DiscoverRegisterError e ->
-      mconcat ["An error has occurred trying to register an id for a discovered build: ", renderRegisterError e]
+    DiscoverLogError e ->
+      mconcat ["A logging error has occurred trying to discover builds: ", renderLogError e]
+    DiscoverHttpError e ->
+      mconcat ["A http error has occurred trying to discover builds: ", Http.renderBorisHttpClientError e]

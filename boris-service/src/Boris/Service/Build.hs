@@ -8,24 +8,14 @@ module Boris.Service.Build (
 
 import           Boris.Build
 import           Boris.Core.Data
+import           Boris.Service.Boot
 import           Boris.Service.Git
 import           Boris.Service.Log
 import           Boris.Service.Workspace
-import           Boris.Store.Build (BuildCancelled (..))
-import qualified Boris.Store.Build as SB
-import qualified Boris.Store.Results as SR
-import           Boris.Queue (RequestBuild (..))
+import qualified Boris.Service.Remote as Remote
 
 import           Control.Concurrent.Async (async, waitEitherCancel)
-import           Control.Monad.IO.Class (liftIO)
-import           Control.Monad.Trans.Class (lift)
-
-import qualified Data.Text.IO as T
-
-import           Jebediah.Data (LogGroup (..), LogStream (..))
-
-import           Mismi (Error, runAWS, runAWST, renderError)
-import           Mismi.Amazonka (Env)
+import           Control.Monad.IO.Class (MonadIO (..))
 
 import           P
 
@@ -36,15 +26,15 @@ import qualified Tine.Conduit as X
 
 import           Twine.Snooze (snooze, seconds)
 
-import           X.Control.Monad.Trans.Either (EitherT, newEitherT, runEitherT)
+import           X.Control.Monad.Trans.Either (EitherT, newEitherT, runEitherT, joinEitherE)
 
 data BuilderError =
-    BuildAwsError Error
-  | BuildResultError SR.JsonError
+    BuildLogError LogError
+  | BuildRemoteError Remote.RemoteError
 
 data LifecycleError =
-    LifecycleAwsError Error
-  | LifecycleInitialiseError InitialiseError
+    LifecycleInitialiseError InitialiseError
+  | LifecycleRemoteError Remote.RemoteError
 
 -- |
 -- Basic executor flow:
@@ -68,33 +58,22 @@ data LifecycleError =
 --  * we record the results.
 --
 --
-builder :: Env -> Environment -> WorkspacePath -> RequestBuild -> EitherT BuilderError IO ()
-builder env e w request = do
-  let
-    project = requestBuildProject request
-    build = requestBuildName request
-    buildId = requestBuildId request
-    repository = requestBuildRepository request
-    mref = requestBuildRef request
-    gname = LogGroup $ mconcat ["boris.", renderEnvironment e]
-    sname = LogStream . renderBuildId $ buildId
+builder :: LogService -> BuildService -> WorkspacePath -> BuildId -> Project -> Repository -> Build -> Maybe Ref -> EitherT BuilderError IO ()
+builder logs builds w buildId project repository build mref = do
+  joinEitherE join . newEitherT . firstT BuildLogError . withLogger logs project buildId $ \out -> runEitherT $ do
+    initial <- firstT BuildRemoteError $
+      Remote.heartbeat builds buildId
 
-  runAWST env BuildAwsError . newEitherT . withLogger gname sname $ \out -> runEitherT $ do
-    liftIO . T.putStrLn $ "acknowledge: " <> renderBuildId buildId
-
-    initial <- runAWST env BuildAwsError . lift $ do
-      SB.heartbeat e buildId
-
-    ack <- runAWST env BuildAwsError . lift $
-      SB.acknowledge e buildId gname sname
+    ack <- firstT BuildRemoteError $
+      Remote.acknowledge builds buildId
 
     case (ack, initial) of
       (Accept, BuildNotCancelled) -> do
         let
           heartbeater =
             runEitherT $ do
-              heart <- runAWS env $ do
-                SB.heartbeat e buildId
+              heart <- firstT BuildRemoteError $
+                Remote.heartbeat builds buildId
               case heart of
                 BuildCancelled ->
                   pure ()
@@ -103,14 +82,14 @@ builder env e w request = do
                   newEitherT heartbeater
 
         heartbeater' <- liftIO . async $ heartbeater
-        lifecycle' <- liftIO . async . runEitherT $ lifecycle out env e w project build repository mref buildId
+        lifecycle' <- liftIO . async . runEitherT $ lifecycle out builds w project build repository mref buildId
 
         state <- liftIO $ waitEitherCancel heartbeater' lifecycle'
 
         result <- case state of
           -- we couldn't send a heartbeat, so had to give up, this should be rare, but can happen.
           Left (Left err) -> do
-            X.xPutStrLn out $ mconcat ["| boris:ko:heartbeat-error | ", renderError err]
+            X.xPutStrLn out $ mconcat ["| boris:ko:heartbeat-error | ", renderBuilderError err]
             pure $ BuildKo
 
           -- we were cancelled, nothing more to see here.
@@ -120,9 +99,8 @@ builder env e w request = do
 
           -- initialisation error, wasn't even a valid build we ditch it all together (i.e. deindex).
           Right (Left err) -> do
-            liftIO . T.putStrLn $ "deindex: " <> renderBuildId buildId
-            runAWST env BuildAwsError . lift $ do
-              SB.deindex e project build buildId
+            firstT BuildRemoteError $
+              Remote.disavow builds buildId project build
             X.xPutStrLn out $ mconcat ["| boris:ko:initialization | ", renderLifecycleError err]
             pure $ BuildKo
 
@@ -136,11 +114,8 @@ builder env e w request = do
             X.xPutStrLn out $ "| boris:ok |"
             pure $ BuildOk
 
-        runAWST env BuildAwsError $ do
-          liftIO . T.putStrLn $ "complete: " <> renderBuildId buildId
-          r <- lift $ SB.complete e buildId result
-          firstT BuildResultError $
-            SR.add e (SR.Result buildId project build r result)
+        firstT BuildRemoteError $
+          Remote.complete builds buildId result
 
       (AlreadyRunning, BuildCancelled) ->
         pure ()
@@ -149,14 +124,12 @@ builder env e w request = do
         pure ()
 
       (Accept, BuildCancelled) ->
-        runAWST env BuildAwsError $ do
-          r <- lift $ SB.complete e buildId BuildKo
-          firstT BuildResultError $
-            SR.add e (SR.Result buildId project build r BuildKo)
+        firstT BuildRemoteError $
+          Remote.complete builds buildId BuildKo
 
 
-lifecycle :: X.Out -> Env -> Environment -> WorkspacePath -> Project -> Build -> Repository -> Maybe Ref -> BuildId -> EitherT LifecycleError IO (Either BuildError ())
-lifecycle out env e w project build repository mref buildId =
+lifecycle :: X.Out -> BuildService -> WorkspacePath -> Project -> Build -> Repository -> Maybe Ref -> BuildId -> EitherT LifecycleError IO (Either BuildError ())
+lifecycle out builds w project build repository mref buildId =
   withWorkspace w buildId $ \workspace -> do
     instant <- firstT LifecycleInitialiseError $
       initialise out out workspace build repository mref
@@ -200,9 +173,8 @@ lifecycle out env e w project build repository mref buildId =
         , SetEnv "BORIS_COMMIT" (renderCommit commit)
         ]
 
-    runAWST env LifecycleAwsError . lift $ do
-      liftIO . T.putStrLn $ "index: " <> renderBuildId buildId
-      SB.index e project build buildId ref commit
+    firstT LifecycleRemoteError $
+      Remote.avow builds buildId project build ref commit
 
     liftIO . runEitherT $
       runBuild out out workspace specification context
@@ -210,15 +182,15 @@ lifecycle out env e w project build repository mref buildId =
 renderBuilderError :: BuilderError -> Text
 renderBuilderError err =
   case err of
-    BuildAwsError e ->
-      mconcat ["An AWS error occurred trying to obtain a build to run: ", renderError e]
-    BuildResultError e ->
-      mconcat ["Error decoding results: ", SR.jsonError e]
+    BuildLogError e ->
+      mconcat ["Error commissioning log: ", renderLogError e]
+    BuildRemoteError e ->
+      mconcat ["Error contacting server: ", Remote.renderRemoteError e]
 
 renderLifecycleError :: LifecycleError -> Text
 renderLifecycleError err =
   case err of
-    LifecycleAwsError e ->
-      mconcat ["An AWS error occurred trying to update boris store: ", renderError e]
     LifecycleInitialiseError e ->
       mconcat ["An error occurred trying to initialise git repository: ", renderInitialiseError e]
+    LifecycleRemoteError e ->
+      mconcat ["An error occurred trying to confirm ref with remote: ", Remote.renderRemoteError e]
