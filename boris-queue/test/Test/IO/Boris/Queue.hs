@@ -4,7 +4,8 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Test.IO.Boris.Queue where
 
-import           Boris.Queue (BuildQueue (..), QueueSize (..))
+import           Boris.Core.Data
+import           Boris.Queue (BuildQueue (..))
 import qualified Boris.Queue as Q
 
 import           Disorder.Core (failWith)

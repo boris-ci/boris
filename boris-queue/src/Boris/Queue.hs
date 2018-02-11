@@ -6,7 +6,6 @@ module Boris.Queue (
   , RequestBuild (..)
   , RequestDiscover (..)
   , BuildQueue (..)
-  , QueueSize (..)
   , size
   , put
   , get
@@ -67,11 +66,6 @@ data RequestDiscover =
 newtype BuildQueue =
   BuildQueue {
       renderBuildQueue :: Text
-    } deriving (Eq, Show)
-
-newtype QueueSize =
-  QueueSize {
-      getQueueSize :: Int
     } deriving (Eq, Show)
 
 size :: BuildQueue -> AWS QueueSize
