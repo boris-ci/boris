@@ -35,6 +35,7 @@ data BorisHttpClientError =
     BorisHttpClientBalanceError BalanceError
   | BorisHttpClientDecodeError Text
   | BorisHttpClientUnhandledResponseError (H.Response BL.ByteString)
+    deriving (Show)
 
 borisVersion :: ByteString
 borisVersion =
@@ -63,6 +64,8 @@ post b url a = do
     }
   case H.responseStatus res of
     Status 201 _ ->
+      hoistEither . first BorisHttpClientDecodeError $ decodeResponse res
+    Status 200 _ ->
       hoistEither . first BorisHttpClientDecodeError $ decodeResponse res
     _ ->
       left $ BorisHttpClientUnhandledResponseError res
