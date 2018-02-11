@@ -12,3 +12,5 @@ cabal.sandbox.config
 /gen
 */gen
 */tmp
+/bin/mth
+/Dockerfile
