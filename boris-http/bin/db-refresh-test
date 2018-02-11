@@ -1,0 +1,8 @@
+#!/bin/sh -eux
+
+dropdb boris_test || true
+createuser -S -d -R boris_test || true
+createdb boris_test
+echo "alter user boris_test with SUPERUSER;" | psql boris_test
+echo "alter user boris_test with encrypted password 'boris_test';" | psql boris_test
+echo "grant all privileges on database boris_test to boris_test;" | psql boris_test

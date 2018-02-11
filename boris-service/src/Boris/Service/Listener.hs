@@ -7,9 +7,10 @@ module Boris.Service.Listener (
   ) where
 
 import           Boris.Core.Data
+import           Boris.Service.Boot
 import           Boris.Service.Build
 import           Boris.Service.Discover
-import           Boris.Queue (BuildQueue (..), Request (..))
+import           Boris.Queue (BuildQueue (..), Request (..), RequestBuild (..), RequestDiscover (..))
 import qualified Boris.Queue as Q
 
 import           Mismi (Error, runAWST, renderError)
@@ -27,8 +28,8 @@ data ListenerError =
   | ListenerBuilderError BuilderError
   | ListenerDiscoverError DiscoverError
 
-listen :: Env -> Environment -> BuildQueue -> WorkspacePath -> EitherT ListenerError IO ()
-listen env e q w = do
+listen :: LogService -> BuildService -> DiscoverService -> Env -> BuildQueue -> WorkspacePath -> EitherT ListenerError IO ()
+listen logs builds discovers env q w = do
   r <- runAWST env ListenerAwsError . bimapEitherT ListenerQueueError id $
     Q.get q
 
@@ -36,10 +37,10 @@ listen env e q w = do
     case request of
       RequestDiscover' x ->
         bimapEitherT ListenerDiscoverError id $
-          discover env e q w x
+          discover logs discovers w (requestDiscoverId x) (requestDiscoverProject x) (requestDiscoverRepository x)
       RequestBuild' x ->
         bimapEitherT ListenerBuilderError id $
-          builder env e w x
+          builder logs builds w (requestBuildId x) (requestBuildProject x) (requestBuildRepository x) (requestBuildName x) (requestBuildRef x)
 
 renderListenerError :: ListenerError -> Text
 renderListenerError err =

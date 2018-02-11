@@ -7,7 +7,6 @@ module Boris.Client.Scoreboard (
 import           Boris.Core.Data
 import           Boris.Client.Http (BorisHttpClientError (..))
 import qualified Boris.Client.Http as H
-import           Boris.Store.Results (Result (..))
 
 import           Data.Aeson (FromJSON (..), withObject, (.:), (.:?))
 import           Data.Aeson.Types (Value, Parser)

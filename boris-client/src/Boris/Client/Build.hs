@@ -8,19 +8,19 @@ module Boris.Client.Build (
   , ignore
   , rebuild
   , queue
-  , GetBuild (..)
-  , GetQueue (..)
+  , heartbeat
+  , acknowledge
+  , disavow
+  , avow
+  , complete
   ) where
 
 import           Boris.Core.Data
-import           Boris.Store.Build (BuildData (..), LogData (..), BuildCancelled (..))
 import           Boris.Client.Http (BorisHttpClientError (..))
 import qualified Boris.Client.Http as H
-import           Boris.Queue (QueueSize (..))
+import           Boris.Representation.ApiV1
 
-import           Data.Aeson (FromJSON (..), ToJSON (..), object, withObject, (.:), (.:?), (.=))
-
-import           Jebediah.Data (LogGroup (..), LogStream (..))
+import           Data.Aeson (object, (.=))
 
 import           P
 
@@ -44,14 +44,43 @@ cancel :: BalanceConfig -> BuildId -> EitherT BorisHttpClientError IO ()
 cancel c i =
   H.delete c ["build", renderBuildId i]
 
-list :: BalanceConfig -> Project -> Build -> EitherT BorisHttpClientError IO [(Ref, [BuildId])]
+list :: BalanceConfig -> Project -> Build -> EitherT BorisHttpClientError IO (Maybe BuildTree)
 list c p b =
-  fmap (maybe [] (fmap (\r -> (getBuildsDetailRef r, getBuildsDetailIds r))) . fmap getBuildsDetail) $
+  (fmap . fmap) getBuilds $
     H.get c ["project", renderProject p , "build", renderBuild b]
 
 ignore :: BalanceConfig -> Project -> Build -> Bool -> EitherT BorisHttpClientError IO ()
 ignore c p b i =
   H.put c ["project", renderProject p , "build", renderBuild b, "ignore"] (PutBuildIgnore i)
+
+heartbeat :: BalanceConfig -> BuildId -> EitherT BorisHttpClientError IO BuildCancelled
+heartbeat c i =
+  fmap postHeartbeatCancelled $
+    H.post c ["build", renderBuildId i, "heartbeat"] ()
+
+acknowledge :: BalanceConfig -> BuildId -> EitherT BorisHttpClientError IO Acknowledge
+acknowledge c i =
+  fmap postAcknowledge $
+    H.post c ["build", renderBuildId i, "acknowledge"] PostAcknowledgeRequest
+
+disavow :: BalanceConfig -> BuildId -> Project -> Build -> EitherT BorisHttpClientError IO ()
+disavow c i p b = do
+  PostDisavowResponse <- H.post c ["build", renderBuildId i, "disavow"] $
+    PostDisavowRequest p b
+  pure ()
+
+avow :: BalanceConfig -> BuildId -> Project -> Build -> Ref -> Commit -> EitherT BorisHttpClientError IO ()
+avow config i p b r c = do
+  PostAvowResponse <- H.post config ["build", renderBuildId i, "avow"] $
+    PostAvowRequest p b r c
+  pure ()
+
+complete :: BalanceConfig -> BuildId -> BuildResult -> EitherT BorisHttpClientError IO ()
+complete config i r = do
+  PostCompleteResponse <- H.post config ["build", renderBuildId i, "complete"] $ object [
+      "result" .= case r of BuildOk -> True; BuildKo -> False
+    ]
+  pure ()
 
 rebuild :: BalanceConfig -> BuildId -> EitherT BorisHttpClientError IO (Maybe BuildData)
 rebuild c i = do
@@ -70,87 +99,3 @@ queue :: BalanceConfig -> EitherT BorisHttpClientError IO (Maybe QueueSize)
 queue c =
   (fmap . fmap) getQueue $
     H.get c ["queue"]
-
-newtype PostBuildRequest =
-  PostBuildRequest (Maybe Ref)
-
-instance ToJSON PostBuildRequest where
-  toJSON (PostBuildRequest r) =
-    object [
-        "ref" .= fmap renderRef r
-      ]
-
-newtype GetBuild =
-  GetBuild {
-      getBuild :: BuildData
-    } deriving (Eq, Show)
-
-instance FromJSON GetBuild where
-  parseJSON =
-    withObject "GetBuild" $ \o ->
-      fmap GetBuild $
-        BuildData
-          <$> (fmap BuildId $ o .: "build_id")
-          <*> (fmap Project $ o .: "project")
-          <*> (fmap Build $ o .: "build")
-          <*> ((fmap . fmap) Ref $ o .:? "ref")
-          <*> ((fmap . fmap) Commit $ o .:? "commit")
-          <*> (o .:? "queued")
-          <*> (o .:? "started")
-          <*> (o .:? "completed")
-          <*> (o .:? "heartbeat")
-          <*> ((fmap . fmap) (bool BuildKo BuildOk) $ o .:? "result")
-          <*> (do ll <- o .:? "log"
-                  forM ll $ \l ->
-                    flip (withObject "LogData") l $ \ld ->
-                      LogData <$> (fmap LogGroup $ ld .: "group") <*> (fmap LogStream $ ld .: "stream"))
-          <*> ((fmap . fmap) (bool BuildNotCancelled BuildCancelled) $ o .:? "cancelled")
-
-newtype GetBuilds =
-  GetBuilds {
-      getBuildsDetail :: [GetBuildsDetail]
-    } deriving (Eq, Show)
-
-data GetBuildsDetail =
-  GetBuildsDetail {
-      getBuildsDetailRef :: Ref
-    , getBuildsDetailIds :: [BuildId]
-    } deriving (Eq, Show)
-
-instance FromJSON GetBuilds where
-  parseJSON =
-    withObject "GetBuilds" $ \o ->
-      fmap GetBuilds $
-        o .: "details"
-
-instance FromJSON GetBuildsDetail where
-  parseJSON =
-    withObject "GetBuildsDetail" $ \o ->
-      GetBuildsDetail
-        <$> fmap Ref (o .: "ref")
-        <*> (fmap . fmap) BuildId (o .: "build_ids")
-
-newtype PutBuildIgnore =
-  PutBuildIgnore
-    Bool
-      deriving (Eq, Show)
-
-instance ToJSON PutBuildIgnore where
-  toJSON (PutBuildIgnore i) =
-    object [
-        "ignore" .= i
-      ]
-
-newtype GetQueue =
-  GetQueue {
-      getQueue :: QueueSize
-    }
-
-instance ToJSON GetQueue where
-  toJSON (GetQueue q) =
-    object ["size" .= getQueueSize q]
-
-instance FromJSON GetQueue where
-  parseJSON =
-    withObject "GetQueue" $ \o ->
-      (GetQueue . QueueSize) <$> o .: "size"

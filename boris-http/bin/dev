@@ -1,19 +1,28 @@
 #!/bin/sh -eux
 
-export AWS_DEFAULT_REGION=ap-southeast-2
-export BORIS_ENVIRONMENT=local
-export BORIS_BUILD_QUEUE=boris-${BORIS_ENVIRONMENT}
-export BORIS_CONFIG_LOCATION=s3://ambiata-dev-view/boris/$(date '+%Y%m%d%H%M%S')-$$
-export PORT=10080
-export BONES_PORT=10081
+ROOT="$(git rev-parse --show-toplevel)"
+LOCAL_TMP="$ROOT/tmp"
+LOCAL_GIT="$ROOT/tmp/git"
 
-LOCAL_TMP="$(dirname $0)/../tmp"
-LOCAL_GIT="$(dirname $0)/../tmp/git"
+export PORT=9999
+
+export BORIS_MODE=development
+
+export BORIS_AUTHENTICATION=none
+
+export BORIS_BUILD_SERVICE=local
+
+export BORIS_LOG_SERVICE=null
+
+export BORIS_PROJECT_MODE=single
+export BORIS_SINGLE_PROJECT_NAME=local
+export BORIS_SINGLE_PROJECT_REPOSITORY="$LOCAL_GIT"
+
+export BORIS_STORE=postgres
+export BORIS_POSTGRES="dbname=boris_test host=docker.for.mac.localhost user=boris_test password=boris_test port=5432"
 
 rm -rf "$LOCAL_GIT"
-
-mkdir -p "$LOCAL_TMP" "$LOCAL_GIT"
-
+mkdir -p "$LOCAL_GIT"
 
 cat > "$LOCAL_GIT/boris-git.toml" <<EOF
 [boris]

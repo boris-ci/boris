@@ -5,6 +5,7 @@ module Boris.Service.Daemon (
   ) where
 
 import           Boris.Core.Data
+import           Boris.Service.Boot
 import           Boris.Service.Listener
 import           Boris.Queue (BuildQueue (..))
 
@@ -24,10 +25,10 @@ import           Twine.Snooze (seconds)
 import           Twine.Guard (TerminationAction (..), TerminationHandler (..), repeatedly)
 
 
-run :: Env -> Environment -> BuildQueue -> WorkspacePath -> Pin -> IO ()
-run env e q work pin = do
+run :: LogService -> BuildService -> DiscoverService -> Env -> BuildQueue -> WorkspacePath -> Pin -> IO ()
+run logs builds discovers env q work pin = do
   repeatedly (seconds 1) (handler "listener" renderListenerError) $
-    let go = listen env e q work in liftIO (checkPin pin) >>= flip unless go
+    let go = listen logs builds discovers env q work in liftIO (checkPin pin) >>= flip unless go
 
 handler :: Text -> (e -> Text) -> TerminationHandler e
 handler label render =

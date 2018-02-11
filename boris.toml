@@ -5,7 +5,7 @@
   command = [
       ["master", "build", "dist-8-0", "-C", "boris-build"]
     ]
-
+w
 [build.dist-8-0-client]
   command = [
       ["master", "build", "dist-8-0", "-C", "boris-client"]
@@ -36,9 +36,9 @@
       ["master", "build", "dist-8-0", "-C", "boris-service"]
     ]
 
-[build.dist-8-0-store]
+[build.dist-8-0-representation]
   command = [
-      ["master", "build", "dist-8-0", "-C", "boris-store"]
+      ["master", "build", "dist-8-0", "-C", "boris-representation"]
     ]
 
 [build.branches-8-0-build]
@@ -76,9 +76,9 @@
       ["master", "build", "branches-8-0", "-C", "boris-service"]
     ]
 
-[build.branches-8-0-store]
+[build.branches-8-0-representation]
   command = [
-      ["master", "build", "branches-8-0", "-C", "boris-store"]
+      ["master", "build", "branches-8-0", "-C", "boris-representation"]
     ]
 
 [build.dist-validate]

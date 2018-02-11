@@ -12,19 +12,28 @@
 	url = git@github.com:ambiata/mismi
 [submodule "lib/jebediah"]
 	path = lib/jebediah
-	url = git@github.com:ambiata/jebediah
+	url = git@github.com:markhibberd/jebediah
 [submodule "lib/twine"]
 	path = lib/twine
 	url = git@github.com:ambiata/twine
 [submodule "lib/tine"]
 	path = lib/tine
-	url = git@github.com:ambiata/tine
+	url = git@github.com:markhibberd/tine
 [submodule "lib/snooze"]
 	path = lib/snooze
-	url = git@github.com:ambiata/snooze
+	url = git@github.com:markhibberd/snooze
 [submodule "lib/bmx.hs"]
 	path = lib/bmx.hs
 	url = git@github.com:ambiata/bmx.hs
 [submodule "lib/spine"]
 	path = lib/spine
-	url = git@github.com:ambiata/spine
+	url = git@github.com:markhibberd/spine
+[submodule "lib/traction"]
+	path = lib/traction
+	url = git@github.com:markhibberd/traction
+[submodule "lib/nest"]
+	path = lib/nest
+	url = git@github.com:markhibberd/nest
+[submodule "lib/vulcan"]
+	path = lib/vulcan
+	url = git@github.com:markhibberd/vulcan

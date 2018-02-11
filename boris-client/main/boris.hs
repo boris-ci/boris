@@ -5,12 +5,10 @@ import           BuildInfo_ambiata_boris_client
 import           DependencyInfo_ambiata_boris_client
 
 import           Boris.Core.Data
-import           Boris.Store.Build (BuildData (..), LogData (..))
 import           Boris.Client.Http (renderBorisHttpClientError)
 import qualified Boris.Client.Build as B
 import qualified Boris.Client.Project as P
 import qualified Boris.Client.Log as L
-import           Boris.Queue (QueueSize (..))
 import qualified Boris.Client.Validate as V
 
 import           Control.Concurrent.Async (async, waitEitherCancel)
@@ -88,8 +86,7 @@ main = do
       RunCommand RealRun c ->
         case c of
           RemoteCommand r -> do
-            environment <- Environment <$> text "BORIS_ENVIRONMENT"
-            run environment r
+            run r
           LocalCommand r ->
             local r
 
@@ -133,8 +130,8 @@ parser =
         RemoteCommand Queue
     ]
 
-run :: Environment -> RemoteCommand -> IO ()
-run e c = case c of
+run :: RemoteCommand -> IO ()
+run c = case c of
   Trigger t p b ref -> do
     bc <- mkBalanceConfig
     d <- orDie renderBorisHttpClientError $ B.trigger bc p b ref
@@ -209,12 +206,14 @@ run e c = case c of
         orDie renderBorisHttpClientError $
           P.fetch bc p >>= mapM_ (liftIO . T.putStrLn . renderBuild)
       (Just p, Just b) ->
-        orDie renderBorisHttpClientError $
-          B.list bc p b >>= mapM_ (\(r, is) -> liftIO $ do
-            T.putStrLn . renderRef $ r
-            forM_ is $ \i -> do
-              T.putStr "\t"
-              T.putStrLn . renderBuildId $ i)
+        orDie renderBorisHttpClientError $ do
+          tree <- B.list bc p b
+          for_ tree $ \t ->
+            for_ (buildTreeRefs t) $ \(BuildTreeRef r is) -> liftIO $ do
+              T.putStrLn . renderRef $ r
+              forM_ is $ \i -> do
+                T.putStr "\t"
+                T.putStrLn . renderBuildId $ i
       (Nothing, Just _) ->
         bomb "Can not specify build without project."
   Status i -> do
@@ -227,9 +226,11 @@ run e c = case c of
       Just r -> do
         T.putStrLn  $ renderBuildData r i
         exitSuccess
-  Log i -> do
-    env <- orDie renderRegionError discoverAWSEnv
-    L.source env e i $$ CL.mapM_ (liftIO . T.putStrLn)
+  Log _i -> do
+--    env <- orDie renderRegionError discoverAWSEnv
+--    L.source env e i $$ CL.mapM_ (liftIO . T.putStrLn)
+    -- FIX MTH not shit logging
+    pure ()
   Ignore p b -> do
     bc <- mkBalanceConfig
     void . orDie renderBorisHttpClientError $ B.ignore bc p b True

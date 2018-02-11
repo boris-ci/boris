@@ -3,10 +3,12 @@
 
 import           Boris.Core.Data
 import           Boris.Queue (BuildQueue (..))
+import qualified Boris.Service.Boot as Boot
 import           Boris.Service.Daemon
 
 import           Control.Concurrent.Async (async, waitCatch)
 
+import           Data.Default (def)
 import qualified Data.List as L
 import           Data.String (String)
 import qualified Data.Text as T
@@ -15,7 +17,16 @@ import qualified Data.Text.IO as T
 import           Mismi (renderRegionError, discoverAWSEnv)
 import           Mismi.DynamoDB.Control (configureRetries)
 
+import qualified Nest
+
+import           Network.Connection (ProxySettings (..))
+import           Network.HTTP.Client (ManagerSettings, newManager)
+import           Network.HTTP.Client.TLS (mkManagerSettings)
+
 import           P
+
+import           Snooze.Balance.Data (BalanceTable (..), BalanceEntry (..), Host (..), Port (..), balanceTableStatic)
+import           Snooze.Balance.Control (BalanceConfig (..))
 
 import           System.Environment (lookupEnv)
 import           System.Exit (exitSuccess, exitFailure)
@@ -39,7 +50,11 @@ main = do
   n <- intOr "BORIS_WORK_THREADS" 1
   let
     cenv = configureRetries env
-  asyncs <- mapM async $ L.replicate n (run cenv environment queue work pin)
+
+  Boot.Boot logx discoverx buildx <-
+    Nest.force $ Boot.boot (pure cenv) mkBalanceConfig
+
+  asyncs <- mapM async $ L.replicate n (run logx buildx discoverx cenv queue work pin)
   results <- forM asyncs $ waitCatch
   forM_ results $ \result -> case result of
     Left e ->
@@ -68,3 +83,22 @@ text e =
 bomb :: Text -> IO a
 bomb msg =
   T.hPutStrLn stderr msg >> exitFailure
+
+mkBalanceConfig :: IO BalanceConfig
+mkBalanceConfig = do
+  ms <- getManagerSettings
+  mgr <- newManager ms
+  h <- Nest.force $ Host <$> Nest.string "HOST"
+  p <- Nest.force $ Port <$> Nest.numeric "PORT" `Nest.withDefault` 9999
+  t <- balanceTableStatic $ BalanceTable [BalanceEntry h p]
+  pure $ BalanceConfig t mempty mgr
+
+socksProxyKey :: String
+socksProxyKey =
+  "SOCKS_PROXY"
+
+getManagerSettings :: IO ManagerSettings
+getManagerSettings = do
+  msocks <- lookupEnv socksProxyKey
+  pure . mkManagerSettings def $
+    SockSettingsEnvironment (Just socksProxyKey) <$ msocks

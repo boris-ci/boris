@@ -72,11 +72,11 @@ parseTomlConfigV1 t =
     forM (M.keys builds) $ \k -> do
       build <- maybeToRight (ConfigInvalidName k) $ newBuild k
       Specification build
-        <$> parseCommands' builds build "pre" [Command "tsar" ["pre"]]
-        <*> parseCommands' builds build "command" [Command "master" ["build", k]]
+        <$> parseCommands' builds build "pre" []
+        <*> parseCommands' builds build "command" []
         <*> parseCommands builds build "post"
-        <*> parseCommands' builds build "success" [Command "tsar" ["success"]]
-        <*> parseCommands' builds build "failure" [Command "tsar" ["failure"]]
+        <*> parseCommands' builds build "success" []
+        <*> parseCommands' builds build "failure" []
 
 parseBuilds :: Table -> Either BorisConfigError Table
 parseBuilds doc =
