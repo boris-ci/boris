@@ -13,6 +13,7 @@ description:           boris-core
 library
   build-depends:
                       base                            >= 3          && < 5
+                    , ambiata-jebediah
                     , ambiata-p
                     , ambiata-x-htoml
                     , containers                      == 0.5.*
@@ -21,8 +22,11 @@ library
                     , filepath                        >= 1.3        && < 1.5
                     , parsec                          == 3.1.*
                     , text                            == 1.2.*
+                    , time                            >= 1.5        && < 1.7
                     , unordered-containers            == 0.2.*
 
+                    -- FUCK
+                    , Cabal == 1.24.*
 
   ghc-options:
                     -Wall
@@ -53,7 +57,10 @@ test-suite test
                     , ambiata-boris-core
                     , ambiata-disorder-core
                     , ambiata-disorder-corpus
+                    , ambiata-jebediah
                     , ambiata-p
+                    , hedgehog                        == 0.5.*
                     , text                            == 1.2.*
+                    , time                            >= 1.5        && < 1.7
                     , QuickCheck                      >= 2.7        && < 2.10
                     , quickcheck-instances            == 0.3.*

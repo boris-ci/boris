@@ -24,6 +24,13 @@ module Boris.Core.Data (
   , Acknowledge (..)
   , WorkspacePath (..)
   , Workspace (..)
+  , BuildCancelled (..)
+  , LogData (..)
+  , BuildData (..)
+  , Result (..)
+  , BuildTree (..)
+  , BuildTreeRef (..)
+  , QueueSize (..)
   , renderBuildResult
   , parseBuildResult
   , renderRegistration
@@ -42,8 +49,11 @@ module Boris.Core.Data (
 
 import qualified Data.List as L
 import qualified Data.Text as T
+import           Data.Time (UTCTime)
 
 import qualified Data.Map.Strict as M
+
+import           Jebediah.Data (LogGroup (..), LogStream (..))
 
 import           P
 
@@ -119,7 +129,7 @@ data Workspace =
 
 newtype Executor =
   Executor {
-      projects :: M.Map Project Repository
+      executorProjects :: M.Map Project Repository
     } deriving (Eq, Show, Ord)
 
 data Command =
@@ -146,7 +156,7 @@ data DiscoverInstance =
       discoverBuild :: Build
     , discoverRef :: Ref
     , discoverCommit :: Commit
-    } deriving (Eq, Show)
+    } deriving (Eq, Ord, Show)
 
 data Specification =
   Specification {
@@ -167,7 +177,7 @@ data Registration =
 data BuildResult =
     BuildOk
   | BuildKo
-    deriving (Eq, Show, Ord)
+    deriving (Eq, Show, Ord, Enum, Bounded)
 
 renderBuildResult :: BuildResult -> Text
 renderBuildResult r =
@@ -190,7 +200,7 @@ parseBuildResult r =
 data Acknowledge =
     Accept
   | AlreadyRunning
-    deriving (Eq, Show)
+    deriving (Eq, Ord, Show, Enum, Bounded)
 
 renderRegistration :: Registration -> Text
 renderRegistration r =
@@ -258,3 +268,58 @@ matchesBuild (BuildNamePattern glob) build =
   G.match
     glob
     (T.unpack $ renderBuild build)
+
+data BuildCancelled =
+    BuildCancelled
+  | BuildNotCancelled
+    deriving (Eq, Ord, Show, Enum, Bounded)
+
+data BuildData =
+  BuildData {
+      buildDataId :: BuildId
+    , buildDataProject :: Project
+    , buildDataBuild :: Build
+    , buildDataRef :: Maybe Ref
+    , buildDataCommit :: Maybe Commit
+    , buildDataQueueTime :: Maybe UTCTime
+    , buildDataStartTime :: Maybe UTCTime
+    , buildDataEndTime :: Maybe UTCTime
+    , buildDataHeartbeatTime :: Maybe UTCTime
+    , buildDataResult :: Maybe BuildResult
+    , buildDataLog :: Maybe LogData
+    , buildDataCancelled :: Maybe BuildCancelled
+    } deriving (Eq, Ord, Show)
+
+data LogData =
+  LogData {
+      logDataGroup :: LogGroup
+    , logDataStream :: LogStream
+    } deriving (Eq, Ord, Show)
+
+data Result =
+  Result {
+      resultBuildId :: !BuildId
+    , resultProject :: !Project
+    , resultBuild :: !Build
+    , resultRef :: !(Maybe Ref)
+    , resultBuildResult :: !BuildResult
+    } deriving (Eq, Show, Ord)
+
+
+data BuildTree =
+  BuildTree {
+      buildTreeProject :: Project
+    , buildTreeBuild :: Build
+    , buildTreeRefs :: [BuildTreeRef]
+    } deriving (Eq, Ord, Show)
+
+data BuildTreeRef =
+  BuildTreeRef {
+      buildTreeRef :: Ref
+    , buildTreeIds :: [BuildId]
+    } deriving (Eq, Ord, Show)
+
+newtype QueueSize =
+  QueueSize {
+      getQueueSize :: Int
+    } deriving (Eq, Ord, Show)

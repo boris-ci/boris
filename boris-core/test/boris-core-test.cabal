@@ -9,11 +9,15 @@ library
                     , ambiata-boris-core
                     , ambiata-disorder-core
                     , ambiata-disorder-corpus
+                    , ambiata-jebediah
                     , ambiata-p
                     , text                            == 1.2.*
+                    , time                            >= 1.5        && < 1.7
+                    , hedgehog                        == 0.5.*
                     , QuickCheck                      >= 2.7        && < 2.10
                     , quickcheck-instances            == 0.3.*
 
 
   exposed-modules:
                     Test.Boris.Core.Arbitrary
+                    Test.Boris.Core.Gen
