@@ -74,7 +74,6 @@ library
                     src
 
   exposed-modules:
-                    Boris.Http.Api.Authentication
                     Boris.Http.Api.Build
                     Boris.Http.Api.Discover
                     Boris.Http.Api.Project

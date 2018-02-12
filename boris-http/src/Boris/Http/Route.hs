@@ -57,6 +57,24 @@ route store buildx logx projectx mode = do
   Spock.get Spock.root $ do
     View.render View.dashboard
 
+  Spock.get ("authentication") $ do
+    withAccept $ \case
+      AcceptHTML ->
+--        View.render $ View.login client
+        error "todo"
+      AcceptJSON -> do
+        Spock.setStatus HTTP.status404
+        Spock.json ()
+
+  Spock.get ("authentication" <//> "callback") $ do
+    withAccept $ \case
+      AcceptHTML ->
+--        View.render $ View.login client
+        error "todo"
+      AcceptJSON -> do
+        Spock.setStatus HTTP.status404
+        Spock.json ()
+
   Spock.get "status" $ do
     builds <- liftStoreError $ Result.status store
     View.render $ View.status builds
