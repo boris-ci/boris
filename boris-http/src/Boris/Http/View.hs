@@ -12,6 +12,7 @@ module Boris.Http.View (
   , build
   , serverError
   , scoreboard
+  , login
   , render
   ) where
 
@@ -189,6 +190,15 @@ build b =
                        Just BuildNotCancelled -> True
                        _ -> False
 
+login :: GithubClient -> Either BMXError Text
+login client =
+  let
+    context = [
+       ("client", BMXString (githubClient client))
+     ]
+  in
+    renderPage <$> renderTemplate (defaultState `usingContext` context) login'
+
 renderTime :: UTCTime -> Text
 renderTime =
   Text.pack . formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ"
@@ -233,7 +243,10 @@ serverError' :: Template
 serverError' =
   $(templateFile "template/server-error.hbs")
 
-
 scoreboard' :: Template
 scoreboard' =
   $(templateFile "template/scoreboard.hbs")
+
+login' :: Template
+login' =
+  $(templateFile "template/login.hbs")

@@ -11,10 +11,17 @@ module Boris.Http.Spock (
   , liftError
   , liftStoreError
 
+  , Authenticated (..)
+  , authenticated
+  , withAuthentication
   ) where
 
 import           Boris.Http.Data
+import           Boris.Http.Boot (AuthenticationMode (..))
 import qualified Boris.Http.View as View
+import qualified Boris.Http.Api.Session as Session
+import           Boris.Http.Store.Data
+import qualified Boris.Http.Store.Api as Store
 import qualified Boris.Http.Store.Error as Store
 
 import           Control.Monad.IO.Class (MonadIO (..))
@@ -33,7 +40,6 @@ import qualified System.IO as IO
 import qualified Web.Spock.Core as Spock
 
 import           X.Control.Monad.Trans.Either (EitherT, runEitherT)
-
 
 liftError :: (e -> Text) -> EitherT e IO a -> Spock.ActionT IO a
 liftError render value =
@@ -111,3 +117,49 @@ withContentType handler = do
                Map.lookup x types
       in
         handler $ finder mimeTypes
+
+data Authenticated =
+    Authenticated SessionId UserId
+  | AuthenticatedNone
+  | NotAuthenticated
+  | WasAuthenticated SessionId
+    deriving (Eq, Show)
+
+data AuthenticatedBy =
+    AuthenticatedByOAuth SessionId UserId
+  | AuthenticatedByDesign
+    deriving (Eq, Show)
+
+authenticated :: AuthenticationMode -> Store -> (AuthenticatedBy -> Spock.ActionT IO ()) -> Spock.ActionT IO ()
+authenticated mode store handler =
+  withAuthentication mode store $ \x -> case x of
+    Authenticated s u ->
+      handler (AuthenticatedByOAuth s u)
+    AuthenticatedNone ->
+      handler AuthenticatedByDesign
+    NotAuthenticated -> do
+      Spock.setStatus HTTP.status403
+      Spock.html "not authorized"
+    WasAuthenticated _ -> do
+      -- FIX Add expiry message.
+      Spock.setStatus HTTP.status403
+      Spock.html "not authorized"
+
+withAuthentication :: AuthenticationMode -> Store -> (Authenticated -> Spock.ActionT IO ()) -> Spock.ActionT IO ()
+withAuthentication mode store handler =
+  case mode of
+    GithubAuthentication manager client secret -> do
+      v <- fmap SessionId <$> Spock.cookie "boris"
+      case v of
+        Nothing ->
+          handler NotAuthenticated
+        Just session -> do
+          account' <- liftError Session.renderAuthenticationError $
+            Session.check store manager client secret session
+          case account' of
+            Nothing ->
+              handler $ WasAuthenticated session
+            Just account ->
+              handler $ Authenticated session account
+    NoAuthentication ->
+      handler AuthenticatedNone

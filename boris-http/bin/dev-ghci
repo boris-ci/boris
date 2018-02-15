@@ -8,7 +8,9 @@ export PORT=9999
 
 export BORIS_MODE=development
 
-export BORIS_AUTHENTICATION=none
+#export BORIS_AUTHENTICATION=none
+export BORIS_AUTHENTICATION=github
+. $ROOT/.env
 
 export BORIS_BUILD_SERVICE=local
 export BORIS_BUILD_SERVICE_NOTIFICATION=http

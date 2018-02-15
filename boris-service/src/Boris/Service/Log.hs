@@ -46,7 +46,7 @@ withLogger service project buildId f =
   case service of
     CloudWatchLogs env environment -> do
       let
-        gname = LogGroup $ mconcat ["boris.discover.", renderEnvironment environment]
+        gname = LogGroup $ mconcat ["boris.", renderEnvironment environment]
         sname = LogStream $ mconcat [renderProject project, ".", renderBuildId buildId]
       withCloudWatch env gname sname f
     Std ->
