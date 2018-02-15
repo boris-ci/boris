@@ -65,7 +65,8 @@ data BuildService =
   | LocalBuildService (Chan.Chan Request)
 
 data LogService =
-    CloudWatchLogs Env
+    CloudWatchLogs Env Environment
+  | DBLogs
   | DevNull
 
 data ProjectMode =
@@ -165,7 +166,7 @@ local = do
 
 cloudwatch :: MonadIO m => IO Env -> Parser m LogService
 cloudwatch mkEnv =
-  CloudWatchLogs <$> liftIO mkEnv
+  CloudWatchLogs <$> liftIO mkEnv <*> (fmap Environment $ Nest.string "BORIS_ENVIRONMENT")
 
 devnull :: Monad m => Parser m LogService
 devnull =

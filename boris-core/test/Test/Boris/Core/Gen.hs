@@ -91,7 +91,6 @@ genBuildData =
     <*> Gen.maybe genUTCTime
     <*> Gen.maybe genUTCTime
     <*> Gen.maybe genBuildResult
-    <*> Gen.maybe genLogData
     <*> Gen.maybe genBuildCancelled
 
 genResult :: Gen Result
@@ -109,7 +108,8 @@ genBuildResult =
 
 genLogData :: Gen LogData
 genLogData =
-  LogData
+  -- FIXME: Gen.choice [ CloudwatchLog, DBLog ]
+  fmap CloudwatchLog $ CloudwatchLogData
     <$> (LogGroup <$> Gen.element ["red", "green"])
     <*> (fmap (LogStream . Text.pack . show) $
       Gen.int (Range.constant 0 99999))

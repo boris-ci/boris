@@ -25,6 +25,8 @@ module Boris.Core.Data (
   , WorkspacePath (..)
   , Workspace (..)
   , BuildCancelled (..)
+  , CloudwatchLogData (..)
+  , DBLogData (..)
   , LogData (..)
   , BuildData (..)
   , Result (..)
@@ -45,11 +47,12 @@ module Boris.Core.Data (
   , renderBuildNamePattern
   , parseBuildNamePattern
   , matchesBuild
+  , renderDBLogData
   ) where
 
 import qualified Data.List as L
 import qualified Data.Text as T
-import           Data.Time (UTCTime)
+import           Data.Time (UTCTime, formatTime, defaultTimeLocale)
 
 import qualified Data.Map.Strict as M
 
@@ -83,6 +86,7 @@ newtype BuildId =
   BuildId {
       renderBuildId :: Text
     } deriving (Eq, Show)
+
 
 instance Ord BuildId where
   compare b1 b2 =
@@ -286,15 +290,33 @@ data BuildData =
     , buildDataEndTime :: Maybe UTCTime
     , buildDataHeartbeatTime :: Maybe UTCTime
     , buildDataResult :: Maybe BuildResult
-    , buildDataLog :: Maybe LogData
     , buildDataCancelled :: Maybe BuildCancelled
     } deriving (Eq, Ord, Show)
 
 data LogData =
-  LogData {
+    CloudwatchLog CloudwatchLogData
+  | DBLog [DBLogData]
+  deriving (Eq, Ord, Show)
+
+data CloudwatchLogData =
+  CloudwatchLogData {
       logDataGroup :: LogGroup
     , logDataStream :: LogStream
     } deriving (Eq, Ord, Show)
+
+data DBLogData =
+  DBLogData {
+      logEntryTimeStamp :: UTCTime
+    , logEntry :: Text
+    } deriving (Eq, Ord, Show)
+
+renderTime :: UTCTime -> Text
+renderTime =
+  T.pack . formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ"
+
+renderDBLogData :: DBLogData -> Text
+renderDBLogData dbl =
+  mconcat [ renderTime $ logEntryTimeStamp dbl, "        ", logEntry dbl ]
 
 data Result =
   Result {

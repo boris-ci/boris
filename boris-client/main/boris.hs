@@ -144,13 +144,7 @@ run c = case c of
           liftIO . T.putStrLn $ "Waiting for build to start..."
           liftIO $ threadDelay 1000000
           r <- B.fetch bc i
-          case fmap buildDataLog r of
-            Nothing ->
-              waitForLog
-            Just Nothing ->
-              waitForLog
-            Just (Just l) ->
-              pure l
+          l <- B.fetchLogData bc $ buildDataId r
 
         waitForStatus = runEitherT $ do
           liftIO $ threadDelay 1000000

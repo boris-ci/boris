@@ -22,24 +22,19 @@ import qualified Boris.Http.Store.Error as Store
 import qualified Boris.Http.View as View
 import qualified Boris.Representation.ApiV1 as ApiV1
 
-import           Control.Monad.IO.Class (MonadIO (..))
-
-import           Data.Aeson (object, (.:), (.=))
-import qualified Data.Aeson as Aeson
+import           Data.Aeson (object, (.=))
+import           Data.ByteString.Char8 (unlines)
 import           Data.Conduit (runConduit, (=$=))
 import qualified Data.Conduit.List as CL
 import           Data.Default (def)
 import qualified Data.FileEmbed as FileEmbed
 import qualified Data.Text as Text
-
-import qualified Network.HTTP.Client as Client
-import           Network.HTTP.Client.TLS (tlsManagerSettings)
-import qualified Network.HTTP.Types as Http
+import qualified Data.Text.Encoding as Text
+import qualified Data.Text.IO as TextIO
 
 import           P
 
-import           System.IO (IO)
-import qualified System.IO as IO
+import           System.IO (IO, putStrLn)
 
 -- spock experiment
 import qualified Network.HTTP.Types as HTTP
@@ -405,18 +400,29 @@ route store authentication buildx logx projectx mode = do
     authenticated authentication store $ \_ -> do
 
       log'' <- liftError Store.renderFetchError $
-        Build.logOf store logx (BuildId buildId)
+        Build.logOf' store logx (BuildId buildId)
 
-      case log'' of
-        Nothing -> do
+      withAccept $ \case
+        AcceptHTML -> do
           Spock.setStatus HTTP.notFound404
           Spock.html "TODO: 404 page."
-        Just logs ->
-          Spock.stream $ \send flush ->
-            runConduit $
-              logs =$=
-                CL.mapM_ (\t -> send (fromByteString t) >> flush)
-
+--          case log'' of
+--            Nothing -> do
+--              Spock.setStatus HTTP.notFound404
+--              Spock.html "TODO: 404 page."
+--            Just b ->
+--              View.render $ View.build b
+        AcceptJSON -> do
+          case log'' of
+            Nothing -> do
+              Spock.setStatus HTTP.notFound404
+              Spock.json ()
+            Just logs -> do
+              Spock.json $ ApiV1.GetLogs (Text.intercalate "\n" logs)
+--              Spock.stream $ \send flush ->
+--                runConduit $
+--                  logs =$=
+--                    CL.mapM_ (\t -> send (fromByteString t) >> flush)
 
 
 newSession :: Mode -> SessionId -> Spock.ActionT IO ()
@@ -436,3 +442,4 @@ killSession =
 sessionName :: Text
 sessionName =
   "boris"
+
