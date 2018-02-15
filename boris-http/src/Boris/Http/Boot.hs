@@ -15,6 +15,7 @@ import           Boris.Core.Data
 import qualified Boris.Service.Boot as Service
 import qualified Boris.Service.Discover as Discover
 import qualified Boris.Service.Build as Build
+import           Boris.Http.Data
 import           Boris.Http.Store.Data
 import           Boris.Queue (BuildQueue (..), Request (..), RequestDiscover (..), RequestBuild (..))
 
@@ -30,7 +31,7 @@ import qualified Data.Text.IO as Text
 import           Mismi.Environment (Env)
 import           Mismi.S3.Core.Data (Address (..), addressFromText)
 
-import           Network.HTTP.Client (newManager)
+import           Network.HTTP.Client (Manager, newManager)
 import           Network.HTTP.Client.TLS (tlsManagerSettings)
 
 import qualified Nest
@@ -52,9 +53,10 @@ data Mode =
     DevelopmentMode
   | ProductionMode
   | TestMode
+    deriving (Eq, Show)
 
 data AuthenticationMode =
-    GithubAuthentication
+    GithubAuthentication Manager GithubClient GithubSecret
   | NoAuthentication
 
 data BuildService =
@@ -81,10 +83,16 @@ boot mkEnv = do
     , ("development", DevelopmentMode)
     ]) `Nest.withDefault` ProductionMode
 
-  auth <- Nest.setting "BORIS_AUTHENTICATION" (Map.fromList [
-      ("github", GithubAuthentication)
-    , ("none", NoAuthentication)
-    ]) `Nest.withDefault` NoAuthentication
+  store <- join $ Nest.setting "BORIS_STORE" (Map.fromList [
+      ("dynamo", dynamo mkEnv)
+    , ("postgres", postgres)
+    , ("memory", memory)
+    ]) `Nest.withDefault` dynamo mkEnv
+
+  auth <- join $ Nest.setting "BORIS_AUTHENTICATION" (Map.fromList [
+      ("github", github)
+    , ("none", pure NoAuthentication)
+    ]) `Nest.withDefault` (pure NoAuthentication)
 
   worker <- join $ Nest.setting "BORIS_BUILD_SERVICE" (Map.fromList [
       ("sqs", sqs mkEnv)
@@ -104,13 +112,14 @@ boot mkEnv = do
     , ("whitelist", whitelist mkEnv)
     ]) `Nest.withDefault` whitelist mkEnv
 
-  store <- join $ Nest.setting "BORIS_STORE" (Map.fromList [
-      ("dynamo", dynamo mkEnv)
-    , ("postgres", postgres)
-    , ("memory", memory)
-    ]) `Nest.withDefault` dynamo mkEnv
-
   pure $ Boot mode auth worker logs project store
+
+github :: MonadIO m => Parser m AuthenticationMode
+github = do
+  manager <- liftIO $ newManager tlsManagerSettings
+  client <- GithubClient <$> Nest.string "BORIS_GITHUB_CLIENT"
+  secret <- GithubSecret <$> Nest.string "BORIS_GITHUB_SECRET"
+  pure $ GithubAuthentication manager client secret
 
 sqs :: MonadIO m => IO Env -> Parser m BuildService
 sqs mkEnv =

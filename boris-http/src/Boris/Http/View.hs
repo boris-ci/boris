@@ -12,12 +12,13 @@ module Boris.Http.View (
   , build
   , serverError
   , scoreboard
+  , login
   , render
   ) where
 
 import           BMX (BMXError, renderBMXError)
-import           BMX (Template, renderPage, renderTemplate, templateFile)
-import           BMX (BMXValue (..), defaultState, usingContext)
+import           BMX (BMXState, Template, renderPage, renderTemplate, templateFile, partialFromTemplate)
+import           BMX (BMXValue (..), defaultState, usingContext, usingPartials)
 
 import           Boris.Core.Data (Project (..), Build (..), Commit (..), Ref (..), BuildId (..), BuildCancelled (..), Result (..), BuildData (..), BuildResult (..), sortBuildIds, renderBuildResult, BuildTree (..), BuildTreeRef (..))
 import           Boris.Http.Data
@@ -63,7 +64,7 @@ dashboard =
     context = [
       ]
   in
-    renderPage <$> renderTemplate (defaultState `usingContext` context) dashboard'
+    renderPage <$> renderTemplate (bmx `usingContext` context) dashboard'
 
 -- FIX error id
 serverError :: ErrorId -> Either BMXError Text
@@ -73,7 +74,7 @@ serverError e =
         ("error", BMXString . errorId $ e)
       ]
   in
-    renderPage <$> renderTemplate (defaultState `usingContext` context) serverError'
+    renderPage <$> renderTemplate (bmx `usingContext` context) serverError'
 
 status :: [Result] -> Either BMXError Text
 status bs =
@@ -88,7 +89,7 @@ status bs =
             ]
       ]
   in
-    renderPage <$> renderTemplate (defaultState `usingContext` context) status'
+    renderPage <$> renderTemplate (bmx `usingContext` context) status'
 
 
 scoreboard :: [Result] -> Either BMXError Text
@@ -102,7 +103,7 @@ scoreboard bs =
         (,) "buildClass" $ BMXString buildClass
       ]
   in
-    renderPage <$> renderTemplate (defaultState `usingContext` context) scoreboard'
+    renderPage <$> renderTemplate (bmx `usingContext` context) scoreboard'
 
 projects :: [Project] -> Either BMXError Text
 projects p =
@@ -111,7 +112,7 @@ projects p =
         ("projects", BMXList ((BMXString . renderProject) <$> sortOn renderProject p))
       ]
   in
-    renderPage <$> renderTemplate (defaultState `usingContext` context) projects'
+    renderPage <$> renderTemplate (bmx `usingContext` context) projects'
 
 project :: Project -> [Build] -> Either BMXError Text
 project p bs =
@@ -121,7 +122,7 @@ project p bs =
       , ("builds", BMXList ((BMXString . renderBuild) <$> sortOn renderBuild bs))
       ]
   in
-    renderPage <$> renderTemplate (defaultState `usingContext` context) project'
+    renderPage <$> renderTemplate (bmx `usingContext` context) project'
 
 builds :: BuildTree -> [BuildId] -> Either BMXError Text
 builds (BuildTree p b refs) queued =
@@ -141,7 +142,7 @@ builds (BuildTree p b refs) queued =
       , ("queued", BMXList ((BMXString . renderBuildId) <$> sortBuildIds queued))
       ]
   in
-    renderPage <$> renderTemplate (defaultState `usingContext` context) builds'
+    renderPage <$> renderTemplate (bmx `usingContext` context) builds'
 
 commit :: Project -> Commit -> [BuildData] -> Either BMXError Text
 commit p c bs =
@@ -157,7 +158,7 @@ commit p c bs =
         ]))
       ]
   in
-    renderPage <$> renderTemplate (defaultState `usingContext` context) commit'
+    renderPage <$> renderTemplate (bmx `usingContext` context) commit'
 
 build :: BuildData -> Either BMXError Text
 build b =
@@ -181,13 +182,22 @@ build b =
       , ("cancel", BMXBool ((isNothing . buildDataResult $ b) && (notCancelled (buildDataCancelled b))))
       ]
   in
-    renderPage <$> renderTemplate (defaultState `usingContext` context) build'
+    renderPage <$> renderTemplate (bmx `usingContext` context) build'
 
   where
     notCancelled :: Maybe BuildCancelled -> Bool
     notCancelled r = case r of
                        Just BuildNotCancelled -> True
                        _ -> False
+
+login :: GithubClient -> Either BMXError Text
+login client =
+  let
+    context = [
+       ("client", BMXString (githubClient client))
+     ]
+  in
+    renderPage <$> renderTemplate (bmx `usingContext` context) login'
 
 renderTime :: UTCTime -> Text
 renderTime =
@@ -233,7 +243,18 @@ serverError' :: Template
 serverError' =
   $(templateFile "template/server-error.hbs")
 
-
 scoreboard' :: Template
 scoreboard' =
   $(templateFile "template/scoreboard.hbs")
+
+login' :: Template
+login' =
+  $(templateFile "template/login.hbs")
+
+frame' :: Template
+frame' =
+  $(templateFile "template/frame.hbs")
+
+bmx :: (Applicative m, Monad m) => BMXState m
+bmx =
+  defaultState `usingPartials` [("frame", partialFromTemplate frame')]

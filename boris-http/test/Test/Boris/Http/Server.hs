@@ -53,7 +53,7 @@ withServerT testing =
 withServer :: (BalanceConfig -> IO a) -> IO a
 withServer testing = do
   ref <- IORef.newIORef (1, [], [])
-  app <- Spock.spockAsApp $ Spock.spockConfigT Spock.defaultSpockConfig id (Route.route (MemoryStore ref) Boot.EcsBuildService Boot.DevNull (Boot.SingleProjectMode (Project "demo") (Repository "master")) Boot.TestMode)
+  app <- Spock.spockAsApp $ Spock.spockConfigT Spock.defaultSpockConfig id (Route.route (MemoryStore ref) Boot.NoAuthentication Boot.EcsBuildService Boot.DevNull (Boot.SingleProjectMode (Project "demo") (Repository "master")) Boot.TestMode)
   mgr <- newManager tlsManagerSettings
   Socket.withSocketsDo $
     bracket

@@ -40,6 +40,7 @@ library
                     , containers                      == 0.5.*
                     , cryptonite                      == 0.*
                     , file-embed                      == 0.0.*
+                    , github                          == 0.*
                     , http-client                     == 0.4.*
                     , http-client-tls                 == 0.2.*
                     , http-media                      == 0.6.*
@@ -78,6 +79,7 @@ library
                     Boris.Http.Api.Discover
                     Boris.Http.Api.Project
                     Boris.Http.Api.Result
+                    Boris.Http.Api.Session
 
                     Boris.Http.Boot
                     Boris.Http.Data
