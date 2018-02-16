@@ -23,9 +23,18 @@ module Boris.Http.Store.Api (
   , deindex
   , complete
   , discover
+  , userByGithubId
+  , updateUser
+  , addUser
+  , newSession
+  , tickSession
+  , getSession
+  , getSessionUser
+  , getSessionOAuth
   ) where
 
 import           Boris.Core.Data
+import           Boris.Http.Data
 import           Boris.Http.Store.Data
 import           Boris.Http.Store.Error
 import qualified Boris.Http.Store.Dynamo.Build as Dynamo
@@ -54,7 +63,7 @@ import           System.IO (IO)
 import qualified Traction.Control as Traction
 import qualified Traction.Migration as Traction
 
-import           X.Control.Monad.Trans.Either (EitherT)
+import           X.Control.Monad.Trans.Either (EitherT, left)
 
 
 initialise :: Store -> EitherT StoreError IO ()
@@ -396,3 +405,91 @@ discover store buildid project =
         void $ Postgres.discover buildid project
     MemoryStore _refx -> do
       pure ()
+
+userByGithubId :: Store -> GithubId -> EitherT StoreError IO (Maybe User)
+userByGithubId store userId =
+  case store of
+    DynamoStore _env _e ->
+      left $ UnsupportedBackendError "authentication" "dynamo"
+    PostgresStore pool ->
+      firstT (PostgresBackendError) . Traction.runDb pool $
+        Postgres.userByGithubId userId
+    MemoryStore _refx -> do
+      left $ UnsupportedBackendError "authentication" "memory"
+
+updateUser :: Store -> User -> EitherT StoreError IO ()
+updateUser store user =
+  case store of
+    DynamoStore _env _e ->
+      left $ UnsupportedBackendError "authentication" "dynamo"
+    PostgresStore pool ->
+      firstT PostgresBackendError . Traction.runDb pool $
+        Postgres.updateUser user
+    MemoryStore _refx -> do
+      left $ UnsupportedBackendError "authentication" "memory"
+
+addUser :: Store -> GithubUser -> EitherT StoreError IO User
+addUser store user =
+  case store of
+    DynamoStore _env _e ->
+      left $ UnsupportedBackendError "authentication" "dynamo"
+    PostgresStore pool ->
+      firstT PostgresBackendError . Traction.runDb pool $
+        Postgres.addUser user
+    MemoryStore _refx -> do
+      left $ UnsupportedBackendError "authentication" "memory"
+
+newSession :: Store -> Session -> User -> EitherT StoreError IO ()
+newSession store session user =
+  case store of
+    DynamoStore _env _e ->
+      left $ UnsupportedBackendError "authentication" "dynamo"
+    PostgresStore pool ->
+      firstT PostgresBackendError . Traction.runDb pool $
+        Postgres.newSession session user
+    MemoryStore _refx -> do
+      left $ UnsupportedBackendError "authentication" "memory"
+
+tickSession :: Store -> SessionId -> EitherT StoreError IO ()
+tickSession store session =
+  case store of
+    DynamoStore _env _e ->
+      left $ UnsupportedBackendError "authentication" "dynamo"
+    PostgresStore pool ->
+      firstT PostgresBackendError . Traction.runDb pool $
+        Postgres.tickSession session
+    MemoryStore _refx -> do
+      left $ UnsupportedBackendError "authentication" "memory"
+
+getSession :: Store -> SessionId -> EitherT StoreError IO (Maybe AuthenticatedUser)
+getSession store session =
+  case store of
+    DynamoStore _env _e ->
+      left $ UnsupportedBackendError "authentication" "dynamo"
+    PostgresStore pool ->
+      firstT PostgresBackendError . Traction.runDb pool $
+        Postgres.getSession session
+    MemoryStore _refx -> do
+      left $ UnsupportedBackendError "authentication" "memory"
+
+getSessionUser :: Store -> SessionId -> EitherT StoreError IO (Maybe UserId)
+getSessionUser store session =
+  case store of
+    DynamoStore _env _e ->
+      left $ UnsupportedBackendError "authentication" "dynamo"
+    PostgresStore pool ->
+      firstT PostgresBackendError . Traction.runDb pool $
+        Postgres.getSessionUser session
+    MemoryStore _refx -> do
+      left $ UnsupportedBackendError "authentication" "memory"
+
+getSessionOAuth :: Store -> SessionId -> EitherT StoreError IO (Maybe GithubOAuth)
+getSessionOAuth store session =
+  case store of
+    DynamoStore _env _e ->
+      left $ UnsupportedBackendError "authentication" "dynamo"
+    PostgresStore pool ->
+      firstT PostgresBackendError . Traction.runDb pool $
+        Postgres.getSessionOAuth session
+    MemoryStore _refx -> do
+      left $ UnsupportedBackendError "authentication" "memory"

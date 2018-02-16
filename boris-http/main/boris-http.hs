@@ -29,7 +29,7 @@ main = do
      env <- orDie renderRegionError discoverAWSEnv
      pure $ configureRetries env
 
-  Boot.Boot mode _authentication builds logs projectx store <-
+  Boot.Boot mode authentication builds logs projectx store <-
     Nest.force $ Boot.boot mkEnv
 
   orDie Store.renderStoreError $
@@ -37,7 +37,7 @@ main = do
 
   port <- Nest.force $ Nest.numeric "PORT" `Nest.withDefault` 10080
 
-  app <- Spock.spockAsApp $ Spock.spockConfigT Spock.defaultSpockConfig id (Route.route store builds logs projectx mode)
+  app <- Spock.spockAsApp $ Spock.spockConfigT Spock.defaultSpockConfig id (Route.route store authentication builds logs projectx mode)
 
   let
     s = setPort port $

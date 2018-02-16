@@ -24,6 +24,7 @@ import qualified Traction.Control as Traction
 data StoreError =
     DynamoBackendError Mismi.Error
   | PostgresBackendError DbError
+  | UnsupportedBackendError Text Text
   | InitialisationError Text
   | TickError Environment
   | ResultsError Text -- FIX
@@ -36,6 +37,8 @@ renderStoreError err =
       mconcat ["Dynamo specific backend error: ", Mismi.renderError e]
     PostgresBackendError e ->
       mconcat ["Postgres specific backend error: ", Traction.renderDbError e]
+    UnsupportedBackendError operation backend ->
+      mconcat ["Operation [", operation, "] is currently not supported by [", backend, "] backend."]
     InitialisationError e ->
       mconcat ["Illspecified initialisation error: ", e]
     TickError e ->

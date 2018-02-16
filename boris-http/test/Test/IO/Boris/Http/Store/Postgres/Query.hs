@@ -4,7 +4,10 @@
 module Test.IO.Boris.Http.Store.Postgres.Query  where
 
 import           Boris.Core.Data
+import           Boris.Http.Data
 import qualified Boris.Http.Store.Postgres.Query as Query
+
+import           Control.Monad.IO.Class (MonadIO (..))
 
 import           Hedgehog
 import qualified Hedgehog.Gen as Gen
@@ -16,6 +19,7 @@ import           P
 import           System.IO (IO)
 
 import qualified Test.Boris.Core.Gen as Gen
+import qualified Test.Boris.Http.Gen as Gen
 import           Test.IO.Boris.Http.Store.Postgres.Test
 
 prop_fetch :: Property
@@ -120,6 +124,34 @@ prop_index =
       pure $
         (buildDataProject <$> result, buildDataBuild <$> result, buildDataId <$> result, result >>= buildDataRef, result >>= buildDataCommit)
     actual === (Just project, Just build, Just buildid, Just ref, Just commit)
+
+prop_user :: Property
+prop_user =
+  property $ do
+    github1 <- forAll Gen.genGithubUser
+    github2 <- forAll Gen.genGithubUser
+    actual <- db $ do
+      user1 <- Query.addUser github1
+      muser1 <- Query.userByGithubId (githubUserId github1)
+      Query.updateUser (user1 { userGithub = github2 })
+      muser2 <- Query.userByGithubId (githubUserId github2)
+      pure (userGithub user1, userGithub <$> muser1, userGithub <$> muser2)
+    actual === (github1, Just github1, Just github2)
+
+prop_session :: Property
+prop_session =
+  property $ do
+    sessionId<- liftIO newSessionToken
+    github <- forAll Gen.genGithubUser
+    oauth <- forAll Gen.genGithubOAuth
+    let session = Session sessionId oauth
+    (user, actual) <- db $ do
+      user <- Query.addUser github
+      Query.newSession session user
+      Query.tickSession sessionId
+      result <- Query.getSession sessionId
+      pure (user, result)
+    actual === (Just $ AuthenticatedUser user $ Session sessionId oauth)
 
 tests :: IO Bool
 tests =

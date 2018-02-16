@@ -45,4 +45,24 @@ schema = [
         , PRIMARY KEY (discover_id, build, commit)
         )
     |]
+  , Migration "create-account" [sql|
+      CREATE TABLE account (
+          id SERIAL PRIMARY KEY
+        , github_id BIGINT NOT NULL
+        , github_login TEXT NOT NULL
+        , github_name TEXT
+        , github_email TEXT
+        , created TIMESTAMPTZ NOT NULL DEFAULT now()
+        , updated TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+    |]
+  , Migration "create-session" [sql|
+      CREATE TABLE session (
+          id TEXT PRIMARY KEY
+        , account BIGINT NOT NULL
+        , oauth TEXT NOT NULL
+        , created TIMESTAMPTZ NOT NULL DEFAULT now()
+        , updated TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+    |]
   ]

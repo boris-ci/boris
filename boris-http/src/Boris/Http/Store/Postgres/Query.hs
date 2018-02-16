@@ -24,10 +24,19 @@ module Boris.Http.Store.Postgres.Query (
   , getQueued
   , getBuildRefs
   , discover
+  , userByGithubId
+  , addUser
+  , updateUser
+  , newSession
+  , tickSession
+  , getSession
+  , getSessionUser
+  , getSessionOAuth
   ) where
 
 
 import           Boris.Core.Data
+import           Boris.Http.Data
 
 import qualified Data.Text as Text
 
@@ -257,3 +266,103 @@ results = do
       (Build b)
       (Ref <$> r)
       (bool BuildKo BuildOk br)
+
+userByGithubId :: MonadDb m => GithubId -> m (Maybe User)
+userByGithubId userId = do
+  x <- Traction.unique [sql|
+      SELECT id, github_id, github_login, github_name, github_email
+        FROM account
+       WHERE github_id = ?
+    |] (Traction.Only $ githubId userId)
+  pure . with x $ \(i, guid, login, name, email) ->
+    User
+      (UserId i)
+      (GithubUser
+        (GithubId guid)
+        (GithubLogin login)
+        (GithubName <$> name)
+        (GithubEmail <$> email))
+
+updateUser :: MonadDb m => User -> m ()
+updateUser user = do
+  void $ Traction.execute [sql|
+      UPDATE account
+         SET github_id = ?
+           , github_login = ?
+           , github_name = ?
+           , github_email = ?
+           , updated = now()
+       WHERE id = ?
+    |] (githubId . githubUserId . userGithub $ user
+      , githubLogin . githubUserLogin . userGithub $ user
+      , fmap githubName . githubUserName. userGithub $ user
+      , fmap githubEmail . githubUserEmail . userGithub $ user
+      , getUserId . userId $ user)
+
+addUser :: MonadDb m => GithubUser -> m User
+addUser user = do
+  i <- Traction.value $ Traction.mandatory [sql|
+      INSERT INTO account (github_id, github_login, github_name, github_email)
+           VALUES (?, ?, ?, ?)
+        RETURNING id
+    |] (githubId . githubUserId $ user
+      , githubLogin . githubUserLogin $ user
+      , fmap githubName . githubUserName $ user
+      , fmap githubEmail . githubUserEmail $ user)
+  pure $ User (UserId i) user
+
+newSession :: MonadDb m => Session -> User -> m ()
+newSession session user = do
+  void $ Traction.execute [sql|
+      INSERT INTO session (id, account, oauth)
+           VALUES (?, ?, ?)
+    |] (getSessionId . sessionId $ session
+      , getUserId . userId $ user
+      , githubOAuth . sessionOAuth $ session)
+
+tickSession :: MonadDb m => SessionId -> m ()
+tickSession session = do
+  void $ Traction.execute [sql|
+      UPDATE session
+         SET updated = now()
+       WHERE id = ?
+    |] (Traction.Only . getSessionId $ session)
+
+getSessionUser :: MonadDb m => SessionId -> m (Maybe UserId)
+getSessionUser session = do
+  (fmap . fmap) UserId . Traction.values $ Traction.unique [sql|
+      SELECT account
+        FROM session
+       WHERE id = ?
+         AND updated > now() - INTERVAL '1 day'
+    |] (Traction.Only $ getSessionId $ session)
+
+getSessionOAuth :: MonadDb m => SessionId -> m (Maybe GithubOAuth)
+getSessionOAuth session = do
+  (fmap . fmap) GithubOAuth . Traction.values $ Traction.unique [sql|
+      SELECT oauth
+        FROM session
+       WHERE id = ?
+         AND updated > now() - INTERVAL '1 day'
+    |] (Traction.Only $ getSessionId $ session)
+
+
+getSession :: MonadDb m => SessionId -> m (Maybe AuthenticatedUser)
+getSession session = do
+  x <- Traction.unique [sql|
+      SELECT s.account, s.oauth, a.github_id, a.github_login, a.github_name, a.github_email
+        FROM session s
+        JOIN account a ON s.account = a.id
+       WHERE s.id = ?
+         AND s.updated > now() - INTERVAL '1 day'
+    |] (Traction.Only $ getSessionId $ session)
+  pure . with x $ \(i, oauth, guid, login, name, email) ->
+    AuthenticatedUser
+      (User
+        (UserId i)
+        (GithubUser
+          (GithubId guid)
+          (GithubLogin login)
+          (GithubName <$> name)
+          (GithubEmail <$> email)))
+      (Session session $ GithubOAuth oauth)
