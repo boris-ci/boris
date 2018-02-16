@@ -11,8 +11,8 @@ import           Boris.Core.Data
 import           Boris.Service.Boot
 import           Boris.Service.Git
 import           Boris.Service.Log
-import           Boris.Service.Workspace
 import qualified Boris.Service.Remote as Remote
+import           Boris.Service.Workspace
 
 import           Control.Concurrent.Async (async, waitEitherCancel)
 import           Control.Monad.IO.Class (MonadIO (..))
@@ -24,9 +24,9 @@ import           System.IO (IO)
 import           Tine.Conduit (WithEnv (..))
 import qualified Tine.Conduit as X
 
-import           Twine.Snooze (snooze, seconds)
+import           Twine.Snooze (seconds, snooze)
 
-import           X.Control.Monad.Trans.Either (EitherT, newEitherT, runEitherT, joinEitherE)
+import           X.Control.Monad.Trans.Either (EitherT, joinEitherE, newEitherT, runEitherT)
 
 data BuilderError =
     BuildLogError LogError

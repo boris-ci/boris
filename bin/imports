@@ -1,0 +1,13 @@
+#!/bin/sh
+
+for project in boris-build boris-client boris-core boris-git boris-http boris-queue boris-representation boris-service; do
+    for tree in src test; do
+        (
+            cd $project
+            for x in $(find $tree -name \*.hs -type f); do
+                stylish-haskell -c ../.style.yaml $x > $x.x
+                mv $x.x $x
+            done
+        )
+    done
+done

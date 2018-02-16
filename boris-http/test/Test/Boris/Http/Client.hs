@@ -5,8 +5,8 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Test.Boris.Http.Client where
 
-import           Boris.Core.Data
 import qualified Boris.Client.Project as Project
+import           Boris.Core.Data
 
 import           Hedgehog
 

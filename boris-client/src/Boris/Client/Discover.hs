@@ -4,9 +4,9 @@ module Boris.Client.Discover (
     complete
   ) where
 
-import           Boris.Core.Data
 import           Boris.Client.Http (BorisHttpClientError (..))
 import qualified Boris.Client.Http as H
+import           Boris.Core.Data
 import           Boris.Representation.ApiV1
 
 import           P

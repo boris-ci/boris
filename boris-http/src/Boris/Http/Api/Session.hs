@@ -10,12 +10,12 @@ module Boris.Http.Api.Session (
 
 
 import           Boris.Core.Data
+import qualified Boris.Http.Api.Project as Project
 import           Boris.Http.Boot
 import           Boris.Http.Data
-import qualified Boris.Http.Api.Project as Project
 import qualified Boris.Http.Service as Service
-import           Boris.Http.Store.Data
 import qualified Boris.Http.Store.Api as Store
+import           Boris.Http.Store.Data
 import qualified Boris.Http.Store.Error as Store
 import           Boris.Queue (Request (..), RequestBuild (..))
 
@@ -23,7 +23,7 @@ import           Control.Monad.IO.Class (MonadIO (..))
 
 import qualified Crypto.Random.Entropy as Entropy
 
-import           Data.Aeson (object, (.=), (.:))
+import           Data.Aeson (object, (.:), (.=))
 import qualified Data.Aeson as Aeson
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Base16 as Base16
@@ -37,9 +37,9 @@ import qualified GitHub.Auth as Github
 import qualified GitHub.Data as Github
 import qualified GitHub.Endpoints.Users as Github
 
-import qualified Network.HTTP.Types as HTTP
 import qualified Network.HTTP.Client as Client
 import           Network.HTTP.Client.TLS (tlsManagerSettings)
+import qualified Network.HTTP.Types as HTTP
 
 import           P
 

@@ -15,19 +15,19 @@ module Boris.Http.Spock (
   , withAuthentication
   ) where
 
-import           Boris.Http.Data
-import           Boris.Http.Boot (AuthenticationMode (..))
-import qualified Boris.Http.View as View
 import qualified Boris.Http.Api.Session as Session
-import           Boris.Http.Store.Data
+import           Boris.Http.Boot (AuthenticationMode (..))
+import           Boris.Http.Data
 import qualified Boris.Http.Store.Api as Store
+import           Boris.Http.Store.Data
 import qualified Boris.Http.Store.Error as Store
+import qualified Boris.Http.View as View
 
 import           Control.Monad.IO.Class (MonadIO (..))
 
+import qualified Data.Map as Map
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
-import qualified Data.Map as Map
 
 import qualified Network.HTTP.Types as HTTP
 

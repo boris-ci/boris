@@ -26,20 +26,20 @@ import qualified Data.Text.Encoding as Text
 import qualified Data.Time as Time
 
 import           Boris.Core.Data
-import           Boris.Http.Boot
 import qualified Boris.Http.Api.Project as Project
+import           Boris.Http.Boot
 
 import qualified Boris.Http.Service as Service
-import           Boris.Http.Store.Data
 import qualified Boris.Http.Store.Api as Store
+import           Boris.Http.Store.Data
 import qualified Boris.Http.Store.Error as Store
 import           Boris.Queue (Request (..), RequestBuild (..))
 
 import           Data.Conduit (Source, (=$=))
 import qualified Data.Conduit.List as Conduit
 
-import           Jebediah.Data (Query (..), Following (..), Log (..))
 import qualified Jebediah.Conduit as Jebediah
+import           Jebediah.Data (Following (..), Log (..), Query (..))
 
 -- FIX MTH this shouldn't be needed once logging gets sorted
 import           Mismi.Amazonka (Env)

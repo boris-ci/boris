@@ -9,13 +9,13 @@ module Boris.Service.Remote (
   , complete
   ) where
 
-import           Boris.Core.Data
-import qualified Boris.Client.Http as Http
 import qualified Boris.Client.Build as Build
+import qualified Boris.Client.Http as Http
+import           Boris.Core.Data
 import           Boris.Service.Boot
 
-import           Control.Monad.Morph (hoist)
 import           Control.Monad.IO.Class (MonadIO (..))
+import           Control.Monad.Morph (hoist)
 
 import           P
 

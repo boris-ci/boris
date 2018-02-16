@@ -9,8 +9,8 @@ module Boris.Service.Git (
   ) where
 
 import           Boris.Core.Data
-import           Boris.Core.Serial.Ref
 import           Boris.Core.Serial.Command
+import           Boris.Core.Serial.Ref
 import qualified Boris.Git as Git
 
 import           Control.Monad.IO.Class (liftIO)
@@ -24,7 +24,7 @@ import           System.IO (IO)
 
 import           Tine.Conduit (Out)
 
-import           X.Control.Monad.Trans.Either (EitherT, runEitherT, bimapEitherT, hoistEither)
+import           X.Control.Monad.Trans.Either (EitherT, bimapEitherT, hoistEither, runEitherT)
 
 
 data InitialiseError =

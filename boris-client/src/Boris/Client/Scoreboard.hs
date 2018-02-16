@@ -4,12 +4,12 @@ module Boris.Client.Scoreboard (
     scoreboard
   ) where
 
-import           Boris.Core.Data
 import           Boris.Client.Http (BorisHttpClientError (..))
 import qualified Boris.Client.Http as H
+import           Boris.Core.Data
 
 import           Data.Aeson (FromJSON (..), withObject, (.:), (.:?))
-import           Data.Aeson.Types (Value, Parser)
+import           Data.Aeson.Types (Parser, Value)
 import qualified Data.Text as T
 
 import           P

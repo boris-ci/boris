@@ -17,8 +17,8 @@ import qualified Data.Map as Map
 
 import           Mismi.Environment (Env)
 
-import qualified Nest
 import           Nest (Parser)
+import qualified Nest
 
 import           P
 

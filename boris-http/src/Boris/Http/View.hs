@@ -17,19 +17,21 @@ module Boris.Http.View (
   ) where
 
 import           BMX (BMXError, renderBMXError)
-import           BMX (BMXState, Template, renderPage, renderTemplate, templateFile, partialFromTemplate)
+import           BMX (BMXState, Template, partialFromTemplate, renderPage, renderTemplate, templateFile)
 import           BMX (BMXValue (..), defaultState, usingContext, usingPartials)
 
-import           Boris.Core.Data (Project (..), Build (..), Commit (..), Ref (..), BuildId (..), BuildCancelled (..), Result (..), BuildData (..), BuildResult (..), sortBuildIds, renderBuildResult, BuildTree (..), BuildTreeRef (..))
+import           Boris.Core.Data (Build (..), BuildCancelled (..), BuildData (..), BuildId (..), BuildResult (..),
+                                  BuildTree (..), BuildTreeRef (..), Commit (..), Project (..), Ref (..), Result (..),
+                                  renderBuildResult, sortBuildIds)
 import           Boris.Http.Data
 
 import           Control.Monad.IO.Class (MonadIO (..))
 
 import           Data.Map (Map)
 import qualified Data.Map as M
-import           Data.Time (UTCTime, diffUTCTime, formatTime, defaultTimeLocale)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
+import           Data.Time (UTCTime, defaultTimeLocale, diffUTCTime, formatTime)
 
 import qualified Network.HTTP.Types as HTTP
 

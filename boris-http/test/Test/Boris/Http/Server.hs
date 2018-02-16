@@ -16,9 +16,9 @@ import           Control.Monad.IO.Class (MonadIO (..))
 
 import           Boris.Core.Data
 
-import           Boris.Http.Store.Data
-import qualified Boris.Http.Route as Route
 import qualified Boris.Http.Boot as Boot
+import qualified Boris.Http.Route as Route
+import           Boris.Http.Store.Data
 
 import qualified Data.IORef as IORef
 
@@ -26,16 +26,16 @@ import           Hedgehog
 
 import qualified Data.Streaming.Network as Network
 
-import qualified Network.Socket as Socket
-import qualified Network.Wai.Handler.Warp as Warp
 import           Network.HTTP.Client (newManager)
 import           Network.HTTP.Client.TLS (tlsManagerSettings)
+import qualified Network.Socket as Socket
+import qualified Network.Wai.Handler.Warp as Warp
 
 import           P
 import qualified Prelude as Unsafe
 
-import           Snooze.Balance.Data (BalanceTable (..), BalanceEntry (..), Host (..), Port (..), balanceTableStatic)
 import           Snooze.Balance.Control (BalanceConfig (..))
+import           Snooze.Balance.Data (BalanceEntry (..), BalanceTable (..), Host (..), Port (..), balanceTableStatic)
 
 import           System.IO (IO)
 

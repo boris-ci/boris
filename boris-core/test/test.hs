@@ -1,6 +1,6 @@
 import qualified Test.Boris.Core.Data
-import qualified Test.Boris.Core.Serial.Ref
 import qualified Test.Boris.Core.Serial.Command
+import qualified Test.Boris.Core.Serial.Ref
 
 import           Disorder.Core.Main
 

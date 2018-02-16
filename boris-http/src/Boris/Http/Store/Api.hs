@@ -37,15 +37,15 @@ import           Boris.Http.Data
 import           Boris.Http.Store.Data
 import           Boris.Http.Store.Error
 
-import qualified Boris.Http.Store.Postgres.Schema as Postgres
 import qualified Boris.Http.Store.Postgres.Query as Postgres
+import qualified Boris.Http.Store.Postgres.Schema as Postgres
 
 import           Control.Monad.IO.Class (MonadIO (..))
 
 import qualified Data.IORef as IORef
 import qualified Data.List as List
-import qualified Data.Time as Time
 import qualified Data.Text as Text
+import qualified Data.Time as Time
 
 import           P
 

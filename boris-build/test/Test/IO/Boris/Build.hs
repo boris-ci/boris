@@ -4,8 +4,8 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Test.IO.Boris.Build where
 
-import           Boris.Core.Data
 import           Boris.Build
+import           Boris.Core.Data
 
 import qualified Data.Conduit.Binary as CB
 import qualified Data.Text as T
@@ -14,11 +14,11 @@ import           Disorder.Core.IO
 
 import           P
 
+import qualified System.Directory as D
 import           System.Exit (ExitCode (..))
 import           System.FilePath (FilePath, (</>))
-import           System.IO (IO, stdout, stderr)
+import           System.IO (IO, stderr, stdout)
 import           System.IO.Temp (withSystemTempDirectory)
-import qualified System.Directory as D
 
 import           Test.Boris.Core.Arbitrary ()
 import           Test.QuickCheck

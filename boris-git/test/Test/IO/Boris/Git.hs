@@ -17,12 +17,12 @@ import           Disorder.Core.IO
 
 import           P
 
+import qualified System.Directory as D
 import           System.Exit (ExitCode (..))
-import           System.FilePath ((</>), (<.>))
-import           System.IO (IO, stdout, stderr)
+import           System.FilePath ((<.>), (</>))
+import           System.IO (IO, stderr, stdout)
 import           System.IO.Temp (withSystemTempDirectory)
 import           System.Process (CreateProcess (..), proc)
-import qualified System.Directory as D
 
 import           Test.QuickCheck
 import           Test.QuickCheck.Instances ()

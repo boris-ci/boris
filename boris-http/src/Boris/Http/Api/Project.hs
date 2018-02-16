@@ -11,8 +11,8 @@ module Boris.Http.Api.Project (
 import           Boris.Core.Data
 import           Boris.Http.Boot
 import qualified Boris.Http.Service as Service
-import           Boris.Http.Store.Data
 import qualified Boris.Http.Store.Api as Store
+import           Boris.Http.Store.Data
 import qualified Boris.Http.Store.Error as Store
 import           Boris.Queue (Request (..), RequestDiscover (..))
 
@@ -21,7 +21,7 @@ import           Control.Monad.Morph (hoist)
 import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.Trans.Resource (runResourceT)
 
-import           Data.Conduit (($=+), ($$+-))
+import           Data.Conduit (($$+-), ($=+))
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Text as CT
 
@@ -32,7 +32,7 @@ import           P
 
 import           System.IO (IO)
 
-import           X.Control.Monad.Trans.Either (EitherT, mapEitherT, left)
+import           X.Control.Monad.Trans.Either (EitherT, left, mapEitherT)
 
 
 data ConfigError =

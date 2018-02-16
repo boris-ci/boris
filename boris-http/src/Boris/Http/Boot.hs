@@ -12,12 +12,12 @@ module Boris.Http.Boot (
   ) where
 
 import           Boris.Core.Data
-import qualified Boris.Service.Boot as Service
-import qualified Boris.Service.Discover as Discover
-import qualified Boris.Service.Build as Build
 import           Boris.Http.Data
 import           Boris.Http.Store.Data
-import           Boris.Queue (BuildQueue (..), Request (..), RequestDiscover (..), RequestBuild (..))
+import           Boris.Queue (BuildQueue (..), Request (..), RequestBuild (..), RequestDiscover (..))
+import qualified Boris.Service.Boot as Service
+import qualified Boris.Service.Build as Build
+import qualified Boris.Service.Discover as Discover
 
 import qualified Control.Concurrent.Async as Async
 import qualified Control.Concurrent.Chan as Chan
@@ -34,13 +34,13 @@ import           Mismi.S3.Core.Data (Address (..), addressFromText)
 import           Network.HTTP.Client (Manager, newManager)
 import           Network.HTTP.Client.TLS (tlsManagerSettings)
 
-import qualified Nest
 import           Nest (Parser)
+import qualified Nest
 
 import           P
 
-import           Snooze.Balance.Data (BalanceTable (..), BalanceEntry (..), Host (..), Port (..), balanceTableStatic)
 import           Snooze.Balance.Control (BalanceConfig (..))
+import           Snooze.Balance.Data (BalanceEntry (..), BalanceTable (..), Host (..), Port (..), balanceTableStatic)
 
 import           System.IO (IO)
 

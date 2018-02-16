@@ -12,16 +12,16 @@ import           Boris.Core.Data
 import           Boris.Service.Boot
 
 import           Data.Conduit ((=$=))
+import qualified Data.Conduit.Binary as CB
 import qualified Data.Conduit.List as CL
 import qualified Data.Conduit.Text as CT
-import qualified Data.Conduit.Binary as CB
 import           Data.Time (getCurrentTime)
 
-import           Jebediah.Data (LogGroup (..), LogStream (..), Log (..), newExclusiveSequence)
-import           Jebediah.Structure (newLogGroup, newLogStream)
 import qualified Jebediah.Conduit as J
+import           Jebediah.Data (Log (..), LogGroup (..), LogStream (..), newExclusiveSequence)
+import           Jebediah.Structure (newLogGroup, newLogStream)
 
-import           Mismi (Env, Error, runAWS, renderError)
+import           Mismi (Env, Error, renderError, runAWS)
 
 import           P
 
