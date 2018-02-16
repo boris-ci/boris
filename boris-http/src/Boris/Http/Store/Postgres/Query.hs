@@ -268,12 +268,12 @@ results = do
       (bool BuildKo BuildOk br)
 
 userByGithubId :: MonadDb m => GithubId -> m (Maybe User)
-userByGithubId userId = do
+userByGithubId uid = do
   x <- Traction.unique [sql|
       SELECT id, github_id, github_login, github_name, github_email
         FROM account
        WHERE github_id = ?
-    |] (Traction.Only $ githubId userId)
+    |] (Traction.Only $ githubId uid)
   pure . with x $ \(i, guid, login, name, email) ->
     User
       (UserId i)

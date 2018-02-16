@@ -10,7 +10,6 @@ module Boris.Client.Build (
   , queue
   , heartbeat
   , acknowledge
-  , disavow
   , avow
   , complete
   ) where
@@ -63,16 +62,10 @@ acknowledge c i =
   fmap postAcknowledge $
     H.post c ["build", renderBuildId i, "acknowledge"] PostAcknowledgeRequest
 
-disavow :: BalanceConfig -> BuildId -> Project -> Build -> EitherT BorisHttpClientError IO ()
-disavow c i p b = do
-  PostDisavowResponse <- H.post c ["build", renderBuildId i, "disavow"] $
-    PostDisavowRequest p b
-  pure ()
-
-avow :: BalanceConfig -> BuildId -> Project -> Build -> Ref -> Commit -> EitherT BorisHttpClientError IO ()
-avow config i p b r c = do
+avow :: BalanceConfig -> BuildId -> Ref -> Commit -> EitherT BorisHttpClientError IO ()
+avow config i r c = do
   PostAvowResponse <- H.post config ["build", renderBuildId i, "avow"] $
-    PostAvowRequest p b r c
+    PostAvowRequest r c
   pure ()
 
 complete :: BalanceConfig -> BuildId -> BuildResult -> EitherT BorisHttpClientError IO ()

@@ -16,8 +16,6 @@ module Boris.Representation.ApiV1 (
   , PostAcknowledgeResponse (..)
   , PostAvowRequest (..)
   , PostAvowResponse (..)
-  , PostDisavowRequest (..)
-  , PostDisavowResponse (..)
   , PostCompleteRequest (..)
   , PostCompleteResponse (..)
   ) where
@@ -139,9 +137,7 @@ instance ToJSON PostHeartbeatResponse where
 
 data PostAvowRequest =
   PostAvowRequest {
-      postAvowRequestProject :: Project
-    , postAvowRequestBuild :: Build
-    , postAvowRequestRef :: Ref
+      postAvowRequestRef :: Ref
     , postAvowRequestCommit :: Commit
     } deriving (Eq, Ord, Show)
 
@@ -149,38 +145,14 @@ instance FromJSON PostAvowRequest where
   parseJSON =
     withObject "PostAvowRequest" $ \o ->
       PostAvowRequest
-        <$> (fmap Project $ o .: "project")
-        <*> (fmap Build $ o .: "build")
-        <*> (fmap Ref $ o .: "ref")
+        <$> (fmap Ref $ o .: "ref")
         <*> (fmap Commit $ o .: "commit")
 
 instance ToJSON PostAvowRequest where
-  toJSON (PostAvowRequest project build ref commit) =
+  toJSON (PostAvowRequest ref commit) =
     object [
-        "project" .= renderProject project
-      , "build" .= renderBuild build
-      , "ref" .= renderRef ref
+        "ref" .= renderRef ref
       , "commit" .= renderCommit commit
-      ]
-
-data PostDisavowRequest =
-    PostDisavowRequest {
-      postDisavowRequestProject :: Project
-    , postDisavowRequestBuild :: Build
-    } deriving (Eq, Ord, Show)
-
-instance FromJSON PostDisavowRequest where
-  parseJSON =
-    withObject "PostDisavowRequest" $ \o ->
-      PostDisavowRequest
-        <$> (fmap Project $ o .: "project")
-        <*> (fmap Build $ o .: "build")
-
-instance ToJSON PostDisavowRequest where
-  toJSON (PostDisavowRequest project build) =
-    object [
-        "project" .= renderProject project
-      , "build" .= renderBuild build
       ]
 
 data PostAvowResponse =

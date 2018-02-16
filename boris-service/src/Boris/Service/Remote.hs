@@ -5,7 +5,6 @@ module Boris.Service.Remote (
   , renderRemoteError
   , heartbeat
   , acknowledge
-  , disavow
   , avow
   , complete
   ) where
@@ -52,22 +51,12 @@ acknowledge service buildId =
     LogBuild ->
       pure Accept
 
--- FIX is this really needed or could it be inferred on server???
-disavow :: MonadIO m => BuildService -> BuildId -> Project -> Build -> EitherT RemoteError m ()
-disavow service buildId project build =
+avow :: MonadIO m => BuildService -> BuildId -> Ref -> Commit -> EitherT RemoteError m ()
+avow service buildId ref commit =
   case service of
     PushBuild http ->
       hoist liftIO . firstT RemoteHttpError $
-        Build.disavow http buildId project build
-    LogBuild ->
-      pure ()
-
-avow :: MonadIO m => BuildService -> BuildId -> Project -> Build -> Ref -> Commit -> EitherT RemoteError m ()
-avow service buildId project build ref commit =
-  case service of
-    PushBuild http ->
-      hoist liftIO . firstT RemoteHttpError $
-        Build.avow http buildId project build ref commit
+        Build.avow http buildId ref commit
     LogBuild ->
       pure ()
 

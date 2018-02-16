@@ -12,7 +12,6 @@ module Boris.Http.Api.Build (
   , byProject
   , logOf
   , avow
-  , disavow
   , complete
   , BuildError (..)
   , renderBuildError
@@ -137,9 +136,9 @@ acknowledge store buildId =
 cancel :: Store -> BuildId -> EitherT Store.FetchError IO (Maybe ())
 cancel store i = do
   d <- Store.fetch store i
-  for d $ \dd ->
+  for d $ \_ ->
     firstT Store.FetchBackendError $ do
-      Store.cancel store (buildDataProject dd) (buildDataBuild dd) i
+      Store.cancel store i
 
 byCommit :: Store -> Project -> Commit -> EitherT Store.StoreError IO [BuildId]
 byCommit store project commit =
@@ -163,13 +162,9 @@ logOf store logs i = do
         DevNull ->
           pure Nothing
 
-avow :: Store -> BuildId -> Project -> Build -> Ref -> Commit -> EitherT Store.StoreError IO ()
-avow store i project build ref commit = do
-  Store.index store i project build ref commit
-
-disavow :: Store -> BuildId -> Project -> Build -> EitherT Store.StoreError IO ()
-disavow store i project build = do
-  Store.deindex store i project build
+avow :: Store -> BuildId -> Ref -> Commit -> EitherT Store.StoreError IO ()
+avow store i ref commit = do
+  Store.index store i ref commit
 
 complete :: Store -> BuildId -> BuildResult -> EitherT Store.StoreError IO ()
 complete store i result = do
