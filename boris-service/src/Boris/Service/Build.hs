@@ -97,10 +97,8 @@ builder logs builds w buildId project repository build mref = do
             X.xPutStrLn out $ mconcat ["| boris:ko:cancelled | "]
             pure $ BuildKo
 
-          -- initialisation error, wasn't even a valid build we ditch it all together (i.e. deindex).
+          -- initialisation error, wasn't even a valid build we ditch it all together
           Right (Left err) -> do
-            firstT BuildRemoteError $
-              Remote.disavow builds buildId project build
             X.xPutStrLn out $ mconcat ["| boris:ko:initialization | ", renderLifecycleError err]
             pure $ BuildKo
 
@@ -174,7 +172,7 @@ lifecycle out builds w project build repository mref buildId =
         ]
 
     firstT LifecycleRemoteError $
-      Remote.avow builds buildId project build ref commit
+      Remote.avow builds buildId ref commit
 
     liftIO . runEitherT $
       runBuild out out workspace specification context

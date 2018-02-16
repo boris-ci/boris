@@ -334,35 +334,11 @@ route store authentication buildx logx projectx mode = do
                 -- FIX unhax
                 Spock.setStatus HTTP.status400
                 Spock.json $ object ["error" .= ("could not parse ref." :: Text)]
-              Just (ApiV1.PostAvowRequest project build ref commit) -> do
+              Just (ApiV1.PostAvowRequest ref commit) -> do
                 liftStoreError $
-                  Build.avow store buildId project build ref commit
+                  Build.avow store buildId ref commit
                 Spock.setHeader "Location" $ "/build/" <> renderBuildId buildId
                 Spock.json $ ApiV1.PostAvowResponse
-
-  Spock.post ("build" <//> Spock.var <//> "disavow") $ \buildId' ->
-    authenticated authentication store $ \_ -> do
-      let
-        buildId = BuildId buildId'
-
-      withContentType $ \content ->
-        case content of
-          ContentTypeForm -> do
-            -- FIX 400?
-            Spock.setStatus HTTP.notFound404
-            Spock.html "TODO: 404 page."
-          ContentTypeJSON -> do
-            e <- Spock.jsonBody
-            case e of
-              Nothing -> do
-                -- FIX unhax
-                Spock.setStatus HTTP.status400
-                Spock.json $ object ["error" .= ("could not parse ref." :: Text)]
-              Just (ApiV1.PostDisavowRequest project build) -> do
-                liftStoreError $
-                  Build.disavow store buildId project build
-                Spock.setHeader "Location" $ "/build/" <> renderBuildId buildId
-                Spock.json $ ApiV1.PostDisavowResponse
 
   Spock.post ("build" <//> Spock.var <//> "complete") $ \buildId' ->
     authenticated authentication store $ \_ -> do

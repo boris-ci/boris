@@ -84,15 +84,14 @@ boot mkEnv = do
     ]) `Nest.withDefault` ProductionMode
 
   store <- join $ Nest.setting "BORIS_STORE" (Map.fromList [
-      ("dynamo", dynamo mkEnv)
-    , ("postgres", postgres)
+      ("postgres", postgres)
     , ("memory", memory)
-    ]) `Nest.withDefault` dynamo mkEnv
+    ]) `Nest.withDefault` postgres
 
   auth <- join $ Nest.setting "BORIS_AUTHENTICATION" (Map.fromList [
       ("github", github)
     , ("none", pure NoAuthentication)
-    ]) `Nest.withDefault` (pure NoAuthentication)
+    ]) `Nest.withDefault` github
 
   worker <- join $ Nest.setting "BORIS_BUILD_SERVICE" (Map.fromList [
       ("sqs", sqs mkEnv)
@@ -185,12 +184,6 @@ single =
   SingleProjectMode
     <$> (Project <$> Nest.string "BORIS_SINGLE_PROJECT_NAME")
     <*> (Repository <$> Nest.string "BORIS_SINGLE_PROJECT_REPOSITORY")
-
-dynamo :: MonadIO m => IO Env -> Parser m Store
-dynamo mkEnv = do
-  e <- Environment <$> Nest.string "BORIS_ENVIRONMENT"
-  env <- liftIO mkEnv
-  pure $ DynamoStore env e
 
 postgres :: MonadIO m => Parser m Store
 postgres = do

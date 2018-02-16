@@ -20,7 +20,6 @@ module Boris.Http.Store.Api (
   , heartbeat
   , acknowledge
   , index
-  , deindex
   , complete
   , discover
   , userByGithubId
@@ -37,24 +36,16 @@ import           Boris.Core.Data
 import           Boris.Http.Data
 import           Boris.Http.Store.Data
 import           Boris.Http.Store.Error
-import qualified Boris.Http.Store.Dynamo.Build as Dynamo
-import qualified Boris.Http.Store.Dynamo.Index as Dynamo
-import qualified Boris.Http.Store.Dynamo.Lifecycle as Dynamo
-import qualified Boris.Http.Store.Dynamo.Tick as Dynamo
-import qualified Boris.Http.Store.Dynamo.Results as Dynamo
 
 import qualified Boris.Http.Store.Postgres.Schema as Postgres
 import qualified Boris.Http.Store.Postgres.Query as Postgres
 
 import           Control.Monad.IO.Class (MonadIO (..))
-import           Control.Monad.Trans.Class (MonadTrans (..))
 
 import qualified Data.IORef as IORef
 import qualified Data.List as List
 import qualified Data.Time as Time
 import qualified Data.Text as Text
-
-import qualified Mismi.Control as Mismi
 
 import           P
 
@@ -69,9 +60,6 @@ import           X.Control.Monad.Trans.Either (EitherT, left)
 initialise :: Store -> EitherT StoreError IO ()
 initialise s =
   case s of
-    DynamoStore env e ->
-      Mismi.runAWST env DynamoBackendError . firstT InitialisationError $
-        Dynamo.initialise e
     PostgresStore pool ->
       void . firstT PostgresBackendError . Traction.runDb pool $
         Traction.migrate Postgres.schema
@@ -80,9 +68,6 @@ initialise s =
 
 tick :: Store -> EitherT StoreError IO BuildId
 tick = \case
-  DynamoStore env e ->
-    Mismi.runAWST env DynamoBackendError . firstT TickError $
-      Dynamo.next e
   PostgresStore pool ->
     firstT PostgresBackendError . Traction.runDb pool $
       Postgres.tick
@@ -94,9 +79,6 @@ tick = \case
 getProjectCommitBuildIds :: Store -> Project -> Commit -> EitherT StoreError IO [BuildId]
 getProjectCommitBuildIds store project commit =
   case store of
-    DynamoStore env e ->
-      firstT DynamoBackendError . Mismi.runAWS env $
-        Dynamo.getProjectCommitBuildIds e project commit
     PostgresStore pool ->
       firstT PostgresBackendError . Traction.runDb pool $
         Postgres.getProjectCommitBuildIds project commit
@@ -108,9 +90,6 @@ getProjectCommitBuildIds store project commit =
 getProjectCommitSeen :: Store -> Project -> Commit -> EitherT StoreError IO [Build]
 getProjectCommitSeen store project commit =
   case store of
-    DynamoStore env e ->
-      firstT DynamoBackendError . Mismi.runAWS env $
-        Dynamo.getProjectCommitSeen e project commit
     PostgresStore pool ->
       firstT PostgresBackendError . Traction.runDb pool $
         Postgres.getProjectCommitSeen project commit
@@ -122,9 +101,6 @@ getProjectCommitSeen store project commit =
 getProjectCommitDiscovered :: Store -> Project -> Commit -> EitherT StoreError IO [Build]
 getProjectCommitDiscovered store project commit =
   case store of
-    DynamoStore env e ->
-      firstT DynamoBackendError . Mismi.runAWS env $
-        Dynamo.getProjectCommitDiscovered e project commit
     PostgresStore pool ->
       firstT PostgresBackendError . Traction.runDb pool $
         Postgres.getProjectCommitDiscovered project commit
@@ -135,9 +111,6 @@ getProjectCommitDiscovered store project commit =
 addProjectCommitDiscovered :: Store -> BuildId -> Project -> Commit -> Ref -> Build -> EitherT StoreError IO ()
 addProjectCommitDiscovered store buildId project commit ref build =
   case store of
-    DynamoStore env e ->
-      firstT DynamoBackendError . Mismi.runAWS env $
-        Dynamo.addProjectCommitDiscovered e project commit build
     PostgresStore pool ->
       firstT PostgresBackendError . Traction.runDb pool $
         Postgres.addProjectCommitDiscovered buildId build commit
@@ -148,9 +121,6 @@ addProjectCommitDiscovered store buildId project commit ref build =
 getProjects :: Store -> Project -> EitherT StoreError IO [Build]
 getProjects store project =
   case store of
-    DynamoStore env e ->
-      firstT DynamoBackendError . Mismi.runAWS env $
-        Dynamo.getProjects e project
     PostgresStore pool ->
       firstT PostgresBackendError . Traction.runDb pool $
         Postgres.getProjects project
@@ -161,9 +131,6 @@ getProjects store project =
 getBuildRefs :: Store -> Project -> Build -> EitherT StoreError IO [Ref]
 getBuildRefs store project build =
   case store of
-    DynamoStore env e ->
-      firstT DynamoBackendError . Mismi.runAWS env $
-        Dynamo.getBuildRefs e project build
     PostgresStore pool ->
       firstT PostgresBackendError . Traction.runDb pool $
         Postgres.getBuildRefs project build
@@ -174,9 +141,6 @@ getBuildRefs store project build =
 getBuildIds :: Store -> Project -> Build -> Ref -> EitherT StoreError IO [BuildId]
 getBuildIds store project build ref =
   case store of
-    DynamoStore env e ->
-      firstT DynamoBackendError . Mismi.runAWS env $
-        Dynamo.getBuildIds e project build ref
     PostgresStore pool ->
       firstT PostgresBackendError . Traction.runDb pool $
         Postgres.getBuildIds project build ref
@@ -187,9 +151,6 @@ getBuildIds store project build ref =
 getQueued :: Store -> Project -> Build -> EitherT StoreError IO [BuildId]
 getQueued store project build =
   case store of
-    DynamoStore env e ->
-      firstT DynamoBackendError . Mismi.runAWS env $
-        Dynamo.getQueued e project build
     PostgresStore pool ->
       firstT PostgresBackendError . Traction.runDb pool $
         Postgres.getQueued  project build
@@ -200,9 +161,6 @@ getQueued store project build =
 fetch :: Store -> BuildId -> EitherT FetchError IO (Maybe BuildData)
 fetch store build =
   case store of
-    DynamoStore env e ->
-      fmap Just . Mismi.runAWST env (FetchBackendError . DynamoBackendError) $
-        Dynamo.fetch e build
     PostgresStore pool ->
       firstT (FetchBackendError . PostgresBackendError) . Traction.runDb pool $
         Postgres.fetch build
@@ -213,9 +171,6 @@ fetch store build =
 register :: Store -> Project -> Build -> BuildId -> EitherT RegisterError IO ()
 register store project build buildid =
   case store of
-    DynamoStore env e ->
-      Mismi.runAWST env (RegisterStoreError . DynamoBackendError) $
-        Dynamo.register e project build buildid
     PostgresStore pool ->
       firstT (RegisterStoreError . PostgresBackendError) . Traction.runDb pool $
         Postgres.register project build buildid
@@ -225,12 +180,9 @@ register store project build buildid =
         ((n, (BuildData buildid project build Nothing Nothing (Just now) Nothing Nothing Nothing Nothing Nothing Nothing) : builds, discovers), ())
 
 
-index :: Store -> BuildId -> Project -> Build -> Ref -> Commit -> EitherT StoreError IO ()
-index store buildId project build ref commit  =
+index :: Store -> BuildId -> Ref -> Commit -> EitherT StoreError IO ()
+index store buildId ref commit  =
   case store of
-    DynamoStore env e ->
-      Mismi.runAWST env DynamoBackendError . lift $
-        Dynamo.index e project build buildId ref commit
     PostgresStore pool ->
       firstT PostgresBackendError . Traction.runDb pool $
         Postgres.index buildId ref commit
@@ -245,24 +197,9 @@ index store buildId project build ref commit  =
       liftIO $ IORef.atomicModifyIORef' refx $ \(n, builds, discovers) ->
         ((n, update <$> builds, discovers), ())
 
-deindex :: Store -> BuildId -> Project -> Build -> EitherT StoreError IO ()
-deindex store buildId project build =
+cancel :: Store -> BuildId -> EitherT StoreError IO ()
+cancel store buildid =
   case store of
-    DynamoStore env e ->
-      Mismi.runAWST env DynamoBackendError . lift $
-        Dynamo.deindex e project build buildId
-    PostgresStore _pool ->
-      pure ()
-    MemoryStore _ref ->
-      pure ()
-
-cancel :: Store -> Project -> Build -> BuildId -> EitherT StoreError IO ()
-cancel store project build buildid =
-  case store of
-    DynamoStore env e ->
-      void . firstT DynamoBackendError . Mismi.runAWS env $ do
-        Dynamo.deindex e project build buildid
-        Dynamo.cancel e buildid
     PostgresStore pool ->
       firstT (PostgresBackendError) . Traction.runDb pool $
         Postgres.cancel buildid
@@ -281,9 +218,6 @@ cancel store project build buildid =
 cancelx :: Store -> BuildId -> EitherT StoreError IO ()
 cancelx store buildid =
   case store of
-    DynamoStore env e ->
-      void . firstT DynamoBackendError . Mismi.runAWS env $ do
-        Dynamo.cancel e buildid
     PostgresStore pool ->
       firstT (PostgresBackendError) . Traction.runDb pool $
         Postgres.cancel buildid
@@ -302,9 +236,6 @@ cancelx store buildid =
 heartbeat :: Store -> BuildId -> EitherT StoreError IO BuildCancelled
 heartbeat store buildid =
   case store of
-    DynamoStore env e ->
-      firstT DynamoBackendError . Mismi.runAWS env $ do
-        Dynamo.heartbeat e buildid
     PostgresStore pool ->
       firstT (PostgresBackendError) . Traction.runDb pool $
         Postgres.heartbeat buildid
@@ -324,9 +255,6 @@ heartbeat store buildid =
 acknowledge :: Store -> BuildId -> EitherT StoreError IO Acknowledge
 acknowledge store buildid =
   case store of
-    DynamoStore env e ->
-      firstT DynamoBackendError . Mismi.runAWS env $ do
-        Dynamo.acknowledge' e buildid
     PostgresStore pool ->
       firstT (PostgresBackendError) . Traction.runDb pool $
         Postgres.acknowledge' buildid
@@ -346,10 +274,6 @@ acknowledge store buildid =
 results :: Store -> EitherT StoreError IO [Result]
 results store =
   case store of
-    DynamoStore env e ->
-      Mismi.runAWST env DynamoBackendError $
-        firstT (ResultsError . Dynamo.jsonError) $
-          Dynamo.compress e
     PostgresStore pool ->
       firstT (PostgresBackendError) . Traction.runDb pool $
         Postgres.results
@@ -374,11 +298,6 @@ results store =
 complete :: Store -> BuildId -> BuildResult -> EitherT StoreError IO ()
 complete store buildid result =
   case store of
-    DynamoStore env e ->
-      Mismi.runAWST env DynamoBackendError $ do
-        r <- lift $ Dynamo.complete e buildid result
-        firstT (ResultsError . Dynamo.jsonError) . for_ r $
-          Dynamo.add e
     PostgresStore pool ->
       firstT (PostgresBackendError) . Traction.runDb pool $
         void $ Postgres.complete buildid result
@@ -397,9 +316,6 @@ complete store buildid result =
 discover :: Store -> BuildId -> Project -> EitherT StoreError IO ()
 discover store buildid project =
   case store of
-    DynamoStore env _e ->
-      Mismi.runAWST env DynamoBackendError $ do        -- FIX MTH maybe should store something here?
-        pure ()
     PostgresStore pool ->
       firstT (PostgresBackendError) . Traction.runDb pool $
         void $ Postgres.discover buildid project
@@ -407,21 +323,17 @@ discover store buildid project =
       pure ()
 
 userByGithubId :: Store -> GithubId -> EitherT StoreError IO (Maybe User)
-userByGithubId store userId =
+userByGithubId store uid =
   case store of
-    DynamoStore _env _e ->
-      left $ UnsupportedBackendError "authentication" "dynamo"
     PostgresStore pool ->
       firstT (PostgresBackendError) . Traction.runDb pool $
-        Postgres.userByGithubId userId
+        Postgres.userByGithubId uid
     MemoryStore _refx -> do
       left $ UnsupportedBackendError "authentication" "memory"
 
 updateUser :: Store -> User -> EitherT StoreError IO ()
 updateUser store user =
   case store of
-    DynamoStore _env _e ->
-      left $ UnsupportedBackendError "authentication" "dynamo"
     PostgresStore pool ->
       firstT PostgresBackendError . Traction.runDb pool $
         Postgres.updateUser user
@@ -431,8 +343,6 @@ updateUser store user =
 addUser :: Store -> GithubUser -> EitherT StoreError IO User
 addUser store user =
   case store of
-    DynamoStore _env _e ->
-      left $ UnsupportedBackendError "authentication" "dynamo"
     PostgresStore pool ->
       firstT PostgresBackendError . Traction.runDb pool $
         Postgres.addUser user
@@ -442,8 +352,6 @@ addUser store user =
 newSession :: Store -> Session -> User -> EitherT StoreError IO ()
 newSession store session user =
   case store of
-    DynamoStore _env _e ->
-      left $ UnsupportedBackendError "authentication" "dynamo"
     PostgresStore pool ->
       firstT PostgresBackendError . Traction.runDb pool $
         Postgres.newSession session user
@@ -453,8 +361,6 @@ newSession store session user =
 tickSession :: Store -> SessionId -> EitherT StoreError IO ()
 tickSession store session =
   case store of
-    DynamoStore _env _e ->
-      left $ UnsupportedBackendError "authentication" "dynamo"
     PostgresStore pool ->
       firstT PostgresBackendError . Traction.runDb pool $
         Postgres.tickSession session
@@ -464,8 +370,6 @@ tickSession store session =
 getSession :: Store -> SessionId -> EitherT StoreError IO (Maybe AuthenticatedUser)
 getSession store session =
   case store of
-    DynamoStore _env _e ->
-      left $ UnsupportedBackendError "authentication" "dynamo"
     PostgresStore pool ->
       firstT PostgresBackendError . Traction.runDb pool $
         Postgres.getSession session
@@ -475,8 +379,6 @@ getSession store session =
 getSessionUser :: Store -> SessionId -> EitherT StoreError IO (Maybe UserId)
 getSessionUser store session =
   case store of
-    DynamoStore _env _e ->
-      left $ UnsupportedBackendError "authentication" "dynamo"
     PostgresStore pool ->
       firstT PostgresBackendError . Traction.runDb pool $
         Postgres.getSessionUser session
@@ -486,8 +388,6 @@ getSessionUser store session =
 getSessionOAuth :: Store -> SessionId -> EitherT StoreError IO (Maybe GithubOAuth)
 getSessionOAuth store session =
   case store of
-    DynamoStore _env _e ->
-      left $ UnsupportedBackendError "authentication" "dynamo"
     PostgresStore pool ->
       firstT PostgresBackendError . Traction.runDb pool $
         Postgres.getSessionOAuth session
