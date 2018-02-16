@@ -40,7 +40,7 @@ import           Boris.Http.Data
 
 import qualified Data.Text as Text
 
-import           Database.PostgreSQL.Simple ((:.)(..))
+import           Database.PostgreSQL.Simple ((:.) (..))
 
 import           Jebediah.Data (LogGroup (..), LogStream (..))
 

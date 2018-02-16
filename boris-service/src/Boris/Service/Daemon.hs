@@ -5,9 +5,9 @@ module Boris.Service.Daemon (
   ) where
 
 import           Boris.Core.Data
+import           Boris.Queue (BuildQueue (..))
 import           Boris.Service.Boot
 import           Boris.Service.Listener
-import           Boris.Queue (BuildQueue (..))
 
 import           Control.Monad.IO.Class (liftIO)
 
@@ -21,8 +21,8 @@ import           Mismi.Amazonka (Env)
 import           System.IO (IO)
 
 import           Twine.Data.Pin (Pin, checkPin)
-import           Twine.Snooze (seconds)
 import           Twine.Guard (TerminationAction (..), TerminationHandler (..), repeatedly)
+import           Twine.Snooze (seconds)
 
 
 run :: LogService -> BuildService -> DiscoverService -> Env -> BuildQueue -> WorkspacePath -> Pin -> IO ()

@@ -15,37 +15,37 @@ import qualified Boris.Http.Api.Project as Project
 import qualified Boris.Http.Api.Result as Result
 import qualified Boris.Http.Api.Session as Session
 import           Boris.Http.Boot
-import qualified Boris.Http.View as View
-import           Boris.Http.Spock
 import           Boris.Http.Data
+import           Boris.Http.Spock
 import           Boris.Http.Store.Data
 import qualified Boris.Http.Store.Error as Store
+import qualified Boris.Http.View as View
 import qualified Boris.Representation.ApiV1 as ApiV1
 
 import           Control.Monad.IO.Class (MonadIO (..))
 
-import           Data.Aeson (object, (.=), (.:))
+import           Data.Aeson (object, (.:), (.=))
 import qualified Data.Aeson as Aeson
-import           Data.Conduit ((=$=), runConduit)
+import           Data.Conduit (runConduit, (=$=))
 import qualified Data.Conduit.List as CL
 import           Data.Default (def)
 import qualified Data.FileEmbed as FileEmbed
 import qualified Data.Text as Text
 
-import qualified Network.HTTP.Types as Http
 import qualified Network.HTTP.Client as Client
 import           Network.HTTP.Client.TLS (tlsManagerSettings)
+import qualified Network.HTTP.Types as Http
 
 import           P
 
-import qualified System.IO as IO
 import           System.IO (IO)
+import qualified System.IO as IO
 
 -- spock experiment
 import qualified Network.HTTP.Types as HTTP
+import qualified Network.Wai.Middleware.RequestLogger as RequestLogger
 import qualified Network.Wai.Middleware.Static as Static
 import qualified Network.Wai.Middleware.StaticEmbedded as StaticEmbedded
-import qualified Network.Wai.Middleware.RequestLogger as RequestLogger
 import           Web.Spock.Core ((<//>))
 import qualified Web.Spock.Core as Spock
 

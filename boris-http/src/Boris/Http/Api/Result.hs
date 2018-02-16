@@ -7,8 +7,8 @@ module Boris.Http.Api.Result (
 
 
 import           Boris.Core.Data
-import           Boris.Http.Store.Data
 import qualified Boris.Http.Store.Api as Store
+import           Boris.Http.Store.Data
 import qualified Boris.Http.Store.Error as Store
 
 import           P

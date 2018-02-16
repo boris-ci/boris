@@ -5,8 +5,8 @@
 module Test.IO.Boris.Service.Git where
 
 import           Boris.Core.Data
-import           Boris.Service.Workspace
 import qualified Boris.Service.Git as Git
+import           Boris.Service.Workspace
 
 import qualified Data.Conduit.Binary as CB
 import qualified Data.Text as T
@@ -17,13 +17,13 @@ import           Disorder.Core.IO
 
 import           P
 
-import           System.Exit (ExitCode (..))
+import qualified System.Directory as D
 import           System.Environment (setEnv)
+import           System.Exit (ExitCode (..))
 import           System.FilePath ((</>))
-import           System.IO (IO, stdout, stderr)
+import           System.IO (IO, stderr, stdout)
 import           System.IO.Temp (withSystemTempDirectory)
 import           System.Process (CreateProcess (..), proc)
-import qualified System.Directory as D
 
 import           Test.Boris.Core.Arbitrary ()
 import           Test.QuickCheck

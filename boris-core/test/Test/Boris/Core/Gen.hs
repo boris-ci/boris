@@ -7,7 +7,7 @@ import           Boris.Core.Data
 
 import           Data.Text (Text)
 import qualified Data.Text as Text
-import           Data.Time (UTCTime (..), Day (..), DiffTime)
+import           Data.Time (Day (..), DiffTime, UTCTime (..))
 
 import           Jebediah.Data (LogGroup (..), LogStream (..))
 

@@ -16,12 +16,12 @@ module Boris.Queue (
   , toRequest
   ) where
 
-import           Control.Lens ((.~), (^.), (^?), ix, to)
+import           Control.Lens (ix, to, (.~), (^.), (^?))
 import           Control.Monad.Trans.Class (lift)
 
 import           Boris.Core.Data
 
-import           Data.Aeson (Value (..), object, withObject, (.=), (.:), (.:?))
+import           Data.Aeson (Value (..), object, withObject, (.:), (.:?), (.=))
 import           Data.Aeson.Types (Parser)
 import qualified Data.Text as T
 
@@ -33,8 +33,8 @@ import qualified Mismi.SQS.Amazonka as A
 import           P
 
 
-import           X.Control.Monad.Trans.Either (EitherT, left, hoistEither)
-import           X.Data.Aeson (asWith, asTextWith)
+import           X.Control.Monad.Trans.Either (EitherT, hoistEither, left)
+import           X.Data.Aeson (asTextWith, asWith)
 
 
 data QueueError =

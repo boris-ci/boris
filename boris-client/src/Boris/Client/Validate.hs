@@ -11,7 +11,7 @@ import qualified Data.Text.IO as T
 
 import           P
 
-import           System.IO (IO, FilePath)
+import           System.IO (FilePath, IO)
 
 import           X.Control.Monad.Trans.Either (EitherT, newEitherT)
 import           X.Control.Monad.Trans.Either.Exit (orDie)

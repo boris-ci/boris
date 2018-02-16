@@ -11,12 +11,12 @@ module Boris.Http.Api.Discover (
 import qualified Data.List as List
 
 import           Boris.Core.Data
-import           Boris.Http.Boot
 import qualified Boris.Http.Api.Project as Project
+import           Boris.Http.Boot
 
 import qualified Boris.Http.Service as Service
-import           Boris.Http.Store.Data
 import qualified Boris.Http.Store.Api as Store
+import           Boris.Http.Store.Data
 import qualified Boris.Http.Store.Error as Store
 import           Boris.Queue (Request (..), RequestBuild (..))
 import           P

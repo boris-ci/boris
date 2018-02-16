@@ -12,8 +12,8 @@ import           P
 
 import           System.IO
 
-import           Test.QuickCheck
 import           Test.Boris.Queue.Arbitrary ()
+import           Test.QuickCheck
 
 import           X.Data.Aeson
 

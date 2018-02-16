@@ -19,9 +19,9 @@ import qualified Data.Text.Encoding as T
 
 import           P
 
-import           System.Exit (ExitCode (..))
 import           System.Directory (doesDirectoryExist)
-import           System.IO (IO, FilePath)
+import           System.Exit (ExitCode (..))
+import           System.IO (FilePath, IO)
 
 import           Tine.Conduit (Out)
 import qualified Tine.Conduit as X

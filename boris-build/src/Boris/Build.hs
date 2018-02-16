@@ -20,7 +20,7 @@ import qualified Tine.Conduit as X
 import           System.Exit (ExitCode (..))
 import           System.IO (IO)
 
-import           X.Control.Monad.Trans.Either (EitherT, bimapEitherT, runEitherT, hoistEither)
+import           X.Control.Monad.Trans.Either (EitherT, bimapEitherT, hoistEither, runEitherT)
 
 data BuildError =
     RunError ExitCode

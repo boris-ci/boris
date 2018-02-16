@@ -1,7 +1,7 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PackageImports #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Boris.Core.Data (
     Environment (..)
   , Project (..)

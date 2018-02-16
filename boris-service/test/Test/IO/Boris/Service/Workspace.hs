@@ -17,9 +17,9 @@ import           Disorder.Core.IO
 
 import           P
 
+import qualified System.Directory as D
 import           System.FilePath ((</>))
 import           System.IO.Temp (withSystemTempDirectory)
-import qualified System.Directory as D
 
 import           Test.Boris.Core.Arbitrary ()
 import           Test.QuickCheck

@@ -7,13 +7,13 @@ module Boris.Service.Listener (
   ) where
 
 import           Boris.Core.Data
+import           Boris.Queue (BuildQueue (..), Request (..), RequestBuild (..), RequestDiscover (..))
+import qualified Boris.Queue as Q
 import           Boris.Service.Boot
 import           Boris.Service.Build
 import           Boris.Service.Discover
-import           Boris.Queue (BuildQueue (..), Request (..), RequestBuild (..), RequestDiscover (..))
-import qualified Boris.Queue as Q
 
-import           Mismi (Error, runAWST, renderError)
+import           Mismi (Error, renderError, runAWST)
 import           Mismi.Amazonka (Env)
 
 import           P

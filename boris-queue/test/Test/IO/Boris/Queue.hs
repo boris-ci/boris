@@ -16,10 +16,10 @@ import           P
 
 import           Test.Boris.Core.Arbitrary ()
 import           Test.Boris.Queue.Arbitrary ()
-import           Test.QuickCheck
 import           Test.Mismi (testAWS)
 import           Test.Mismi.Arbitrary ()
 import           Test.Mismi.SQS (withQueue)
+import           Test.QuickCheck
 
 import           X.Control.Monad.Trans.Either (runEitherT)
 

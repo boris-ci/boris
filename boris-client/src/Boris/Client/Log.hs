@@ -12,8 +12,8 @@ import qualified Data.Conduit.List as CL
 
 import qualified Data.Text as T
 
-import           Jebediah.Data (Following (..), Query (..), LogGroup (..), LogStream (..), Log (..))
 import qualified Jebediah.Conduit as J
+import           Jebediah.Data (Following (..), Log (..), LogGroup (..), LogStream (..), Query (..))
 
 import           Mismi.Amazonka (Env)
 

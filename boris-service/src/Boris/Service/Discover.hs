@@ -7,9 +7,9 @@ module Boris.Service.Discover (
   , renderDiscoverError
   ) where
 
-import           Boris.Core.Data
-import qualified Boris.Client.Http as Http
 import qualified Boris.Client.Discover as Discover
+import qualified Boris.Client.Http as Http
+import           Boris.Core.Data
 import           Boris.Service.Boot
 import           Boris.Service.Git
 import           Boris.Service.Log
@@ -21,7 +21,7 @@ import           System.IO (IO)
 
 import qualified Tine.Conduit as X
 
-import           X.Control.Monad.Trans.Either (EitherT, runEitherT, newEitherT, bimapEitherT, joinEitherE)
+import           X.Control.Monad.Trans.Either (EitherT, bimapEitherT, joinEitherE, newEitherT, runEitherT)
 
 data DiscoverError =
     DiscoverInitialiseError InitialiseError

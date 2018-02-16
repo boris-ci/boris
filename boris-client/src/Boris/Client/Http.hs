@@ -24,12 +24,12 @@ import           P
 
 import           Snooze.Balance.Control (BalanceConfig, BalanceError (..), runBalanceT)
 import           Snooze.Balance.Http (httpBalanced)
-import           Snooze.Url (encodePathSegmentsBS)
 import           Snooze.Json (decodeResponse)
+import           Snooze.Url (encodePathSegmentsBS)
 
 import           System.IO (IO)
 
-import           X.Control.Monad.Trans.Either (EitherT, newEitherT, bimapEitherT, hoistEither, left)
+import           X.Control.Monad.Trans.Either (EitherT, bimapEitherT, hoistEither, left, newEitherT)
 
 data BorisHttpClientError =
     BorisHttpClientBalanceError BalanceError

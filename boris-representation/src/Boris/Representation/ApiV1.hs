@@ -22,7 +22,7 @@ module Boris.Representation.ApiV1 (
 
 import           Boris.Core.Data
 
-import           Data.Aeson (FromJSON (..), ToJSON (..), object, (.=), (.:), (.:?), withObject, Value)
+import           Data.Aeson (FromJSON (..), ToJSON (..), Value, object, withObject, (.:), (.:?), (.=))
 
 import           Jebediah.Data (LogGroup (..), LogStream (..))
 

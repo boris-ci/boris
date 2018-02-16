@@ -10,8 +10,8 @@ import           Boris.Core.Data
 
 import           Control.Lens ((^?))
 
-import qualified Data.Text as T
 import qualified Data.HashMap.Strict as M
+import qualified Data.Text as T
 
 import           Text.Parsec.Error (ParseError)
 import           Text.Toml (parseTomlDoc)
@@ -19,7 +19,7 @@ import           Text.Toml.Types (Table)
 
 import           P
 
-import           X.Text.Toml (_NTable, _NTValue, _VString, _VInteger, key)
+import           X.Text.Toml (key, _NTValue, _NTable, _VInteger, _VString)
 
 {--
 # example "boris-git.toml" config file
