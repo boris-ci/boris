@@ -18,7 +18,6 @@ module Boris.Http.Spock (
 import qualified Boris.Http.Api.Session as Session
 import           Boris.Http.Boot (AuthenticationMode (..))
 import           Boris.Http.Data
-import qualified Boris.Http.Store.Api as Store
 import           Boris.Http.Store.Data
 import qualified Boris.Http.Store.Error as Store
 import qualified Boris.Http.View as View
@@ -140,12 +139,12 @@ withAuthentication mode store handler =
       case v of
         Nothing ->
           handler NotAuthenticated
-        Just sessionId -> do
+        Just sessionId' -> do
           result <- liftError Session.renderAuthenticationError $
-            Session.check store manager client secret sessionId
+            Session.check store manager client secret sessionId'
           case result of
             Nothing ->
-              handler $ WasAuthenticated sessionId
+              handler $ WasAuthenticated sessionId'
             Just (AuthenticatedUser account session) ->
               handler $ Authenticated session account
     NoAuthentication ->

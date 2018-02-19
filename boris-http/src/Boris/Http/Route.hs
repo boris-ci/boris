@@ -23,18 +23,13 @@ import qualified Boris.Http.View as View
 import qualified Boris.Representation.ApiV1 as ApiV1
 
 import           Data.Aeson (object, (.=))
-import           Data.ByteString.Char8 (unlines)
 import           Data.Conduit (runConduit, (=$=))
 import qualified Data.Conduit.List as CL
-import           Data.Default (def)
 import qualified Data.FileEmbed as FileEmbed
-import qualified Data.Text as Text
-import qualified Data.Text.Encoding as Text
-import qualified Data.Text.IO as TextIO
 
 import           P
 
-import           System.IO (IO, putStrLn)
+import           System.IO (IO)
 
 -- spock experiment
 import qualified Network.HTTP.Types as HTTP
@@ -185,7 +180,7 @@ route store authentication buildx logx projectx mode = do
                   Just ii -> do
                     Spock.setStatus HTTP.created201
                     Spock.setHeader "Location" $ "/build/" <> renderBuildId ii
-                    Spock.json $ ApiV1.GetBuild (BuildData ii project build ref Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
+                    Spock.json $ ApiV1.GetBuild (BuildData ii project build ref Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
 
 
   Spock.get ("project" <//> Spock.var <//> "commit" <//> Spock.var) $ \project' commit' ->
@@ -442,4 +437,3 @@ killSession =
 sessionName :: Text
 sessionName =
   "boris"
-

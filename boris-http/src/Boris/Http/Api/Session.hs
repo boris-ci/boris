@@ -9,26 +9,17 @@ module Boris.Http.Api.Session (
   ) where
 
 
-import           Boris.Core.Data
-import qualified Boris.Http.Api.Project as Project
-import           Boris.Http.Boot
 import           Boris.Http.Data
-import qualified Boris.Http.Service as Service
 import qualified Boris.Http.Store.Api as Store
 import           Boris.Http.Store.Data
 import qualified Boris.Http.Store.Error as Store
-import           Boris.Queue (Request (..), RequestBuild (..))
 
 import           Control.Monad.IO.Class (MonadIO (..))
-
-import qualified Crypto.Random.Entropy as Entropy
 
 import           Data.Aeson (object, (.:), (.=))
 import qualified Data.Aeson as Aeson
 import           Data.ByteString (ByteString)
-import qualified Data.ByteString.Base16 as Base16
 import           Data.Default (def)
-import qualified Data.List as List
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
@@ -38,7 +29,6 @@ import qualified GitHub.Data as Github
 import qualified GitHub.Endpoints.Users as Github
 
 import qualified Network.HTTP.Client as Client
-import           Network.HTTP.Client.TLS (tlsManagerSettings)
 import qualified Network.HTTP.Types as HTTP
 
 import           P
@@ -65,15 +55,15 @@ renderAuthenticationError err =
       mconcat ["Authentication error contacting github: ", Text.pack . show $ e]
 
 check :: Store -> Client.Manager -> GithubClient -> GithubSecret -> SessionId -> EitherT AuthenticationError IO (Maybe AuthenticatedUser)
-check store _manager _client _secret sessionId = do
+check store _manager _client _secret sessionId' = do
   a <- firstT AuthenticationStoreError $
-    Store.getSession store sessionId
+    Store.getSession store sessionId'
   case a of
     Nothing ->
       pure Nothing
     Just _ -> do
       firstT AuthenticationStoreError $
-        Store.tickSession store sessionId
+        Store.tickSession store sessionId'
       pure a
 
 authenticate :: Store -> Client.Manager -> GithubClient -> GithubSecret -> GithubCode -> EitherT AuthenticationError IO Session
