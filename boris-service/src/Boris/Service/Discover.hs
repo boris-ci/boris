@@ -30,7 +30,7 @@ data DiscoverError =
 
 discover :: LogService -> DiscoverService ->  WorkspacePath -> BuildId -> Project -> Repository -> EitherT DiscoverError IO ()
 discover logs discovers w buildid project repository = do
-  joinEitherE join . newEitherT . firstT DiscoverLogError . withLogger logs project buildid  $ \out -> runEitherT $
+  joinEitherE join . newEitherT . firstT DiscoverLogError . withLogger logs $ \out -> runEitherT $
     withWorkspace w buildid $ \workspace -> do
       X.xPutStrLn out . mconcat $ ["[boris:discover] ", renderProject project]
 

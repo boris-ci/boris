@@ -60,7 +60,7 @@ data LifecycleError =
 --
 builder :: LogService -> BuildService -> WorkspacePath -> BuildId -> Project -> Repository -> Build -> Maybe Ref -> EitherT BuilderError IO ()
 builder logs builds w buildId project repository build mref = do
-  joinEitherE join . newEitherT . firstT BuildLogError . withLogger logs project buildId $ \out -> runEitherT $ do
+  joinEitherE join . newEitherT . firstT BuildLogError . withLogger logs $ \out -> runEitherT $ do
     initial <- firstT BuildRemoteError $
       Remote.heartbeat builds buildId
 

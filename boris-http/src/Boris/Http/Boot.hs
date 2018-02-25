@@ -65,8 +65,7 @@ data BuildService =
   | LocalBuildService (Chan.Chan Request)
 
 data LogService =
-    CloudWatchLogs Env Environment
-  | DBLogs
+    DBLogs
   | DevNull
 
 data ProjectMode =
@@ -101,10 +100,9 @@ boot mkEnv = do
     ]) `Nest.withDefault` sqs mkEnv
 
   logs <- join $ Nest.setting "BORIS_LOG_SERVICE" (Map.fromList [
-      ("cloudwatch", cloudwatch mkEnv)
-    , ("null", devnull)
+      ("null", devnull)
     , ("std", devnull)
-    ]) `Nest.withDefault` cloudwatch mkEnv
+    ]) `Nest.withDefault` devnull
 
   project <- join $ Nest.setting "BORIS_PROJECT_MODE" (Map.fromList [
       ("user", user)
@@ -163,10 +161,6 @@ local = do
     in
       go
   pure $ LocalBuildService channel
-
-cloudwatch :: MonadIO m => IO Env -> Parser m LogService
-cloudwatch mkEnv =
-  CloudWatchLogs <$> liftIO mkEnv <*> (fmap Environment $ Nest.string "BORIS_ENVIRONMENT")
 
 devnull :: Monad m => Parser m LogService
 devnull =

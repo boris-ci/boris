@@ -25,7 +25,6 @@ module Boris.Core.Data (
   , WorkspacePath (..)
   , Workspace (..)
   , BuildCancelled (..)
-  , CloudwatchLogData (..)
   , DBLogData (..)
   , LogData (..)
   , BuildData (..)
@@ -55,8 +54,6 @@ import qualified Data.Text as T
 import           Data.Time (UTCTime, formatTime, defaultTimeLocale)
 
 import qualified Data.Map.Strict as M
-
-import           Jebediah.Data (LogGroup (..), LogStream (..))
 
 import           P
 
@@ -294,15 +291,8 @@ data BuildData =
     } deriving (Eq, Ord, Show)
 
 data LogData =
-    CloudwatchLog CloudwatchLogData
-  | DBLog [DBLogData]
-  deriving (Eq, Ord, Show)
-
-data CloudwatchLogData =
-  CloudwatchLogData {
-      logDataGroup :: LogGroup
-    , logDataStream :: LogStream
-    } deriving (Eq, Ord, Show)
+    DBLog [DBLogData]
+    deriving (Eq, Ord, Show)
 
 data DBLogData =
   DBLogData {

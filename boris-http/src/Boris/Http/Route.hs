@@ -6,8 +6,6 @@ module Boris.Http.Route (
     route
   ) where
 
-import           Blaze.ByteString.Builder (fromByteString)
-
 import           Boris.Core.Data
 import qualified Boris.Http.Api.Build as Build
 import qualified Boris.Http.Api.Discover as Discover
@@ -23,9 +21,8 @@ import qualified Boris.Http.View as View
 import qualified Boris.Representation.ApiV1 as ApiV1
 
 import           Data.Aeson (object, (.=))
-import           Data.Conduit (runConduit, (=$=))
-import qualified Data.Conduit.List as CL
 import qualified Data.FileEmbed as FileEmbed
+import qualified Data.Text as Text
 
 import           P
 
@@ -395,7 +392,7 @@ route store authentication buildx logx projectx mode = do
     authenticated authentication store $ \_ -> do
 
       log'' <- liftError Store.renderFetchError $
-        Build.logOf' store logx (BuildId buildId)
+        Build.logOf store logx (BuildId buildId)
 
       withAccept $ \case
         AcceptHTML -> do

@@ -27,8 +27,6 @@ import           Data.Aeson (FromJSON (..), ToJSON (..), Value, object, withObje
 
 import           P
 
-import           System.IO (IO)
-
 data GetCommit =
   GetCommit Project [BuildId]
   deriving (Eq, Show)

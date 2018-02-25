@@ -11,7 +11,6 @@ module Boris.Http.Api.Build (
   , byCommit
   , byProject
   , logOf
-  , logOf'
   , avow
   , complete
   , BuildError (..)
@@ -21,9 +20,7 @@ module Boris.Http.Api.Build (
 
 import           Control.Monad.IO.Class (MonadIO (..))
 
-import           Data.ByteString (ByteString)
 import qualified Data.Text as Text
-import qualified Data.Text.Encoding as Text
 import qualified Data.Time as Time
 
 import           Boris.Core.Data
@@ -35,16 +32,6 @@ import qualified Boris.Http.Store.Api as Store
 import           Boris.Http.Store.Data
 import qualified Boris.Http.Store.Error as Store
 import           Boris.Queue (Request (..), RequestBuild (..))
-
-import           Data.Conduit (Source, (=$=))
-import qualified Data.Conduit.List as Conduit
-
-import qualified Jebediah.Conduit as Jebediah
-import           Jebediah.Data (Following (..), Log (..), Query (..))
-import           Jebediah.Data (LogGroup (..), LogStream (..))
-
--- FIX MTH this shouldn't be needed once logging gets sorted
-import           Mismi.Amazonka (Env)
 
 import           P
 
@@ -150,49 +137,19 @@ byProject :: Store -> Project -> EitherT Store.StoreError IO [Build]
 byProject store project =
   Store.getProjects store project
 
-logOf :: Store -> LogService -> BuildId -> EitherT Store.FetchError IO (Maybe (Source IO ByteString))
+logOf :: Store -> LogService -> BuildId -> EitherT Store.FetchError IO (Maybe [Text])
 logOf store logs i = do
   d <- Store.fetch store i
   case d of
     Nothing ->
       pure Nothing
-    Just ld -> do
+    Just _ -> do
       case logs of
-        CloudWatchLogs env environ -> do
-          let
-            gname = LogGroup $ mconcat [ "boris.", renderEnvironment environ ]
-            sname = LogStream $ mconcat [ renderProject $ buildDataProject ld, ".", renderBuildId $ buildDataId ld ]
-          pure . Just $ source env (CloudwatchLogData gname sname) =$= Conduit.map (\t ->
-            Text.encodeUtf8 $ t <> "\n")
-        DBLogs -> do
-          l' <- Store.fetchLogData store i
-          case l' of
-            Just (DBLog l) ->
-              pure . Just $ Conduit.sourceList l =$= Conduit.map (\t -> Text.encodeUtf8 $ renderDBLogData t <> "\n")
-            Just (CloudwatchLog _) ->
-              pure Nothing
-            Nothing ->
-              pure Nothing
-        DevNull ->
-          pure Nothing
-
-logOf' :: Store -> LogService -> BuildId -> EitherT Store.FetchError IO (Maybe [Text])
-logOf' store logs i = do
-  d <- Store.fetch store i
-  case d of
-    Nothing ->
-      pure Nothing
-    Just ld -> do
-      case logs of
-        CloudWatchLogs env environ ->
-          pure Nothing
         DBLogs -> do
           l' <- Store.fetchLogData store i
           case l' of
             Just (DBLog l) ->
               pure $ Just (renderDBLogData <$> l)
-            Just (CloudwatchLog _) ->
-              pure Nothing
             Nothing ->
               pure Nothing
         DevNull ->
@@ -205,11 +162,3 @@ avow store i ref commit = do
 complete :: Store -> BuildId -> BuildResult -> EitherT Store.StoreError IO ()
 complete store i result = do
   Store.complete store i result
-
-source :: Env -> CloudwatchLogData -> Source IO Text
-source env c =
-  Jebediah.source env (logDataGroup c) (logDataStream c) Everything NoFollow
-    =$= Jebediah.unclean
-    =$= Conduit.map logChunk
-
-
