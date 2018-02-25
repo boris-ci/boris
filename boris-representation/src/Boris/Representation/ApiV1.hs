@@ -395,11 +395,17 @@ instance ToJSON PostCompleteResponse where
 
 newtype GetLogs =
   GetLogs {
-      renderLogs :: Text
+      getLogs :: LogData
     } deriving (Eq, Ord, Show)
 
 instance ToJSON GetLogs where
-  toJSON (GetLogs l) =
+  toJSON (GetLogs (DBLog ls)) =
     object [
-      "result" .= l
+      "result" .= renderDBLogs ls
     ]
+
+instance FromJSON GetLogs where
+  parseJSON =
+    -- FIXME
+    withObject "GetLogs" $ \_ ->
+      pure . GetLogs $ DBLog []

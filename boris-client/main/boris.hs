@@ -15,15 +15,11 @@ import           Control.Concurrent.Async (async, waitEitherCancel)
 import           Control.Concurrent (threadDelay)
 import           Control.Monad.IO.Class (liftIO)
 
-import           Data.Conduit (($$))
-import qualified Data.Conduit.List as CL
 import           Data.Default (def)
 import           Data.String (String)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           Data.Time (UTCTime, diffUTCTime, formatTime, defaultTimeLocale)
-
-import           Mismi (renderRegionError, discoverAWSEnv)
 
 import           Network.Connection (ProxySettings (..))
 import           Network.HTTP.Client (ManagerSettings, newManager)
@@ -144,7 +140,11 @@ run c = case c of
           liftIO . T.putStrLn $ "Waiting for build to start..."
           liftIO $ threadDelay 1000000
           r <- B.fetch bc i
-          l <- B.fetchLogData bc $ buildDataId r
+          case fmap buildDataId r of
+            Nothing ->
+              waitForLog
+            Just i' ->
+              L.fetch bc i'
 
         waitForStatus = runEitherT $ do
           liftIO $ threadDelay 1000000
@@ -158,14 +158,16 @@ run c = case c of
               liftIO $ threadDelay 5000000
               pure x
 
-        taillog env l =
-          L.source' env (logDataGroup l) (logDataStream l) $$
-            CL.mapM_ (liftIO . T.putStrLn)
+        taillog (DBLog ls) =
+          T.putStrLn $ renderDBLogs ls
 
       l <- orDie renderBorisHttpClientError waitForLog
-      env <- orDie renderRegionError discoverAWSEnv
       as <- async waitForStatus
-      at <- async $ taillog env l
+      at <- async $ taillog l
+      -- FIXME
+      -- We used to need waitEitherCancel for async fetching
+      -- of logs (CloudWatch) and build-status. Now logs are
+      -- fetched from the db.
       f <- waitEitherCancel as at
 
       case f of
@@ -253,7 +255,7 @@ run c = case c of
 
 
 renderBuildData :: BuildData -> BuildId -> Text
-renderBuildData r i =
+renderBuildData r _i =
    T.unlines $ [
        mconcat ["id: ", renderBuildId . buildDataId $ r]
      , mconcat ["project: ", renderProject . buildDataProject $ r]
@@ -264,7 +266,7 @@ renderBuildData r i =
      , mconcat ["end-at: ", maybe "n/a" renderTime . buildDataEndTime $ r]
      , mconcat ["heartbeat-at: ", maybe "n/a" renderTime . buildDataHeartbeatTime $ r]
      , mconcat ["duration: ", maybe "n/a" (uncurry renderDuration) $ (,) <$> buildDataStartTime r <*> buildDataEndTime r]
-     , mconcat ["log: ", maybe "n/a" (const $ "boris log " <> renderBuildId i) . buildDataLog $ r]
+     -- , mconcat ["log: ", maybe "n/a" (const $ "boris log " <> renderBuildId i) . buildDataLog $ r]
      , mconcat ["result: ", maybe "n/a" (\br -> case br of BuildOk -> "successful"; BuildKo -> "failure") . buildDataResult $ r]
      ]
 

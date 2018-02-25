@@ -22,7 +22,6 @@ import qualified Boris.Representation.ApiV1 as ApiV1
 
 import           Data.Aeson (object, (.=))
 import qualified Data.FileEmbed as FileEmbed
-import qualified Data.Text as Text
 
 import           P
 
@@ -391,31 +390,20 @@ route store authentication buildx logx projectx mode = do
   Spock.get ("log" <//> Spock.var) $ \buildId ->
     authenticated authentication store $ \_ -> do
 
-      log'' <- liftError Store.renderFetchError $
+      log' <- liftError Store.renderFetchError $
         Build.logOf store logx (BuildId buildId)
 
       withAccept $ \case
         AcceptHTML -> do
           Spock.setStatus HTTP.notFound404
           Spock.html "TODO: 404 page."
---          case log'' of
---            Nothing -> do
---              Spock.setStatus HTTP.notFound404
---              Spock.html "TODO: 404 page."
---            Just b ->
---              View.render $ View.build b
         AcceptJSON -> do
-          case log'' of
+          case log' of
             Nothing -> do
               Spock.setStatus HTTP.notFound404
               Spock.json ()
             Just logs -> do
-              Spock.json $ ApiV1.GetLogs (Text.intercalate "\n" logs)
---              Spock.stream $ \send flush ->
---                runConduit $
---                  logs =$=
---                    CL.mapM_ (\t -> send (fromByteString t) >> flush)
-
+              Spock.json $ ApiV1.GetLogs logs
 
 newSession :: Mode -> SessionId -> Spock.ActionT IO ()
 newSession mode session =

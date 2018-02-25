@@ -47,6 +47,7 @@ module Boris.Core.Data (
   , parseBuildNamePattern
   , matchesBuild
   , renderDBLogData
+  , renderDBLogs
   ) where
 
 import qualified Data.List as L
@@ -307,6 +308,10 @@ renderTime =
 renderDBLogData :: DBLogData -> Text
 renderDBLogData dbl =
   mconcat [ renderTime $ logEntryTimeStamp dbl, "        ", logEntry dbl ]
+
+renderDBLogs :: [DBLogData] -> Text
+renderDBLogs ls =
+  T.intercalate "\n" $ renderDBLogData <$> ls
 
 data Result =
   Result {

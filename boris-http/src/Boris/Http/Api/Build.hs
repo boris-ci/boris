@@ -137,7 +137,7 @@ byProject :: Store -> Project -> EitherT Store.StoreError IO [Build]
 byProject store project =
   Store.getProjects store project
 
-logOf :: Store -> LogService -> BuildId -> EitherT Store.FetchError IO (Maybe [Text])
+logOf :: Store -> LogService -> BuildId -> EitherT Store.FetchError IO (Maybe LogData)
 logOf store logs i = do
   d <- Store.fetch store i
   case d of
@@ -148,8 +148,8 @@ logOf store logs i = do
         DBLogs -> do
           l' <- Store.fetchLogData store i
           case l' of
-            Just (DBLog l) ->
-              pure $ Just (renderDBLogData <$> l)
+            Just dbl ->
+              pure $ Just dbl
             Nothing ->
               pure Nothing
         DevNull ->
