@@ -222,11 +222,13 @@ run c = case c of
       Just r -> do
         T.putStrLn  $ renderBuildData r i
         exitSuccess
-  Log _i -> do
---    env <- orDie renderRegionError discoverAWSEnv
---    L.source env e i $$ CL.mapM_ (liftIO . T.putStrLn)
-    -- FIX MTH not shit logging
-    pure ()
+  Log i -> do
+    bc <- mkBalanceConfig
+    ll <- orDie renderBorisHttpClientError $ L.fetch bc i
+    case ll of
+      DBLog ls -> do
+        T.putStrLn $ renderDBLogs ls
+        exitSuccess
   Ignore p b -> do
     bc <- mkBalanceConfig
     void . orDie renderBorisHttpClientError $ B.ignore bc p b True
@@ -266,7 +268,6 @@ renderBuildData r _i =
      , mconcat ["end-at: ", maybe "n/a" renderTime . buildDataEndTime $ r]
      , mconcat ["heartbeat-at: ", maybe "n/a" renderTime . buildDataHeartbeatTime $ r]
      , mconcat ["duration: ", maybe "n/a" (uncurry renderDuration) $ (,) <$> buildDataStartTime r <*> buildDataEndTime r]
-     -- , mconcat ["log: ", maybe "n/a" (const $ "boris log " <> renderBuildId i) . buildDataLog $ r]
      , mconcat ["result: ", maybe "n/a" (\br -> case br of BuildOk -> "successful"; BuildKo -> "failure") . buildDataResult $ r]
      ]
 
