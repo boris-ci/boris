@@ -3,6 +3,8 @@
 ROOT="$(git rev-parse --show-toplevel)"
 LOCAL_TMP="$ROOT/tmp"
 LOCAL_GIT="$ROOT/tmp/git"
+DB_STRING="dbname=boris_test host=localhost user=boris_test password=boris_test port=5432"
+#DB_STRING="dbname=boris_test host=docker.for.mac.localhost user=boris_test password=boris_test port=5432"
 
 export PORT=9999
 
@@ -25,7 +27,7 @@ export BORIS_SINGLE_PROJECT_NAME=demo
 export BORIS_SINGLE_PROJECT_REPOSITORY="$LOCAL_GIT"
 
 export BORIS_STORE=postgres
-export BORIS_POSTGRES="dbname=boris_test host=localhost user=boris_test password=boris_test port=5432"
+export BORIS_POSTGRES="$DB_STRING"
 
 rm -rf "$LOCAL_GIT"
 mkdir -p "$LOCAL_GIT"
