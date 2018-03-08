@@ -11,7 +11,6 @@ import qualified Boris.Client.Project as P
 import qualified Boris.Client.Log as L
 import qualified Boris.Client.Validate as V
 
-import           Control.Concurrent.Async (async, waitEitherCancel)
 import           Control.Concurrent (threadDelay)
 import           Control.Monad.IO.Class (liftIO)
 
@@ -37,13 +36,7 @@ import           System.Environment (lookupEnv)
 import           System.IO
 
 import           X.Options.Applicative
-import           X.Control.Monad.Trans.Either (newEitherT, runEitherT)
 import           X.Control.Monad.Trans.Either.Exit (orDie)
-
-data Tail =
-    Tail
-  | NoTail
-    deriving (Eq, Show)
 
 data Cli =
       RemoteCommand RemoteCommand
@@ -51,7 +44,7 @@ data Cli =
     deriving (Eq, Show)
 
 data RemoteCommand =
-    Trigger Tail Project Build (Maybe Ref)
+    Trigger Project Build (Maybe Ref)
   | Discover Project
   | Cancel BuildId
   | List (Maybe Project) (Maybe Build)
@@ -65,7 +58,6 @@ data RemoteCommand =
 data LocalCommand =
   Validate (Maybe FilePath) (Maybe FilePath)
     deriving (Eq, Show)
-
 
 main :: IO ()
 main = do
@@ -91,8 +83,7 @@ parser =
   safeCommand . subparser . mconcat $ [
       command' "build" "Trigger a build" . fmap RemoteCommand $
         Trigger
-          <$> tailP
-          <*> projectP
+          <$> projectP
           <*> buildP
           <*> optional refP
     , command' "discover" "Probe for builds to trigger for a project" . fmap RemoteCommand $
@@ -128,57 +119,30 @@ parser =
 
 run :: RemoteCommand -> IO ()
 run c = case c of
-  Trigger t p b ref -> do
+  Trigger p b ref -> do
     bc <- mkBalanceConfig
     d <- orDie renderBorisHttpClientError $ B.trigger bc p b ref
     T.hPutStrLn stderr $ mconcat ["boris submitted [", renderBuildId . buildDataId $ d, "]"]
-    when (t == Tail) $ do
-      let
-        i = buildDataId d
+    let
+      i = buildDataId d
 
-        waitForLog = do
-          liftIO . T.putStrLn $ "Waiting for build to start..."
-          liftIO $ threadDelay 1000000
-          r <- B.fetch bc i
-          case fmap buildDataId r of
-            Nothing ->
-              waitForLog
-            Just i' ->
-              L.fetch bc i'
+      waitForLog = do
+        liftIO . T.putStrLn $ "Waiting for build to start..."
+        liftIO $ threadDelay 1000000
+        r <- B.fetch bc i
+        case fmap buildDataId r of
+          Nothing ->
+            waitForLog
+          Just i' ->
+            L.fetch bc i'
 
-        waitForStatus = runEitherT $ do
-          liftIO $ threadDelay 1000000
-          r <- B.fetch bc i
-          case fmap buildDataResult r of
-            Nothing ->
-              newEitherT waitForStatus
-            Just Nothing ->
-              newEitherT waitForStatus
-            Just (Just x) -> do
-              liftIO $ threadDelay 5000000
-              pure x
+      taillog (DBLog ls) =
+        T.putStrLn $ renderDBLogs ls
 
-        taillog (DBLog ls) =
-          T.putStrLn $ renderDBLogs ls
+    l <- orDie renderBorisHttpClientError waitForLog
+    taillog l
 
-      l <- orDie renderBorisHttpClientError waitForLog
-      as <- async waitForStatus
-      at <- async $ taillog l
-      -- FIXME
-      -- We used to need waitEitherCancel for async fetching
-      -- of logs (CloudWatch) and build-status. Now logs are
-      -- fetched from the db.
-      f <- waitEitherCancel as at
-
-      case f of
-        Left (Left err) ->
-          bomb $ renderBorisHttpClientError err
-        Left (Right BuildOk) ->
-          exitSuccess
-        Left (Right BuildKo) ->
-          exitFailure
-        Right () ->
-          exitSuccess
+    exitSuccess
 
   Discover p -> do
     bc <- mkBalanceConfig
@@ -302,14 +266,6 @@ buildIdP =
   fmap BuildId . argument textRead . mconcat $ [
       metavar "BUILD_ID"
     , help "Unique build identifier."
-    ]
-
-tailP :: Parser Tail
-tailP =
-  flag NoTail Tail . mconcat $ [
-      short 't'
-    , long "tail"
-    , help "Tail build log after submitting."
     ]
 
 borisrefP :: Parser FilePath
