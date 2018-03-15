@@ -18,16 +18,14 @@ module Boris.Representation.ApiV1 (
   , PostAvowResponse (..)
   , PostCompleteRequest (..)
   , PostCompleteResponse (..)
+  , GetLogs (..)
   ) where
 
 import           Boris.Core.Data
 
 import           Data.Aeson (FromJSON (..), ToJSON (..), Value, object, withObject, (.:), (.:?), (.=))
 
-import           Jebediah.Data (LogGroup (..), LogStream (..))
-
 import           P
-
 
 data GetCommit =
   GetCommit Project [BuildId]
@@ -229,10 +227,6 @@ instance FromJSON GetBuild where
           <*> (o .:? "completed")
           <*> (o .:? "heartbeat")
           <*> ((fmap . fmap) (bool BuildKo BuildOk) $ o .:? "result")
-          <*> (do ll <- o .:? "log"
-                  forM ll $ \l ->
-                    flip (withObject "LogData") l $ \ld ->
-                      LogData <$> (fmap LogGroup $ ld .: "group") <*> (fmap LogStream $ ld .: "stream"))
           <*> ((fmap . fmap) (bool BuildNotCancelled BuildCancelled) $ o .:? "cancelled")
 
 instance ToJSON GetBuild where
@@ -248,7 +242,6 @@ instance ToJSON GetBuild where
       , "completed" .= buildDataEndTime b
       , "heartbeat" .= buildDataHeartbeatTime b
       , "result" .= (flip fmap (buildDataResult b) $ \bb -> case bb of BuildOk -> True; BuildKo -> False)
-      , "log" .= (flip fmap (buildDataLog b) $ \l -> object ["group" .= (logGroup . logDataGroup) l, "stream" .= (logStream . logDataStream) l])
       , "cancelled" .= (flip fmap (buildDataCancelled b) $ \bb -> case bb of BuildCancelled -> True; BuildNotCancelled -> False)
       ]
 
@@ -399,3 +392,20 @@ instance ToJSON PostCompleteResponse where
   toJSON PostCompleteResponse =
     object [
       ]
+
+newtype GetLogs =
+  GetLogs {
+      getLogs :: LogData
+    } deriving (Eq, Ord, Show)
+
+instance ToJSON GetLogs where
+  toJSON (GetLogs (DBLog ls)) =
+    object [
+      "result" .= renderDBLogs ls
+    ]
+
+instance FromJSON GetLogs where
+  parseJSON =
+    -- FIXME
+    withObject "GetLogs" $ \_ ->
+      pure . GetLogs $ DBLog []

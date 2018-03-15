@@ -61,7 +61,7 @@ prop_acknowledge =
       Query.register project build buildid
       ack <- Query.acknowledge buildid group stream
       result <- Query.fetch buildid
-      pure $ (ack, isJust . buildDataStartTime <$> result, isJust . buildDataLog <$> result)
+      pure $ (ack, isJust . buildDataStartTime <$> result)
     actual === (Accept, Just True, Just True)
 
 prop_acknowledge_reject :: Property

@@ -9,8 +9,6 @@ import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day (..), DiffTime, UTCTime (..))
 
-import           Jebediah.Data (LogGroup (..), LogStream (..))
-
 import           Hedgehog
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
@@ -91,7 +89,6 @@ genBuildData =
     <*> Gen.maybe genUTCTime
     <*> Gen.maybe genUTCTime
     <*> Gen.maybe genBuildResult
-    <*> Gen.maybe genLogData
     <*> Gen.maybe genBuildCancelled
 
 genResult :: Gen Result
@@ -109,10 +106,13 @@ genBuildResult =
 
 genLogData :: Gen LogData
 genLogData =
-  LogData
-    <$> (LogGroup <$> Gen.element ["red", "green"])
-    <*> (fmap (LogStream . Text.pack . show) $
-      Gen.int (Range.constant 0 99999))
+  fmap DBLog $ Gen.list (Range.linear 1 100) genDBLogData
+
+genDBLogData :: Gen DBLogData
+genDBLogData =
+  DBLogData
+    <$> genUTCTime
+    <*> (Text.pack <$> Gen.string (Range.linear 0 100) Gen.unicode)
 
 genBuildCancelled :: Gen BuildCancelled
 genBuildCancelled =

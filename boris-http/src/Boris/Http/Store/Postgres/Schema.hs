@@ -63,6 +63,12 @@ schema = [
         , oauth TEXT NOT NULL
         , created TIMESTAMPTZ NOT NULL DEFAULT now()
         , updated TIMESTAMPTZ NOT NULL DEFAULT now()
+  , Migration "create-log" [sql|
+      CREATE TABLE log (
+          build_id BIGINT NOT NULL
+        , log_id SERIAL PRIMARY KEY
+        , logged_at TIMESTAMP WITH TIME_ZONE
+        , log_payload TEXT
         )
     |]
   ]

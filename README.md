@@ -56,8 +56,6 @@ When triggering a build you need to specify:
    to tell it which of those branches to build, when asking for
    a build, Boris will not guess.
 
-Additionally you can also follow the log locally by using `-t|--tail`.
-
 Examples:
 
 ```
@@ -446,10 +444,6 @@ When a build is triggered with Boris, the following happens:
 
 
 Sundry information:
-
-  - While builds are happening, logs are streamed to cloudwatch, they
-    can be streamed locally or in web view while the build is in progress
-    or after it is complete.
 
   - There is a heartbeat process following the build, if a build fails
     to call in after a while (for example if the node dies, it will be

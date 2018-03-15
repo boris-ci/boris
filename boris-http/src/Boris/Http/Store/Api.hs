@@ -13,6 +13,7 @@ module Boris.Http.Store.Api (
   , getBuildIds
   , getQueued
   , fetch
+  , fetchLogData
   , results
   , register
   , cancel
@@ -168,6 +169,16 @@ fetch store build =
       liftIO $ IORef.atomicModifyIORef' refx $ \(n, builds, discovers) ->
         ((n, builds, discovers), head . filter ((==) build . buildDataId) $ builds)
 
+fetchLogData :: Store -> BuildId -> EitherT FetchError IO (Maybe LogData)
+fetchLogData store build =
+  case store of
+    PostgresStore pool ->
+      secondT (Just . DBLog)
+        (firstT (FetchBackendError . PostgresBackendError) . Traction.runDb pool $
+          Postgres.fetchLogs build)
+    MemoryStore _ ->
+      pure Nothing
+
 register :: Store -> Project -> Build -> BuildId -> EitherT RegisterError IO ()
 register store project build buildid =
   case store of
@@ -177,7 +188,7 @@ register store project build buildid =
     MemoryStore refx -> do
       now <- liftIO $ Time.getCurrentTime
       liftIO $ IORef.atomicModifyIORef' refx $ \(n, builds, discovers) ->
-        ((n, (BuildData buildid project build Nothing Nothing (Just now) Nothing Nothing Nothing Nothing Nothing Nothing) : builds, discovers), ())
+        ((n, (BuildData buildid project build Nothing Nothing (Just now) Nothing Nothing Nothing Nothing Nothing) : builds, discovers), ())
 
 
 index :: Store -> BuildId -> Ref -> Commit -> EitherT StoreError IO ()

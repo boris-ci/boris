@@ -6,8 +6,6 @@ module Boris.Http.Route (
     route
   ) where
 
-import           Blaze.ByteString.Builder (fromByteString)
-
 import           Boris.Core.Data
 import qualified Boris.Http.Api.Build as Build
 import qualified Boris.Http.Api.Discover as Discover
@@ -22,24 +20,12 @@ import qualified Boris.Http.Store.Error as Store
 import qualified Boris.Http.View as View
 import qualified Boris.Representation.ApiV1 as ApiV1
 
-import           Control.Monad.IO.Class (MonadIO (..))
-
-import           Data.Aeson (object, (.:), (.=))
-import qualified Data.Aeson as Aeson
-import           Data.Conduit (runConduit, (=$=))
-import qualified Data.Conduit.List as CL
-import           Data.Default (def)
+import           Data.Aeson (object, (.=))
 import qualified Data.FileEmbed as FileEmbed
-import qualified Data.Text as Text
-
-import qualified Network.HTTP.Client as Client
-import           Network.HTTP.Client.TLS (tlsManagerSettings)
-import qualified Network.HTTP.Types as Http
 
 import           P
 
 import           System.IO (IO)
-import qualified System.IO as IO
 
 -- spock experiment
 import qualified Network.HTTP.Types as HTTP
@@ -190,7 +176,7 @@ route store authentication buildx logx projectx mode = do
                   Just ii -> do
                     Spock.setStatus HTTP.created201
                     Spock.setHeader "Location" $ "/build/" <> renderBuildId ii
-                    Spock.json $ ApiV1.GetBuild (BuildData ii project build ref Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
+                    Spock.json $ ApiV1.GetBuild (BuildData ii project build ref Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
 
 
   Spock.get ("project" <//> Spock.var <//> "commit" <//> Spock.var) $ \project' commit' ->
@@ -404,20 +390,20 @@ route store authentication buildx logx projectx mode = do
   Spock.get ("log" <//> Spock.var) $ \buildId ->
     authenticated authentication store $ \_ -> do
 
-      log'' <- liftError Store.renderFetchError $
+      log' <- liftError Store.renderFetchError $
         Build.logOf store logx (BuildId buildId)
 
-      case log'' of
-        Nothing -> do
+      withAccept $ \case
+        AcceptHTML -> do
           Spock.setStatus HTTP.notFound404
           Spock.html "TODO: 404 page."
-        Just logs ->
-          Spock.stream $ \send flush ->
-            runConduit $
-              logs =$=
-                CL.mapM_ (\t -> send (fromByteString t) >> flush)
-
-
+        AcceptJSON -> do
+          case log' of
+            Nothing -> do
+              Spock.setStatus HTTP.notFound404
+              Spock.json ()
+            Just logs -> do
+              Spock.json $ ApiV1.GetLogs logs
 
 newSession :: Mode -> SessionId -> Spock.ActionT IO ()
 newSession mode session =

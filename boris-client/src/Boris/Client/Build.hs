@@ -39,6 +39,7 @@ fetch c i =
   (fmap . fmap) getBuild $
     H.get c ["build", renderBuildId i]
 
+
 cancel :: BalanceConfig -> BuildId -> EitherT BorisHttpClientError IO ()
 cancel c i =
   H.delete c ["build", renderBuildId i]

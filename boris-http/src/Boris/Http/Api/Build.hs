@@ -20,9 +20,7 @@ module Boris.Http.Api.Build (
 
 import           Control.Monad.IO.Class (MonadIO (..))
 
-import           Data.ByteString (ByteString)
 import qualified Data.Text as Text
-import qualified Data.Text.Encoding as Text
 import qualified Data.Time as Time
 
 import           Boris.Core.Data
@@ -34,15 +32,6 @@ import qualified Boris.Http.Store.Api as Store
 import           Boris.Http.Store.Data
 import qualified Boris.Http.Store.Error as Store
 import           Boris.Queue (Request (..), RequestBuild (..))
-
-import           Data.Conduit (Source, (=$=))
-import qualified Data.Conduit.List as Conduit
-
-import qualified Jebediah.Conduit as Jebediah
-import           Jebediah.Data (Following (..), Log (..), Query (..))
-
--- FIX MTH this shouldn't be needed once logging gets sorted
-import           Mismi.Amazonka (Env)
 
 import           P
 
@@ -148,17 +137,21 @@ byProject :: Store -> Project -> EitherT Store.StoreError IO [Build]
 byProject store project =
   Store.getProjects store project
 
-logOf :: Store -> LogService -> BuildId -> EitherT Store.FetchError IO (Maybe (Source IO ByteString))
+logOf :: Store -> LogService -> BuildId -> EitherT Store.FetchError IO (Maybe LogData)
 logOf store logs i = do
   d <- Store.fetch store i
-  case d >>= buildDataLog of
+  case d of
     Nothing ->
       pure Nothing
-    Just ld -> do
+    Just _ -> do
       case logs of
-        CloudWatchLogs env ->
-          pure . Just $ source env ld =$= Conduit.map (\t ->
-            Text.encodeUtf8 $ t <> "\n")
+        DBLogs -> do
+          l' <- Store.fetchLogData store i
+          case l' of
+            Just dbl ->
+              pure $ Just dbl
+            Nothing ->
+              pure Nothing
         DevNull ->
           pure Nothing
 
@@ -169,9 +162,3 @@ avow store i ref commit = do
 complete :: Store -> BuildId -> BuildResult -> EitherT Store.StoreError IO ()
 complete store i result = do
   Store.complete store i result
-
-source :: Env -> LogData -> Source IO Text
-source env (LogData gname sname) =
-  Jebediah.source env gname sname Everything NoFollow
-    =$= Jebediah.unclean
-    =$= Conduit.map logChunk

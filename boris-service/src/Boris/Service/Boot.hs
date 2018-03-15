@@ -9,13 +9,9 @@ module Boris.Service.Boot (
   , BuildService (..)
   ) where
 
-import           Boris.Core.Data
-
 import           Control.Monad.IO.Class (MonadIO (..))
 
 import qualified Data.Map as Map
-
-import           Mismi.Environment (Env)
 
 import           Nest (Parser)
 import qualified Nest
@@ -27,8 +23,7 @@ import           Snooze.Balance.Control (BalanceConfig (..))
 import           System.IO (IO)
 
 data LogService =
-    CloudWatchLogs Env Environment
-  | Std
+    Std
 
 data DiscoverService =
     PushDiscover BalanceConfig
@@ -41,11 +36,10 @@ data BuildService =
 data Boot =
   Boot LogService DiscoverService BuildService
 
-boot :: MonadIO m => IO Env -> IO BalanceConfig -> Parser m Boot
-boot mkEnv mkHttp = do
+boot :: MonadIO m => IO BalanceConfig -> Parser m Boot
+boot mkHttp = do
   logs <- join $ Nest.setting "BORIS_LOG_SERVICE" (Map.fromList [
-      ("cloudwatch", cloudwatch mkEnv)
-    , ("std", std)
+      ("std", std)
     ]) `Nest.withDefault` std
 
   discover <- join $ Nest.setting "BORIS_DISCOVER_SERVICE_NOTIFICATION" (Map.fromList [
@@ -59,12 +53,6 @@ boot mkEnv mkHttp = do
     ]) `Nest.withDefault` pure LogBuild
 
   pure $ Boot logs discover build
-
-cloudwatch :: MonadIO m => IO Env -> Parser m LogService
-cloudwatch mkEnv =
-  CloudWatchLogs
-    <$> liftIO mkEnv
-    <*> (Environment <$> Nest.string "BORIS_ENVIRONMENT")
 
 std :: Monad m => Parser m LogService
 std =
