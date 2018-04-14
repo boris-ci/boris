@@ -141,17 +141,17 @@ prop_user =
 prop_session :: Property
 prop_session =
   property $ do
-    sessionId<- liftIO newSessionToken
+    sessionId' <- liftIO newSessionToken
     github <- forAll Gen.genGithubUser
     oauth <- forAll Gen.genGithubOAuth
-    let session = Session sessionId oauth
+    let session = Session sessionId' oauth
     (user, actual) <- db $ do
       user <- Query.addUser github
       Query.newSession session user
-      Query.tickSession sessionId
-      result <- Query.getSession sessionId
+      Query.tickSession sessionId'
+      result <- Query.getSession sessionId'
       pure (user, result)
-    actual === (Just $ AuthenticatedUser user $ Session sessionId oauth)
+    actual === (Just $ AuthenticatedUser user $ Session sessionId' oauth)
 
 tests :: IO Bool
 tests =
