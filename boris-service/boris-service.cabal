@@ -115,8 +115,6 @@ executable boris-build
                     , ambiata-boris-client
                     , ambiata-boris-service
                     , ambiata-boris-queue
-                    , ambiata-mismi-core
-                    , ambiata-mismi-dynamodb
                     , ambiata-p
                     , ambiata-snooze
                     , ambiata-twine
