@@ -112,6 +112,7 @@ executable boris-http
                     , ambiata-boris-http
                     , ambiata-boris-queue
                     , ambiata-mismi-core
+                    , ambiata-mismi-dynamodb
                     , ambiata-mismi-s3
                     , ambiata-p
                     , ambiata-twine
