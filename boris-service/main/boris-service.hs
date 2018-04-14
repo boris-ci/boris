@@ -52,7 +52,7 @@ main = do
     cenv = configureRetries env
 
   Boot.Boot logx discoverx buildx <-
-    Nest.force $ Boot.boot (pure cenv) mkBalanceConfig
+    Nest.force $ Boot.boot mkBalanceConfig
 
   asyncs <- mapM async $ L.replicate n (run logx buildx discoverx cenv queue work pin)
   results <- forM asyncs $ waitCatch
