@@ -5,7 +5,6 @@ module Test.Boris.Http.Gen where
 
 import           Boris.Http.Data
 
-import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
 

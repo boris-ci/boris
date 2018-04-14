@@ -11,7 +11,6 @@ import qualified Boris.Service.Discover as Discover
 import           Data.Default (def)
 import           Data.String (String)
 
-import           Mismi (renderRegionError, discoverAWSEnv)
 import qualified Nest
 
 import           Network.Connection (ProxySettings (..))
@@ -74,15 +73,11 @@ run :: Cli -> IO ()
 run c = case c of
   DiscoverCommand buildid project repository -> do
     let
-      mkEnv =
-       -- FIX cloudwatch retries?
-       orDie renderRegionError discoverAWSEnv
-
       path =
         WorkspacePath "."
 
     Boot.Boot logs discovers _ <-
-      Nest.force $ Boot.boot mkEnv mkBalanceConfig
+      Nest.force $ Boot.boot mkBalanceConfig
 
     orDie Discover.renderDiscoverError $
       Discover.discover logs discovers path buildid project repository
@@ -90,13 +85,8 @@ run c = case c of
     exitSuccess
 
   BuildCommand _buildid _project _repository _build _ref -> do
-    let
-      mkEnv =
-       -- FIX cloudwatch retries
-       orDie renderRegionError discoverAWSEnv
-
     Boot.Boot _logs _ _build <-
-      Nest.force $ Boot.boot mkEnv mkBalanceConfig
+      Nest.force $ Boot.boot mkBalanceConfig
 
     -- TODO implement
     exitSuccess
