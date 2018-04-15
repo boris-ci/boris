@@ -7,7 +7,6 @@ import qualified Boris.Http.Db.Schema as Schema
 import qualified Nest
 
 import           Mismi (discoverAWSEnv, renderRegionError)
-import           Mismi.DynamoDB.Control (configureRetries)
 
 import           P
 
@@ -27,8 +26,7 @@ main :: IO ()
 main = do
   let
     mkEnv = do
-     env <- orDie renderRegionError discoverAWSEnv
-     pure $ configureRetries env
+     orDie renderRegionError discoverAWSEnv
 
   Boot.Boot mode authentication builds logs projectx pool <-
     Nest.force $ Boot.boot mkEnv
