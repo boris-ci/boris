@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
-module Test.IO.Boris.Http.Store.Postgres.Schema where
+module Test.IO.Boris.Http.Db.Schema where
 
 import           Control.Monad.Morph (hoist, lift)
 

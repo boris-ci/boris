@@ -32,6 +32,8 @@ module Boris.Core.Data (
   , BuildTree (..)
   , BuildTreeRef (..)
   , QueueSize (..)
+  , Agent (..)
+  , AgentId (..)
   , renderBuildResult
   , parseBuildResult
   , renderRegistration
@@ -339,4 +341,15 @@ data BuildTreeRef =
 newtype QueueSize =
   QueueSize {
       getQueueSize :: Int
+    } deriving (Eq, Ord, Show)
+
+
+data Agent =
+  Agent {
+      agentTags :: [Text]
+    } deriving (Eq, Ord, Show)
+
+newtype AgentId =
+  AgentId {
+      agentId :: Int64
     } deriving (Eq, Ord, Show)

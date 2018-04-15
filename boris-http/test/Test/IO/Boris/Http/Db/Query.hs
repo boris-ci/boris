@@ -1,11 +1,11 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
-module Test.IO.Boris.Http.Store.Postgres.Query  where
+module Test.IO.Boris.Http.Db.Query  where
 
 import           Boris.Core.Data
 import           Boris.Http.Data
-import qualified Boris.Http.Store.Postgres.Query as Query
+import qualified Boris.Http.Db.Query as Query
 
 import           Control.Monad.IO.Class (MonadIO (..))
 

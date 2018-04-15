@@ -7,28 +7,21 @@ module Boris.Http.Api.Result (
 
 
 import           Boris.Core.Data
-import qualified Boris.Http.Store.Api as Store
-import           Boris.Http.Store.Data
-import qualified Boris.Http.Store.Error as Store
+import qualified Boris.Http.Db.Query as Query
 
 import           P
 
 import           System.IO (IO)
 
+import           Traction.Control (MonadDb)
+
 import           X.Control.Monad.Trans.Either (EitherT)
 
+scoreboard :: MonadDb m => m [Result]
+scoreboard =
+  Query.results
 
-import           Control.Monad.IO.Class (liftIO)
-import qualified System.IO as IO
-
-
-scoreboard :: Store -> EitherT Store.StoreError IO [Result]
-scoreboard store = do
-  x <- Store.results store
-  liftIO . IO.print $ x
-  pure x
-
-status :: Store -> EitherT Store.StoreError IO [Result]
-status store =
+status :: MonadDb m => m [Result]
+status =
   filter ((==) BuildKo . resultBuildResult)
-    <$> scoreboard store
+    <$> scoreboard

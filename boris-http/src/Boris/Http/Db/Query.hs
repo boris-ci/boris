@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeOperators #-}
-module Boris.Http.Store.Postgres.Query (
+module Boris.Http.Db.Query (
     tick
   , fetch
   , fetchLogs

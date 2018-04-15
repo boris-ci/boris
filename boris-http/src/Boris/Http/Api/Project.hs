@@ -10,10 +10,9 @@ module Boris.Http.Api.Project (
 
 import           Boris.Core.Data
 import           Boris.Http.Boot
+import qualified Boris.Http.Db.Query as Query
 import qualified Boris.Http.Service as Service
-import qualified Boris.Http.Store.Api as Store
-import           Boris.Http.Store.Data
-import qualified Boris.Http.Store.Error as Store
+
 import           Boris.Queue (Request (..), RequestDiscover (..))
 
 import           Control.Monad.IO.Class (liftIO)
@@ -31,6 +30,9 @@ import qualified Mismi.S3 as S3
 import           P
 
 import           System.IO (IO)
+
+import           Traction.Control (DbPool)
+import qualified Traction.Control as Traction
 
 import           X.Control.Monad.Trans.Either (EitherT, left, mapEitherT)
 
@@ -94,17 +96,17 @@ renderConfigError err =
       mconcat ["Service could not parse repostository configuraiton: ", t]
 
 -- FIX MTH error type
-discover :: Store -> BuildService -> ProjectMode -> Project -> EitherT Text IO (Maybe BuildId)
-discover store buildx projectx project = do
+discover :: DbPool -> BuildService -> ProjectMode -> Project -> EitherT Text IO (Maybe BuildId)
+discover pool buildx projectx project = do
   r <- firstT renderConfigError (pick projectx project)
   case r of
     Nothing ->
       pure Nothing
     Just repository -> do
-      i <- firstT Store.renderStoreError $
-        Store.tick store
-      firstT Store.renderStoreError $
-        Store.discover store i project
+      i <- firstT Traction.renderDbError . Traction.runDb pool $
+        Query.tick
+      firstT Traction.renderDbError . Traction.runDb pool $
+        Query.discover i project
       let req = RequestDiscover' $ RequestDiscover i project repository
       firstT Service.renderServiceError $
         Service.put buildx req

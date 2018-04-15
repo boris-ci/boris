@@ -9,7 +9,7 @@ module Boris.Http.Spock (
   , withContentType
 
   , liftError
-  , liftStoreError
+  , liftDbError
 
   , authenticated
   , withAuthentication
@@ -18,8 +18,7 @@ module Boris.Http.Spock (
 import qualified Boris.Http.Api.Session as Session
 import           Boris.Http.Boot (AuthenticationMode (..))
 import           Boris.Http.Data
-import           Boris.Http.Store.Data
-import qualified Boris.Http.Store.Error as Store
+import qualified Boris.Http.Db.Query as Query
 import qualified Boris.Http.View as View
 
 import           Control.Monad.IO.Class (MonadIO (..))
@@ -34,6 +33,9 @@ import           P
 
 import           System.IO (IO)
 import qualified System.IO as IO
+
+import           Traction.Control (DbPool, DbError)
+import qualified Traction.Control as Traction
 
 import qualified Web.Spock.Core as Spock
 
@@ -50,9 +52,9 @@ liftError render value =
     Right v ->
       pure v
 
-liftStoreError :: EitherT Store.StoreError IO a -> Spock.ActionT IO a
-liftStoreError =
-  liftError Store.renderStoreError
+liftDbError :: EitherT DbError IO a -> Spock.ActionT IO a
+liftDbError =
+  liftError Traction.renderDbError
 
 data Accept =
     AcceptHTML
@@ -116,9 +118,9 @@ withContentType handler = do
       in
         handler $ finder mimeTypes
 
-authenticated :: AuthenticationMode -> Store -> (AuthenticatedBy -> Spock.ActionT IO ()) -> Spock.ActionT IO ()
-authenticated mode store handler =
-  withAuthentication mode store $ \x -> case x of
+authenticated :: AuthenticationMode -> DbPool -> (AuthenticatedBy -> Spock.ActionT IO ()) -> Spock.ActionT IO ()
+authenticated mode pool handler =
+  withAuthentication mode pool $ \x -> case x of
     Authenticated s u ->
       handler (AuthenticatedByOAuth s u)
     AuthenticatedNone ->
@@ -131,17 +133,17 @@ authenticated mode store handler =
       Spock.setStatus HTTP.status403
       Spock.html "not authorized"
 
-withAuthentication :: AuthenticationMode -> Store -> (Authenticated -> Spock.ActionT IO ()) -> Spock.ActionT IO ()
-withAuthentication mode store handler =
+withAuthentication :: AuthenticationMode -> DbPool -> (Authenticated -> Spock.ActionT IO ()) -> Spock.ActionT IO ()
+withAuthentication mode pool handler =
   case mode of
     GithubAuthentication manager client secret -> do
       v <- fmap SessionId <$> Spock.cookie "boris"
       case v of
         Nothing ->
           handler NotAuthenticated
-        Just sessionId' -> do
+        Just sessionId -> do
           result <- liftError Session.renderAuthenticationError $
-            Session.check store manager client secret sessionId'
+            Session.check pool manager client secret sessionId
           case result of
             Nothing ->
               handler $ WasAuthenticated sessionId'

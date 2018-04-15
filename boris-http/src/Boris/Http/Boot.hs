@@ -13,7 +13,6 @@ module Boris.Http.Boot (
 
 import           Boris.Core.Data
 import           Boris.Http.Data
-import           Boris.Http.Store.Data
 import           Boris.Queue (BuildQueue (..), Request (..), RequestBuild (..), RequestDiscover (..))
 import qualified Boris.Service.Boot as Service
 import qualified Boris.Service.Build as Build
@@ -44,6 +43,7 @@ import           Snooze.Balance.Data (BalanceEntry (..), BalanceTable (..), Host
 
 import           System.IO (IO)
 
+import           Traction.Control (DbPool)
 import qualified Traction.Control as Traction
 
 import           X.Control.Monad.Trans.Either (runEitherT)
@@ -74,7 +74,7 @@ data ProjectMode =
   | SingleProjectMode Project Repository
 
 data Boot =
-  Boot Mode AuthenticationMode BuildService LogService ProjectMode Store
+  Boot Mode AuthenticationMode BuildService LogService ProjectMode DbPool
 
 boot :: MonadIO m => IO Env -> Parser m Boot
 boot mkEnv = do
@@ -83,10 +83,7 @@ boot mkEnv = do
     , ("development", DevelopmentMode)
     ]) `Nest.withDefault` ProductionMode
 
-  store <- join $ Nest.setting "BORIS_STORE" (Map.fromList [
-      ("postgres", postgres)
-    , ("memory", memory)
-    ]) `Nest.withDefault` postgres
+  pool <- postgres
 
   auth <- join $ Nest.setting "BORIS_AUTHENTICATION" (Map.fromList [
       ("github", github)
@@ -110,7 +107,7 @@ boot mkEnv = do
     , ("whitelist", whitelist mkEnv)
     ]) `Nest.withDefault` whitelist mkEnv
 
-  pure $ Boot mode auth worker logs project store
+  pure $ Boot mode auth worker logs project pool
 
 github :: MonadIO m => Parser m AuthenticationMode
 github = do
@@ -180,16 +177,10 @@ single =
     <$> (Project <$> Nest.string "BORIS_SINGLE_PROJECT_NAME")
     <*> (Repository <$> Nest.string "BORIS_SINGLE_PROJECT_REPOSITORY")
 
-postgres :: MonadIO m => Parser m Store
+postgres :: MonadIO m => Parser m DbPool
 postgres = do
   conn <- Nest.string "BORIS_POSTGRES"
-  pool <- liftIO $ Traction.newPool conn
-  pure $ PostgresStore pool
-
-memory :: MonadIO m => Parser m Store
-memory = do
-  ref <- liftIO $ IORef.newIORef (1, [], [])
-  pure $ MemoryStore ref
+  liftIO $ Traction.newPool conn
 
 address :: Monad m => ByteString -> Parser m Address
 address name = do

@@ -26,86 +26,85 @@ import qualified Data.Time as Time
 import           Boris.Core.Data
 import qualified Boris.Http.Api.Project as Project
 import           Boris.Http.Boot
+import qualified Boris.Http.Db.Query as Query
 
 import qualified Boris.Http.Service as Service
-import qualified Boris.Http.Store.Api as Store
-import           Boris.Http.Store.Data
-import qualified Boris.Http.Store.Error as Store
 import           Boris.Queue (Request (..), RequestBuild (..))
 
 import           P
 
 import           System.IO (IO)
 
+import           Traction.Control (DbPool, DbError)
+import qualified Traction.Control as Traction
+
 import           X.Control.Monad.Trans.Either (EitherT)
 
 data BuildError =
-    BuildStoreError Store.StoreError
-  | BuildRegisterError Store.RegisterError
+    BuildDbError Traction.DbError
   | BuildConfigError Project.ConfigError
   | BuildServiceError Service.ServiceError
 
 renderBuildError :: BuildError -> Text
 renderBuildError err =
   case err of
-    BuildStoreError e ->
-      mconcat ["Build error via store backend: ", Store.renderStoreError e]
-    BuildRegisterError e ->
-      mconcat ["Build registration error via store backend: ", Store.renderRegisterError e]
+    BuildDbError e ->
+      mconcat ["Build error via db: ", Traction.renderDbError e]
     BuildConfigError e ->
       mconcat ["Build project configuration error: ", Project.renderConfigError e]
     BuildServiceError e ->
       mconcat ["Build service error: ", Service.renderServiceError e]
 
-byId :: Store -> BuildId -> EitherT Store.FetchError IO (Maybe BuildData)
-byId store build = do
-  result <- Store.fetch store build
-  for result $ \r ->
-    case buildDataResult r of
-      Nothing ->
-        case buildDataHeartbeatTime r of
-          Nothing -> do
-            case buildDataCancelled r of
-              Nothing ->
-                pure r
-              Just BuildNotCancelled ->
-                pure r
-              Just BuildCancelled ->
-                pure $ r { buildDataResult = Just . fromMaybe BuildKo . buildDataResult $ r }
-          Just h -> do
-            now <- liftIO Time.getCurrentTime
-            if Time.diffUTCTime now h > 120
-              then do
-                firstT Store.FetchBackendError $
-                  Store.cancelx store build
-                pure $ r { buildDataResult = Just . fromMaybe BuildKo . buildDataResult $ r }
-              else
-                pure r
-      Just _ ->
-        pure r
+byId :: DbPool -> BuildId -> EitherT DbError IO (Maybe BuildData)
+byId pool build =
+  Traction.runDb pool $ do
+    result <- Query.fetch build
+    for result $ \r ->
+      case buildDataResult r of
+        Nothing ->
+          case buildDataHeartbeatTime r of
+            Nothing -> do
+              case buildDataCancelled r of
+                Nothing ->
+                  pure r
+                Just BuildNotCancelled ->
+                  pure r
+                Just BuildCancelled ->
+                  pure $ r { buildDataResult = Just . fromMaybe BuildKo . buildDataResult $ r }
+            Just h -> do
+              now <- liftIO Time.getCurrentTime
+              if Time.diffUTCTime now h > 120
+                then do
+                  Query.cancel build
+                  pure $ r { buildDataResult = Just . fromMaybe BuildKo . buildDataResult $ r }
+                else
+                  pure r
+        Just _ ->
+          pure r
 
-list :: Store -> Project -> Build -> EitherT Store.StoreError IO BuildTree
-list store project build = do
-  refs <- Store.getBuildRefs store project build
+list :: DbPool -> Project -> Build -> EitherT DbError IO BuildTree
+list pool project build = Traction.runDb pool $ do
+  refs <- Query.getBuildRefs project build
   BuildTree project build <$> (for refs $ \ref ->
-    BuildTreeRef ref <$> Store.getBuildIds store project build ref)
+    BuildTreeRef ref <$> Query.getBuildIds project build ref)
 
-queued :: Store -> Project -> Build -> EitherT Store.StoreError IO [BuildId]
-queued store project build =
-  Store.getQueued store project build
+queued :: DbPool -> Project -> Build -> EitherT DbError IO [BuildId]
+queued pool project build =
+  Traction.runDb pool $
+  Query.getQueued project build
 
-submit :: Store -> BuildService -> ProjectMode -> Project -> Build -> Maybe Ref -> EitherT BuildError IO (Maybe BuildId)
-submit store buildx projectx project build ref = do
+submit :: DbPool -> BuildService -> ProjectMode -> Project -> Build -> Maybe Ref -> EitherT BuildError IO (Maybe BuildId)
+submit pool buildx projectx project build ref = do
   repository' <- firstT BuildConfigError $
     Project.pick projectx project
   case repository' of
     Nothing ->
       pure Nothing
     Just repository -> do
-      i <- firstT BuildStoreError $
-        Store.tick store
-      firstT BuildRegisterError $
-        Store.register store project build i
+      i <- firstT BuildDbError . Traction.runDb pool $ do
+        i <- Query.tick
+        Query.register project build i
+        pure i
       let
         normalised = with ref $ \rr ->
           if Text.isPrefixOf "refs/" . renderRef $ rr then rr else Ref . ((<>) "refs/heads/") . renderRef $ rr
@@ -114,51 +113,58 @@ submit store buildx projectx project build ref = do
         Service.put buildx req
       pure $ Just i
 
-heartbeat :: Store -> BuildId -> EitherT Store.StoreError IO BuildCancelled
-heartbeat store buildId =
-  Store.heartbeat store buildId
+heartbeat :: DbPool -> BuildId -> EitherT DbError IO BuildCancelled
+heartbeat pool  buildId =
+  Traction.runDb pool $
+    Query.heartbeat buildId
 
-acknowledge :: Store -> BuildId -> EitherT Store.StoreError IO Acknowledge
-acknowledge store buildId =
-  Store.acknowledge store buildId
+acknowledge :: DbPool -> BuildId -> EitherT DbError IO Acknowledge
+acknowledge pool buildId =
+  Traction.runDb pool $
+    Query.acknowledge' buildId
 
-cancel :: Store -> BuildId -> EitherT Store.FetchError IO (Maybe ())
-cancel store i = do
-  d <- Store.fetch store i
-  for d $ \_ ->
-    firstT Store.FetchBackendError $ do
-      Store.cancel store i
+cancel :: DbPool -> BuildId -> EitherT DbError IO (Maybe ())
+cancel pool i =
+  Traction.runDb pool $ do
+    d <- Query.fetch i
+    for d $ \_ ->
+        Query.cancel i
 
-byCommit :: Store -> Project -> Commit -> EitherT Store.StoreError IO [BuildId]
-byCommit store project commit =
-  Store.getProjectCommitBuildIds store project commit
+byCommit :: DbPool -> Project -> Commit -> EitherT DbError IO [BuildId]
+byCommit pool project commit =
+  Traction.runDb pool $
+    Query.getProjectCommitBuildIds project commit
 
-byProject :: Store -> Project -> EitherT Store.StoreError IO [Build]
-byProject store project =
-  Store.getProjects store project
+byProject :: DbPool -> Project -> EitherT DbError IO [Build]
+byProject pool project =
+  Traction.runDb pool $
+    Query.getProjects project
 
-logOf :: Store -> LogService -> BuildId -> EitherT Store.FetchError IO (Maybe LogData)
-logOf store logs i = do
-  d <- Store.fetch store i
-  case d of
-    Nothing ->
-      pure Nothing
-    Just _ -> do
-      case logs of
-        DBLogs -> do
-          l' <- Store.fetchLogData store i
-          case l' of
-            Just dbl ->
-              pure $ Just dbl
-            Nothing ->
-              pure Nothing
-        DevNull ->
-          pure Nothing
+logOf :: DbPool -> LogService -> BuildId -> EitherT DbError IO (Maybe LogData)
+logOf pool logs i =
+  Traction.runDb pool $ do
+    d <- Query.fetch pool
+    case d of
+      Nothing ->
+        pure Nothing
+      Just _ -> do
+        case logs of
+          DBLogs -> do
+            l' <- Query.fetchLogData i
+            case l' of
+              Just dbl ->
+                pure $ Just dbl
+              Nothing ->
+                pure Nothing
+          DevNull ->
+            pure Nothing
 
-avow :: Store -> BuildId -> Ref -> Commit -> EitherT Store.StoreError IO ()
-avow store i ref commit = do
-  Store.index store i ref commit
+avow :: DbPool -> BuildId -> Ref -> Commit -> EitherT DbError IO ()
+avow pool i ref commit =
+  Traction.runDb pool $
+    Query.index i ref commit
 
-complete :: Store -> BuildId -> BuildResult -> EitherT Store.StoreError IO ()
-complete store i result = do
-  Store.complete store i result
+complete :: DbPool -> BuildId -> BuildResult -> EitherT DbError IO ()
+complete pool i result =
+  void . Traction.runDb pool $
+    Query.complete i result

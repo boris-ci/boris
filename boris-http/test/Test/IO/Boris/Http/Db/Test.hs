@@ -1,13 +1,13 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
-module Test.IO.Boris.Http.Store.Postgres.Test (
+module Test.IO.Boris.Http.Db.Test (
     db
   , checkDb
   , mkPool
   ) where
 
-import           Boris.Http.Store.Postgres.Schema
+import           Boris.Http.Db.Schema
 
 import           Control.Monad.IO.Class (MonadIO (..))
 import           Control.Monad.Morph (hoist, lift)
