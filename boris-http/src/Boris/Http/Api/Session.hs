@@ -10,9 +10,9 @@ module Boris.Http.Api.Session (
 
 
 import           Boris.Http.Data
-import qualified Boris.Http.Store.Api as Store
-import           Boris.Http.Store.Data
-import qualified Boris.Http.Store.Error as Store
+import qualified Boris.Http.Service as Service
+import qualified Boris.Http.Db.Query as Query
+import           Boris.Queue (Request (..), RequestBuild (..))
 
 import           Control.Monad.IO.Class (MonadIO (..))
 
@@ -35,11 +35,14 @@ import           P
 
 import           System.IO (IO)
 
+import           Traction.Control (DbPool, DbError)
+import qualified Traction.Control as Traction
+
 import           X.Control.Monad.Trans.Either (EitherT, newEitherT)
 
 
 data AuthenticationError =
-    AuthenticationStoreError Store.StoreError
+    AuthenticationDbError DbError
   | AuthenticationGithubDecodeError Text
   | AuthenticationGithubError Github.Error
     deriving (Show)
@@ -47,27 +50,27 @@ data AuthenticationError =
 renderAuthenticationError :: AuthenticationError -> Text
 renderAuthenticationError err =
   case err of
-   AuthenticationStoreError e ->
-      mconcat ["Authentication error via store backend: ", Store.renderStoreError e]
+   AuthenticationDbError e ->
+      mconcat ["Authentication error via db: ", Traction.renderDbError e]
    AuthenticationGithubDecodeError e ->
       mconcat ["Authentication error decoding github response: ", e]
    AuthenticationGithubError e ->
       mconcat ["Authentication error contacting github: ", Text.pack . show $ e]
 
-check :: Store -> Client.Manager -> GithubClient -> GithubSecret -> SessionId -> EitherT AuthenticationError IO (Maybe AuthenticatedUser)
-check store _manager _client _secret sessionId' = do
-  a <- firstT AuthenticationStoreError $
-    Store.getSession store sessionId'
+check :: DbPool -> Client.Manager -> GithubClient -> GithubSecret -> SessionId -> EitherT AuthenticationError IO (Maybe AuthenticatedUser)
+check pool _manager _client _secret sessionId = do
+  a <- firstT AuthenticationDbError . Traction.runDb pool $
+    Query.getSession sessionId
   case a of
     Nothing ->
       pure Nothing
     Just _ -> do
-      firstT AuthenticationStoreError $
-        Store.tickSession store sessionId'
+      firstT AuthenticationDbError . Traction.runDb pool $
+        Query.tickSession sessionId
       pure a
 
-authenticate :: Store -> Client.Manager -> GithubClient -> GithubSecret -> GithubCode -> EitherT AuthenticationError IO Session
-authenticate store manager client secret code = do
+authenticate :: DbPool -> Client.Manager -> GithubClient -> GithubSecret -> GithubCode -> EitherT AuthenticationError IO Session
+authenticate pool manager client secret code = do
   response <- liftIO $ Client.httpLbs def {
       Client.host = "github.com"
     , Client.port = 443
@@ -100,25 +103,25 @@ authenticate store manager client secret code = do
         (GithubLogin . Github.untagName . Github.userLogin $ user)
         (fmap GithubName . Github.userName $ user)
         (fmap GithubEmail . Github.userEmail $ user)
-  mu <- firstT AuthenticationStoreError $
-    Store.userByGithubId store (githubUserId githubUser)
+  mu <- firstT AuthenticationDbError . Traction.runDb pool $
+    Query.userByGithubId (githubUserId githubUser)
   u <- case mu of
     Nothing ->
-      firstT AuthenticationStoreError $
-        Store.addUser store githubUser
+      firstT AuthenticationDbError . Traction.runDb pool $
+        Query.addUser githubUser
     Just u ->
       if githubUser == userGithub u then
         pure u
       else do
-        firstT AuthenticationStoreError $
-          Store.updateUser store (u { userGithub = githubUser})
+        firstT AuthenticationDbError . Traction.runDb pool $
+          Query.updateUser (u { userGithub = githubUser})
         pure u
   s <- newSessionToken
   let
     session = Session s (GithubOAuth access)
 
-  firstT AuthenticationStoreError $
-    Store.newSession store session u
+  firstT AuthenticationDbError . Traction.runDb pool $
+    Query.newSession session u
   pure session
 
 newtype AccessToken =

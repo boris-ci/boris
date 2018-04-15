@@ -15,8 +15,6 @@ import qualified Boris.Http.Api.Session as Session
 import           Boris.Http.Boot
 import           Boris.Http.Data
 import           Boris.Http.Spock
-import           Boris.Http.Store.Data
-import qualified Boris.Http.Store.Error as Store
 import qualified Boris.Http.View as View
 import qualified Boris.Representation.ApiV1 as ApiV1
 
@@ -27,6 +25,9 @@ import           P
 
 import           System.IO (IO)
 
+import           Traction.Control (DbPool)
+import qualified Traction.Control as Traction
+
 -- spock experiment
 import qualified Network.HTTP.Types as HTTP
 import qualified Network.Wai.Middleware.RequestLogger as RequestLogger
@@ -36,8 +37,8 @@ import           Web.Spock.Core ((<//>))
 import qualified Web.Spock.Core as Spock
 
 
-route :: Store -> AuthenticationMode -> BuildService -> LogService -> ProjectMode -> Mode -> Spock.SpockT IO ()
-route store authentication buildx logx projectx mode = do
+route :: DbPool -> AuthenticationMode -> BuildService -> LogService -> ProjectMode -> Mode -> Spock.SpockT IO ()
+route pool authentication buildx logx projectx mode = do
   case mode of
     DevelopmentMode -> do
       Spock.middleware RequestLogger.logStdoutDev
@@ -51,7 +52,7 @@ route store authentication buildx logx projectx mode = do
       Spock.middleware . StaticEmbedded.static $ $(FileEmbed.embedDir "assets")
 
   Spock.get Spock.root $ do
-    withAuthentication authentication store $ \a -> case a of
+    withAuthentication authentication pool $ \a -> case a of
       Authenticated _ _ ->
         View.render View.dashboard
       AuthenticatedNone ->
@@ -83,19 +84,19 @@ route store authentication buildx logx projectx mode = do
             Spock.html "TODO: 404 page."
           Just code -> do
             session <- liftError (Session.renderAuthenticationError) $
-              Session.authenticate store manager client secret code
-            newSession mode (sessionId session)
+              Session.authenticate pool manager client secret code
+            newSession mode (sessionIdentifier session)
             Spock.redirect "/"
       NoAuthentication -> do
         Spock.redirect $ "/"
 
   Spock.get "status" $
-    authenticated authentication store $ \_ -> do
-      builds <- liftStoreError $ Result.status store
+    authenticated authentication pool $ \_ -> do
+      builds <- liftDbError . Traction.runDb pool $ Result.status
       View.render $ View.status builds
 
   Spock.get "project" $
-    authenticated authentication store $ \_ -> do
+    authenticated authentication pool $ \_ -> do
       projects <- liftError Project.renderConfigError $
         Project.list projectx
       withAccept $ \case
@@ -105,8 +106,8 @@ route store authentication buildx logx projectx mode = do
           Spock.json $ ApiV1.GetProjects projects
 
   Spock.get ("project" <//> Spock.var) $ \project ->
-    authenticated authentication store $ \_ -> do
-      builds <- liftStoreError $ Build.byProject store (Project project)
+    authenticated authentication pool $ \_ -> do
+      builds <- liftDbError $ Build.byProject pool (Project project)
       withAccept $ \case
         AcceptHTML ->
           View.render $ View.project (Project project) builds
@@ -114,9 +115,9 @@ route store authentication buildx logx projectx mode = do
           Spock.json $ ApiV1.GetProject (Project project) builds
 
   Spock.post ("project" <//> Spock.var) $ \project ->
-    authenticated authentication store $ \_ -> do
+    authenticated authentication pool $ \_ -> do
       buildId <- liftError id $
-        Project.discover store buildx projectx (Project project)
+        Project.discover pool buildx projectx (Project project)
       case buildId of
         Nothing -> do
           -- TODO should have a body
@@ -128,22 +129,22 @@ route store authentication buildx logx projectx mode = do
           Spock.json ()
 
   Spock.get ("project" <//> Spock.var <//> "build" <//> Spock.var) $ \project' build'  ->
-    authenticated authentication store $ \_ -> do
+    authenticated authentication pool $ \_ -> do
       let
         project = Project project'
         build = Build build'
 
-      builds <- liftStoreError $ Build.list store project build
+      builds <- liftDbError $ Build.list pool project build
       withAccept $ \case
         AcceptHTML -> do
-          queued <- liftStoreError $ Build.queued store project build
+          queued <- liftDbError $ Build.queued pool project build
           View.render $ View.builds builds queued
         AcceptJSON ->
           Spock.json $ ApiV1.GetBuilds builds
 
 
   Spock.post ("project" <//> Spock.var <//> "build" <//> Spock.var) $ \project' build' ->
-    authenticated authentication store $ \_ -> do
+    authenticated authentication pool $ \_ -> do
       let
         project = Project project'
         build = Build build'
@@ -153,7 +154,7 @@ route store authentication buildx logx projectx mode = do
           ContentTypeForm -> do
             ref <- fmap Ref <$> Spock.param "ref"
             i <- liftError Build.renderBuildError $
-              Build.submit store buildx projectx project build ref
+              Build.submit pool buildx projectx project build ref
             case i of
               Nothing -> do
                 Spock.setStatus HTTP.notFound404
@@ -169,7 +170,7 @@ route store authentication buildx logx projectx mode = do
                 Spock.json $ object ["error" .= ("could not parse ref." :: Text)]
               Just (ApiV1.PostBuildRequest ref) -> do
                 i <- liftError Build.renderBuildError $
-                  Build.submit store buildx projectx project build ref
+                  Build.submit pool buildx projectx project build ref
                 case i of
                   Nothing ->
                     Spock.setStatus HTTP.notFound404
@@ -180,22 +181,22 @@ route store authentication buildx logx projectx mode = do
 
 
   Spock.get ("project" <//> Spock.var <//> "commit" <//> Spock.var) $ \project' commit' ->
-    authenticated authentication store $ \_ -> do
+    authenticated authentication pool $ \_ -> do
       let
         project = Project project'
         commit = Commit commit'
 
-      builds <- liftStoreError $ Build.byCommit store project commit
+      builds <- liftDbError $ Build.byCommit pool project commit
       withAccept $ \case
         AcceptHTML -> do
-          datas <- for builds $ liftError Store.renderFetchError . Build.byId store
+          datas <- for builds $ \i -> liftDbError (Build.byId pool i)
           View.render $ View.commit project commit (catMaybes datas)
         AcceptJSON ->
           Spock.json $ ApiV1.GetCommit project builds
 
 
   Spock.post ("discover" <//> Spock.var) $ \discoverId' ->
-    authenticated authentication store $ \_ -> do
+    authenticated authentication pool $ \_ -> do
 
       let
         discoverId = BuildId discoverId'
@@ -215,17 +216,17 @@ route store authentication buildx logx projectx mode = do
                 Spock.json $ object ["error" .= ("could not parse ref." :: Text)]
               Just (ApiV1.PostDiscover project guts) -> do
                 liftError Discover.renderCompleteError $
-                  Discover.complete store buildx projectx discoverId project guts
+                  Discover.complete pool buildx projectx discoverId project guts
                 Spock.setStatus HTTP.ok200
                 Spock.json ()
 
   Spock.get ("build" <//> Spock.var) $ \buildId' ->
-    authenticated authentication store $ \_ -> do
+    authenticated authentication pool $ \_ -> do
       let
         buildId = BuildId buildId'
 
-      build <- liftError Store.renderFetchError $
-        Build.byId store buildId
+      build <- liftDbError $
+        Build.byId pool buildId
       withAccept $ \case
         AcceptHTML -> do
           case build of
@@ -243,12 +244,12 @@ route store authentication buildx logx projectx mode = do
               Spock.json $ ApiV1.GetBuild b
 
   Spock.delete ("build" <//> Spock.var) $ \buildId' ->
-    authenticated authentication store $ \_ -> do
+    authenticated authentication pool $ \_ -> do
       let
         buildId = BuildId buildId'
 
-      result <- liftError Store.renderFetchError $
-        Build.cancel store buildId
+      result <- liftDbError $
+        Build.cancel pool buildId
 
       withAccept $ \case
         AcceptHTML -> do
@@ -267,7 +268,7 @@ route store authentication buildx logx projectx mode = do
               Spock.setStatus HTTP.noContent204
 
   Spock.post ("build" <//> Spock.var <//> "heartbeat") $ \buildId' ->
-    authenticated authentication store $ \_ -> do
+    authenticated authentication pool $ \_ -> do
       let
         buildId = BuildId buildId'
 
@@ -278,13 +279,13 @@ route store authentication buildx logx projectx mode = do
             Spock.setStatus HTTP.notFound404
             Spock.html "TODO: 404 page."
           ContentTypeJSON -> do
-            r <- liftStoreError $
-              Build.heartbeat store buildId
+            r <- liftDbError $
+              Build.heartbeat pool buildId
             Spock.setHeader "Location" $ "/build/" <> renderBuildId buildId
             Spock.json $ ApiV1.PostHeartbeatResponse r
 
   Spock.post ("build" <//> Spock.var <//> "acknowledge") $ \buildId' ->
-    authenticated authentication store $ \_ -> do
+    authenticated authentication pool $ \_ -> do
 
       let
         buildId = BuildId buildId'
@@ -296,13 +297,13 @@ route store authentication buildx logx projectx mode = do
             Spock.setStatus HTTP.notFound404
             Spock.html "TODO: 404 page."
           ContentTypeJSON -> do
-            a <- liftStoreError $
-              Build.acknowledge store buildId
+            a <- liftDbError $
+              Build.acknowledge pool buildId
             Spock.setHeader "Location" $ "/build/" <> renderBuildId buildId
             Spock.json $ ApiV1.PostAcknowledgeResponse a
 
   Spock.post ("build" <//> Spock.var <//> "avow") $ \buildId' ->
-    authenticated authentication store $ \_ -> do
+    authenticated authentication pool $ \_ -> do
 
       let
         buildId = BuildId buildId'
@@ -321,13 +322,13 @@ route store authentication buildx logx projectx mode = do
                 Spock.setStatus HTTP.status400
                 Spock.json $ object ["error" .= ("could not parse ref." :: Text)]
               Just (ApiV1.PostAvowRequest ref commit) -> do
-                liftStoreError $
-                  Build.avow store buildId ref commit
+                liftDbError $
+                  Build.avow pool buildId ref commit
                 Spock.setHeader "Location" $ "/build/" <> renderBuildId buildId
                 Spock.json $ ApiV1.PostAvowResponse
 
   Spock.post ("build" <//> Spock.var <//> "complete") $ \buildId' ->
-    authenticated authentication store $ \_ -> do
+    authenticated authentication pool $ \_ -> do
       let
         buildId = BuildId buildId'
 
@@ -345,19 +346,19 @@ route store authentication buildx logx projectx mode = do
                 Spock.setStatus HTTP.status400
                 Spock.json $ object ["error" .= ("could not parse ref." :: Text)]
               Just (ApiV1.PostCompleteRequest result) -> do
-                liftStoreError $
-                  Build.complete store buildId result
+                liftDbError $
+                  Build.complete pool buildId result
                 Spock.setHeader "Location" $ "/build/" <> renderBuildId buildId
                 Spock.json $ ApiV1.PostCompleteResponse
 
 
   Spock.post ("build" <//> Spock.var <//> "cancel") $ \buildId' ->
-    authenticated authentication store $ \_ -> do
+    authenticated authentication pool $ \_ -> do
       let
         buildId = BuildId buildId'
 
-      result <- liftError Store.renderFetchError $
-        Build.cancel store buildId
+      result <- liftDbError $
+        Build.cancel pool buildId
 
       withContentType $ \content ->
         case content of
@@ -377,9 +378,9 @@ route store authentication buildx logx projectx mode = do
                 Spock.setStatus HTTP.noContent204
 
   Spock.get "scoreboard" $
-    authenticated authentication store $ \_ -> do
-      results <- liftStoreError $
-        Result.scoreboard store
+    authenticated authentication pool $ \_ -> do
+      results <- liftDbError . Traction.runDb pool $
+        Result.scoreboard
       withAccept $ \case
         AcceptHTML ->
           View.render $ View.scoreboard results
@@ -388,15 +389,16 @@ route store authentication buildx logx projectx mode = do
 
 -- TODO   [("text/plain; charset=utf-8", r maxBound)] <> withVersion' r
   Spock.get ("log" <//> Spock.var) $ \buildId ->
-    authenticated authentication store $ \_ -> do
+    authenticated authentication pool $ \_ -> do
 
-      log' <- liftError Store.renderFetchError $
-        Build.logOf store logx (BuildId buildId)
+      log' <- liftDbError $
+        Build.logOf pool logx (BuildId buildId)
 
       withAccept $ \case
         AcceptHTML -> do
           Spock.setStatus HTTP.notFound404
           Spock.html "TODO: 404 page."
+
         AcceptJSON -> do
           case log' of
             Nothing -> do

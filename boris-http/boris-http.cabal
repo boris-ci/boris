@@ -66,6 +66,7 @@ library
                     , wai-middleware-static           == 0.8.*
                     , wai-middleware-static-embedded  == 0.1.*
 
+                    -- FUCK
                     , Cabal == 1.24.*
 
   ghc-options:
@@ -83,16 +84,13 @@ library
 
                     Boris.Http.Boot
                     Boris.Http.Data
+
+                    Boris.Http.Db.Schema
+                    Boris.Http.Db.Query
+
                     Boris.Http.Route
                     Boris.Http.Spock
                     Boris.Http.Service
-
-                    Boris.Http.Store.Api
-                    Boris.Http.Store.Data
-                    Boris.Http.Store.Error
-                    Boris.Http.Store.Postgres.Schema
-                    Boris.Http.Store.Postgres.Query
-
                     Boris.Http.View
 
 executable boris-http

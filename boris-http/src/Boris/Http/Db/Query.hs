@@ -2,10 +2,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeOperators #-}
-module Boris.Http.Store.Postgres.Query (
+module Boris.Http.Db.Query (
     tick
   , fetch
   , fetchLogs
+  , fetchLogData
   , cancel
   , register
   , acknowledge
@@ -95,6 +96,11 @@ fetch i = do
       ht
       (bool BuildKo BuildOk <$> br)
       (bool BuildNotCancelled BuildCancelled <$> cancelled)
+
+fetchLogData :: MonadDb m => BuildId -> m LogData
+fetchLogData build =
+  fmap DBLog $
+    fetchLogs build
 
 fetchLogs :: MonadDb m => BuildId -> m [DBLogData]
 fetchLogs i = do
@@ -328,7 +334,7 @@ newSession session user = do
   void $ Traction.execute [sql|
       INSERT INTO session (id, account, oauth)
            VALUES (?, ?, ?)
-    |] (getSessionId . sessionId $ session
+    |] (getSessionId . sessionIdentifier $ session
       , getUserId . userId $ user
       , githubOAuth . sessionOAuth $ session)
 

@@ -1,12 +1,11 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
-module Test.IO.Boris.Http.Store.Postgres.Schema where
+module Test.IO.Boris.Http.Db.Schema where
 
 import           Control.Monad.Morph (hoist, lift)
 
-import qualified Boris.Http.Store.Api as Store
-import           Boris.Http.Store.Data
+import qualified Boris.Http.Db.Schema as Schema
 
 import           Hedgehog
 
@@ -14,13 +13,13 @@ import           P
 
 import           System.IO (IO)
 
-import           Test.IO.Boris.Http.Store.Postgres.Test
+import           Test.IO.Boris.Http.Db.Test
 
 prop_schema :: Property
 prop_schema =
   property $ do
     pool <- mkPool
-    evalExceptT . hoist lift $ Store.initialise (PostgresStore pool)
+    evalExceptT . hoist lift $ Schema.initialise pool
 
 tests :: IO Bool
 tests =
