@@ -146,7 +146,7 @@ withAuthentication mode pool handler =
             Session.check pool manager client secret sessionId
           case result of
             Nothing ->
-              handler $ WasAuthenticated sessionId'
+              handler $ WasAuthenticated sessionId
             Just (AuthenticatedUser account session) ->
               handler $ Authenticated session account
     NoAuthentication ->

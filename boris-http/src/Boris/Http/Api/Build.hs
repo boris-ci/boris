@@ -143,19 +143,14 @@ byProject pool project =
 logOf :: DbPool -> LogService -> BuildId -> EitherT DbError IO (Maybe LogData)
 logOf pool logs i =
   Traction.runDb pool $ do
-    d <- Query.fetch pool
+    d <- Query.fetch i
     case d of
       Nothing ->
         pure Nothing
       Just _ -> do
         case logs of
           DBLogs -> do
-            l' <- Query.fetchLogData i
-            case l' of
-              Just dbl ->
-                pure $ Just dbl
-              Nothing ->
-                pure Nothing
+            Just <$> Query.fetchLogData i
           DevNull ->
             pure Nothing
 

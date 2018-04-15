@@ -85,7 +85,7 @@ route pool authentication buildx logx projectx mode = do
           Just code -> do
             session <- liftError (Session.renderAuthenticationError) $
               Session.authenticate pool manager client secret code
-            newSession mode (sessionId session)
+            newSession mode (sessionIdentifier session)
             Spock.redirect "/"
       NoAuthentication -> do
         Spock.redirect $ "/"

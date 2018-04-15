@@ -15,7 +15,6 @@ import           Control.Monad.Morph (hoist, lift)
 import           P
 
 import           Traction.Control
-import           Traction.Migration
 
 import           Hedgehog
 
@@ -29,7 +28,7 @@ mkPool =
 db :: Db a -> PropertyT IO a
 db x = do
   pool <- mkPool
-  evalExceptT . hoist lift . testDb pool $ migrate schema >> x
+  evalExceptT . hoist lift . testDb pool $ migrate >> x
 
 checkDb :: MonadIO m => Group -> m Bool
 checkDb group =

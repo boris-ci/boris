@@ -1,11 +1,11 @@
 import           Disorder.Core.Main
 
-import qualified Test.IO.Boris.Http.Store.Postgres.Query
-import qualified Test.IO.Boris.Http.Store.Postgres.Schema
+import qualified Test.IO.Boris.Http.Db.Query
+import qualified Test.IO.Boris.Http.Db.Schema
 
 main :: IO ()
 main =
   disorderMain [
-      Test.IO.Boris.Http.Store.Postgres.Schema.tests
-    , Test.IO.Boris.Http.Store.Postgres.Query.tests
+      Test.IO.Boris.Http.Db.Schema.tests
+    , Test.IO.Boris.Http.Db.Query.tests
     ]

@@ -116,7 +116,7 @@ newtype SessionId =
 
 data Session =
   Session {
-      sessionId :: SessionId
+      sessionIdentifier :: SessionId
     , sessionOAuth :: GithubOAuth
     } deriving (Eq, Ord, Show)
 
