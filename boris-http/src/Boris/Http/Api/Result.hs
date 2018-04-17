@@ -11,11 +11,8 @@ import qualified Boris.Http.Db.Query as Query
 
 import           P
 
-import           System.IO (IO)
-
 import           Traction.Control (MonadDb)
 
-import           X.Control.Monad.Trans.Either (EitherT)
 
 scoreboard :: MonadDb m => m [Result]
 scoreboard =

@@ -3,6 +3,7 @@
 import qualified Boris.Http.Boot as Boot
 import qualified Boris.Http.Route as Route
 import qualified Boris.Http.Db.Schema as Schema
+import qualified Boris.Http.Db.Query as Query
 
 import qualified Nest
 
@@ -28,15 +29,28 @@ main = do
     mkEnv = do
      orDie renderRegionError discoverAWSEnv
 
-  Boot.Boot mode authentication builds logs projectx pool <-
+  Boot.Boot mode authentication builds logs projectx pool defaults <-
     Nest.force $ Boot.boot mkEnv
 
   orDie Traction.renderDbError $
     Schema.initialise pool
 
+  settings <- orDie Traction.renderDbError $
+    Traction.runDb pool Query.getSettings
+
   port <- Nest.force $ Nest.numeric "PORT" `Nest.withDefault` 10080
 
-  app <- Spock.spockAsApp $ Spock.spockConfigT Spock.defaultSpockConfig id (Route.route pool authentication builds logs projectx mode)
+  routes <- case (settings, defaults) of
+    (Just _, _) ->
+      pure $ Route.application pool authentication builds logs projectx mode
+    (Nothing, Just s) -> do
+      orDie Traction.renderDbError $
+        Traction.runDb pool $ Query.setSettings s
+      pure $ Route.application pool authentication builds logs projectx mode
+    (Nothing, Nothing) -> do
+      pure $ Route.configure pool authentication builds logs projectx mode
+
+  app <- Spock.spockAsApp $ Spock.spockConfigT Spock.defaultSpockConfig id routes
 
   let
     s = setPort port $

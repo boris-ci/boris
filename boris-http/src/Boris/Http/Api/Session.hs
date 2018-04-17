@@ -10,9 +10,7 @@ module Boris.Http.Api.Session (
 
 
 import           Boris.Http.Data
-import qualified Boris.Http.Service as Service
 import qualified Boris.Http.Db.Query as Query
-import           Boris.Queue (Request (..), RequestBuild (..))
 
 import           Control.Monad.IO.Class (MonadIO (..))
 

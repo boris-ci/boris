@@ -18,7 +18,6 @@ module Boris.Http.Spock (
 import qualified Boris.Http.Api.Session as Session
 import           Boris.Http.Boot (AuthenticationMode (..))
 import           Boris.Http.Data
-import qualified Boris.Http.Db.Query as Query
 import qualified Boris.Http.View as View
 
 import           Control.Monad.IO.Class (MonadIO (..))

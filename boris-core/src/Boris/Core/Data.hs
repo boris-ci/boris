@@ -34,6 +34,7 @@ module Boris.Core.Data (
   , QueueSize (..)
   , Agent (..)
   , AgentId (..)
+  , Settings (..)
   , renderBuildResult
   , parseBuildResult
   , renderRegistration
@@ -353,3 +354,8 @@ newtype AgentId =
   AgentId {
       agentId :: Int64
     } deriving (Eq, Ord, Show)
+
+data Settings =
+    SingleTenantSettings
+  | MultiTenantSettings
+    deriving (Eq, Ord, Show)
