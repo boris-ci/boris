@@ -4,6 +4,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Boris.Http.Route (
     route
+  , application
+  , configure
   ) where
 
 import           Boris.Core.Data
@@ -14,12 +16,18 @@ import qualified Boris.Http.Api.Result as Result
 import qualified Boris.Http.Api.Session as Session
 import           Boris.Http.Boot
 import           Boris.Http.Data
+import qualified Boris.Http.Db.Query as Query
 import           Boris.Http.Spock
 import qualified Boris.Http.View as View
 import qualified Boris.Representation.ApiV1 as ApiV1
 
 import           Data.Aeson (object, (.=))
 import qualified Data.FileEmbed as FileEmbed
+
+import qualified Network.HTTP.Types as HTTP
+import qualified Network.Wai.Middleware.RequestLogger as RequestLogger
+import qualified Network.Wai.Middleware.Static as Static
+import qualified Network.Wai.Middleware.StaticEmbedded as StaticEmbedded
 
 import           P
 
@@ -28,17 +36,12 @@ import           System.IO (IO)
 import           Traction.Control (DbPool)
 import qualified Traction.Control as Traction
 
--- spock experiment
-import qualified Network.HTTP.Types as HTTP
-import qualified Network.Wai.Middleware.RequestLogger as RequestLogger
-import qualified Network.Wai.Middleware.Static as Static
-import qualified Network.Wai.Middleware.StaticEmbedded as StaticEmbedded
 import           Web.Spock.Core ((<//>))
 import qualified Web.Spock.Core as Spock
 
 
-route :: DbPool -> AuthenticationMode -> BuildService -> LogService -> ProjectMode -> Mode -> Spock.SpockT IO ()
-route pool authentication buildx logx projectx mode = do
+init :: Mode -> Spock.SpockT IO ()
+init mode =
   case mode of
     DevelopmentMode -> do
       Spock.middleware RequestLogger.logStdoutDev
@@ -51,6 +54,36 @@ route pool authentication buildx logx projectx mode = do
       Spock.middleware RequestLogger.logStdout
       Spock.middleware . StaticEmbedded.static $ $(FileEmbed.embedDir "assets")
 
+configure :: DbPool -> AuthenticationMode -> BuildService -> LogService -> ProjectMode -> Mode -> Spock.SpockT IO ()
+configure pool authentication buildx logx projectx mode = do
+  init mode
+
+  Spock.get "configure" $ do
+    View.render View.configure
+
+  Spock.post "configure" $ do
+    m <- Spock.param "multi"
+    liftDbError $ Traction.runDb pool $ Query.setSettings $
+      bool SingleTenantSettings MultiTenantSettings $ isJust (m :: Maybe Text)
+    Spock.redirect "/"
+
+  Spock.prehook (do
+    settings <- liftDbError . Traction.runDb pool $
+      Query.getSettings
+
+    case settings of
+      Just _ -> do
+        pure ()
+      Nothing -> do
+        Spock.redirect "/configure") $ route pool authentication buildx logx projectx mode
+
+application :: DbPool -> AuthenticationMode -> BuildService -> LogService -> ProjectMode -> Mode -> Spock.SpockT IO ()
+application pool authentication buildx logx projectx mode = do
+  init mode
+  route pool authentication buildx logx projectx mode
+
+route :: DbPool -> AuthenticationMode -> BuildService -> LogService -> ProjectMode -> Mode -> Spock.SpockT IO ()
+route pool authentication buildx logx projectx mode = do
   Spock.get Spock.root $ do
     withAuthentication authentication pool $ \a -> case a of
       Authenticated _ _ ->

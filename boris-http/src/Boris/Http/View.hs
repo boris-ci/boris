@@ -4,6 +4,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Boris.Http.View (
     dashboard
+  , configure
   , status
   , projects
   , project
@@ -67,6 +68,14 @@ dashboard =
       ]
   in
     renderPage <$> renderTemplate (bmx `usingContext` context) dashboard'
+
+configure :: Either BMXError Text
+configure =
+  let
+    context = [
+      ]
+  in
+    renderPage <$> renderTemplate (bmx `usingContext` context) configure'
 
 -- FIX error id
 serverError :: ErrorId -> Either BMXError Text
@@ -215,6 +224,10 @@ mapFromListGrouped =
 dashboard' :: Template
 dashboard' =
   $(templateFile "template/dashboard.hbs")
+
+configure' :: Template
+configure' =
+  $(templateFile "template/configure.hbs")
 
 status' :: Template
 status' =

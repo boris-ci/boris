@@ -34,6 +34,8 @@ module Boris.Http.Db.Query (
   , getSession
   , getSessionUser
   , getSessionOAuth
+  , getSettings
+  , setSettings
   ) where
 
 
@@ -384,3 +386,24 @@ getSession session = do
           (GithubName <$> name)
           (GithubEmail <$> email)))
       (Session session $ GithubOAuth oauth)
+
+getSettings :: MonadDb m => m (Maybe Settings)
+getSettings =
+  (fmap . fmap) (bool SingleTenantSettings MultiTenantSettings) . Traction.values $ Traction.unique_ [sql|
+      SELECT s.multi_tenant
+        FROM settings s
+    |]
+
+setSettings :: MonadDb m => Settings -> m ()
+setSettings settings =
+  getSettings >>= \s -> case s of
+    Nothing ->
+      void $ Traction.execute [sql|
+        INSERT INTO settings (multi_tenant)
+             VALUES (?)
+      |] (Traction.Only $ MultiTenantSettings == settings)
+    Just _ ->
+      void $ Traction.execute [sql|
+        UPDATE settings
+           SET multi_tenant = ?
+      |] (Traction.Only $ MultiTenantSettings == settings)

@@ -23,7 +23,6 @@ import qualified Control.Concurrent.Chan as Chan
 import           Control.Monad.IO.Class (MonadIO (..))
 
 import           Data.ByteString (ByteString)
-import qualified Data.IORef as IORef
 import qualified Data.Map as Map
 import qualified Data.Text.IO as Text
 
@@ -74,7 +73,7 @@ data ProjectMode =
   | SingleProjectMode Project Repository
 
 data Boot =
-  Boot Mode AuthenticationMode BuildService LogService ProjectMode DbPool
+  Boot Mode AuthenticationMode BuildService LogService ProjectMode DbPool (Maybe Settings)
 
 boot :: MonadIO m => IO Env -> Parser m Boot
 boot mkEnv = do
@@ -107,7 +106,12 @@ boot mkEnv = do
     , ("whitelist", whitelist mkEnv)
     ]) `Nest.withDefault` whitelist mkEnv
 
-  pure $ Boot mode auth worker logs project pool
+  settings <- Nest.option $ Nest.setting "BORIS_TENANCY" (Map.fromList [
+      ("single", SingleTenantSettings)
+    , ("multi", MultiTenantSettings)
+    ])
+
+  pure $ Boot mode auth worker logs project pool settings
 
 github :: MonadIO m => Parser m AuthenticationMode
 github = do

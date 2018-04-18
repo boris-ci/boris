@@ -119,4 +119,11 @@ schema = [
         , UNIQUE (organisation, name)
         )
     |]
+
+  , Migration "create-settings" [sql|
+      CREATE TABLE settings (
+          multi_tenant BOOLEAN
+        )
+    |]
+
   ]

@@ -118,6 +118,7 @@ executable boris-http
                     , nest
                     , Spock-core
                     , text
+                    , traction
                     , transformers
                     , warp
 
