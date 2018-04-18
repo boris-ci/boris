@@ -36,6 +36,8 @@ module Boris.Http.Db.Query (
   , getSessionOAuth
   , getSettings
   , setSettings
+  , getAllProjects
+  , getAccountProjects
   ) where
 
 
@@ -51,7 +53,7 @@ import           Jebediah.Data (LogGroup (..), LogStream (..))
 import           P
 
 import           Traction.Control (MonadDb)
-
+import qualified Traction.Control as Traction
 import           Traction.Sql (sql)
 import qualified Traction.Sql as Traction
 
@@ -407,3 +409,41 @@ setSettings settings =
         UPDATE settings
            SET multi_tenant = ?
       |] (Traction.Only $ MultiTenantSettings == settings)
+
+getAllProjects :: MonadDb m => m [Definition]
+getAllProjects = do
+  let q = [sql|
+      SELECT p.id, p.source, p.name, o.id, o.name, o.type
+        FROM project p, owner o
+    |]
+  x <- Traction.query_ q
+  for x $ \(i, source, name, oid, oname, otype) ->
+    case (,) <$> sourceFromInt source <*> ownerTypeFromInt otype of
+      Just (s, t) ->
+         pure $ Definition
+           (ProjectId i)
+           s
+           (Owner (OwnerId oid) (OwnerName oname) t)
+           (Project name)
+      Nothing ->
+        Traction.liftDb $ Traction.failWith (Traction.DbNoResults q)
+
+getAccountProjects :: MonadDb m => UserId -> m [Definition]
+getAccountProjects account = do
+  let q = [sql|
+      SELECT p.id, p.source, p.name, o.id, o.name, o.type
+        FROM project p, owner o, account_projects ap
+       WHERE ap.account = ?
+         AND ap.project = p.id
+    |]
+  x <- Traction.query q (Traction.Only $ getUserId account)
+  for x $ \(i, source, name, oid, oname, otype) ->
+    case (,) <$> sourceFromInt source <*> ownerTypeFromInt otype of
+      Just (s, t) ->
+         pure $ Definition
+           (ProjectId i)
+           s
+           (Owner (OwnerId oid) (OwnerName oname) t)
+           (Project name)
+      Nothing ->
+        Traction.liftDb $ Traction.failWith (Traction.DbNoResults q)

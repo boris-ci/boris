@@ -33,6 +33,7 @@ schema = [
     Migration "create-tick" [sql|
       CREATE SEQUENCE tick START 1;
     |]
+
   , Migration "create-build" [sql|
       CREATE TABLE build (
           build_id BIGINT PRIMARY KEY
@@ -75,6 +76,7 @@ schema = [
         , updated TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
         )
     |]
+
   , Migration "create-session" [sql|
       CREATE TABLE session (
           id TEXT PRIMARY KEY
@@ -103,20 +105,31 @@ schema = [
         )
     |]
 
-  , Migration "create-organisation" [sql|
-      CREATE TABLE organisation (
+  , Migration "create-owner" [sql|
+      CREATE TABLE owner (
           id SERIAL PRIMARY KEY
         , name TEXT UNIQUE NOT NULL
+        , type INT NOT NULL
         )
     |]
 
   , Migration "create-projects" [sql|
       CREATE TABLE project (
-          id TEXT PRIMARY KEY
-        , organisation BIGINT NOT NULL REFERENCES organisation(id)
-        , name TEXT UNIQUE
+          id SERIAL PRIMARY KEY
+        , source INT NOT NULL
+        , owner BIGINT NOT NULL REFERENCES owner(id)
+        , name TEXT UNIQUE NOT NULL
         , repository TEXT NOT NULL
-        , UNIQUE (organisation, name)
+        , enabled BOOLEAN NOT NULL
+        , UNIQUE (source, owner, name)
+        )
+    |]
+
+  , Migration "create-account-projects" [sql|
+      CREATE TABLE account_projects (
+          account BIGINT NOT NULL REFEENCES account(id)
+        , project BIGING NOT NULL REFERENCES project(id)
+        , PRIMARY KEY (account, project)
         )
     |]
 
@@ -125,5 +138,4 @@ schema = [
           multi_tenant BOOLEAN
         )
     |]
-
   ]

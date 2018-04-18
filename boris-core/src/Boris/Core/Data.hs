@@ -4,6 +4,17 @@
 {-# LANGUAGE PackageImports #-}
 module Boris.Core.Data (
     Environment (..)
+  , Source (..)
+  , sourceFromInt
+  , sourceToInt
+  , Owner (..)
+  , OwnerId (..)
+  , OwnerName (..)
+  , OwnerType (..)
+  , ownerTypeFromInt
+  , ownerTypeToInt
+  , Definition (..)
+  , ProjectId (..)
   , Project (..)
   , Build (..)
   , BuildNamePattern
@@ -13,7 +24,6 @@ module Boris.Core.Data (
   , Commit (..)
   , Ref (..)
   , Pattern (..)
-  , Executor (..)
   , Command (..)
   , BuildPattern (..)
   , Specification (..)
@@ -69,9 +79,90 @@ newtype Environment =
       renderEnvironment :: Text
     } deriving (Eq, Show)
 
+data Source =
+    GitHubSource
+  | ManualSource
+    deriving (Eq, Ord, Show, Enum, Bounded)
+
+sourceToInt :: Source -> Int64
+sourceToInt s =
+  case s of
+    GitHubSource ->
+      0
+    ManualSource ->
+      1
+
+sourceFromInt :: Int64 -> Maybe Source
+sourceFromInt n =
+  case n of
+    0 ->
+      Just GitHubSource
+    1 ->
+      Just ManualSource
+    _ ->
+      Nothing
+
+newtype OwnerId =
+  OwnerId {
+      getOwnerId :: Int64
+    } deriving (Eq, Ord, Show)
+
+newtype OwnerName =
+  OwnerName {
+      getOwnerName :: Int64
+    } deriving (Eq, Ord, Show)
+
+data OwnerType =
+    GitHubOwner
+  | BorisUser
+  | BorisSystem
+    deriving (Eq, Ord, Show, Enum, Bounded)
+
+ownerTypeToInt :: OwnerType -> Int64
+ownerTypeToInt o =
+  case o of
+    GitHubOwner ->
+      0
+    BorisUser ->
+      1
+    BorisSystem ->
+      2
+
+ownerTypeFromInt :: Int64 -> Maybe OwnerType
+ownerTypeFromInt n =
+  case n of
+    0 ->
+      Just GitHubOwner
+    1 ->
+      Just BorisUser
+    2 ->
+      Just BorisSystem
+    _ ->
+      Nothing
+
+data Owner =
+  Owner {
+      ownerId :: OwnerId
+    , ownerName :: OwnerName
+    , ownerType :: OwnerType
+    } deriving (Eq, Ord, Show)
+
+data Definition =
+  Definition {
+      definitionId :: ProjectId
+    , definitionSource :: Source
+    , definitionOwner :: Owner
+    , definitionProject :: Project
+    } deriving (Eq, Ord, Show)
+
 newtype Project =
   Project {
       renderProject :: Text
+    } deriving (Eq, Show, Ord)
+
+newtype ProjectId =
+  ProjectId {
+      getProjectId :: Int64
     } deriving (Eq, Show, Ord)
 
 newtype Build =
@@ -131,11 +222,6 @@ data Workspace =
       workspacePath :: WorkspacePath
     , workspaceId :: BuildId
     } deriving (Eq, Show)
-
-newtype Executor =
-  Executor {
-      executorProjects :: M.Map Project Repository
-    } deriving (Eq, Show, Ord)
 
 data Command =
   Command {
