@@ -153,6 +153,7 @@ data Definition =
     , definitionSource :: Source
     , definitionOwner :: Owner
     , definitionProject :: Project
+    , definitionRepository :: Repository
     } deriving (Eq, Ord, Show)
 
 newtype Project =

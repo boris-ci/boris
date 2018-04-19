@@ -26,6 +26,7 @@ import qualified Data.Time as Time
 import           Boris.Core.Data
 import qualified Boris.Http.Api.Project as Project
 import           Boris.Http.Boot
+import           Boris.Http.Data
 import qualified Boris.Http.Db.Query as Query
 
 import qualified Boris.Http.Service as Service
@@ -42,7 +43,6 @@ import           X.Control.Monad.Trans.Either (EitherT)
 
 data BuildError =
     BuildDbError Traction.DbError
-  | BuildConfigError Project.ConfigError
   | BuildServiceError Service.ServiceError
 
 renderBuildError :: BuildError -> Text
@@ -50,8 +50,6 @@ renderBuildError err =
   case err of
     BuildDbError e ->
       mconcat ["Build error via db: ", Traction.renderDbError e]
-    BuildConfigError e ->
-      mconcat ["Build project configuration error: ", Project.renderConfigError e]
     BuildServiceError e ->
       mconcat ["Build service error: ", Service.renderServiceError e]
 
@@ -93,10 +91,10 @@ queued pool project build =
   Traction.runDb pool $
   Query.getQueued project build
 
-submit :: DbPool -> BuildService -> ProjectMode -> Project -> Build -> Maybe Ref -> EitherT BuildError IO (Maybe BuildId)
-submit pool buildx projectx project build ref = do
-  repository' <- firstT BuildConfigError $
-    Project.pick projectx project
+submit :: DbPool -> Settings -> AuthenticatedBy -> BuildService -> ProjectMode -> Project -> Build -> Maybe Ref -> EitherT BuildError IO (Maybe BuildId)
+submit pool settings authenticated buildx projectx project build ref = do
+  repository' <- firstT BuildDbError $
+    Project.pick pool settings authenticated project
   case repository' of
     Nothing ->
       pure Nothing

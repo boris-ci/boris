@@ -129,9 +129,10 @@ route pool authentication buildx logx projectx mode = do
       View.render $ View.status builds
 
   Spock.get "project" $
-    authenticated authentication pool $ \_ -> do
-      projects <- liftError Project.renderConfigError $
-        Project.list projectx
+    authenticated authentication pool $ \a -> do
+      settings <- getSettings pool
+      projects <- liftDbError $
+        Project.list pool settings a
       withAccept $ \case
         AcceptHTML ->
           View.render $ View.projects projects
@@ -148,9 +149,10 @@ route pool authentication buildx logx projectx mode = do
           Spock.json $ ApiV1.GetProject (Project project) builds
 
   Spock.post ("project" <//> Spock.var) $ \project ->
-    authenticated authentication pool $ \_ -> do
+    authenticated authentication pool $ \a -> do
+      settings <- getSettings pool
       buildId <- liftError id $
-        Project.discover pool buildx projectx (Project project)
+        Project.discover pool settings a buildx (Project project)
       case buildId of
         Nothing -> do
           -- TODO should have a body
@@ -177,7 +179,8 @@ route pool authentication buildx logx projectx mode = do
 
 
   Spock.post ("project" <//> Spock.var <//> "build" <//> Spock.var) $ \project' build' ->
-    authenticated authentication pool $ \_ -> do
+    authenticated authentication pool $ \a -> do
+      settings <- getSettings pool
       let
         project = Project project'
         build = Build build'
@@ -187,7 +190,7 @@ route pool authentication buildx logx projectx mode = do
           ContentTypeForm -> do
             ref <- fmap Ref <$> Spock.param "ref"
             i <- liftError Build.renderBuildError $
-              Build.submit pool buildx projectx project build ref
+              Build.submit pool settings a buildx projectx project build ref
             case i of
               Nothing -> do
                 Spock.setStatus HTTP.notFound404
@@ -203,7 +206,7 @@ route pool authentication buildx logx projectx mode = do
                 Spock.json $ object ["error" .= ("could not parse ref." :: Text)]
               Just (ApiV1.PostBuildRequest ref) -> do
                 i <- liftError Build.renderBuildError $
-                  Build.submit pool buildx projectx project build ref
+                  Build.submit pool settings a buildx projectx project build ref
                 case i of
                   Nothing ->
                     Spock.setStatus HTTP.notFound404
@@ -229,8 +232,8 @@ route pool authentication buildx logx projectx mode = do
 
 
   Spock.post ("discover" <//> Spock.var) $ \discoverId' ->
-    authenticated authentication pool $ \_ -> do
-
+    authenticated authentication pool $ \a -> do
+      settings <- getSettings pool
       let
         discoverId = BuildId discoverId'
 
@@ -249,7 +252,7 @@ route pool authentication buildx logx projectx mode = do
                 Spock.json $ object ["error" .= ("could not parse ref." :: Text)]
               Just (ApiV1.PostDiscover project guts) -> do
                 liftError Discover.renderCompleteError $
-                  Discover.complete pool buildx projectx discoverId project guts
+                  Discover.complete pool settings a buildx projectx discoverId project guts
                 Spock.setStatus HTTP.ok200
                 Spock.json ()
 
@@ -439,6 +442,11 @@ route pool authentication buildx logx projectx mode = do
               Spock.json ()
             Just logs -> do
               Spock.json $ ApiV1.GetLogs logs
+
+getSettings :: DbPool -> Spock.ActionT IO Settings
+getSettings pool =
+  liftDbError . Traction.runDb pool $
+    Query.demandSettings
 
 newSession :: Mode -> SessionId -> Spock.ActionT IO ()
 newSession mode session =
