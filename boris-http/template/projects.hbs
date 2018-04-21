@@ -1,4 +1,9 @@
 {{#> frame }}
+            <div>Create a <a href="/project/new">new project</a></div>
+
+            {{#if projects}}
+            <h3>projects</h3>
+            {{/if}}
             {{#each projects}}
             <div><a href="/project/{{this}}">{{this}}</a></div>
             {{/each}}

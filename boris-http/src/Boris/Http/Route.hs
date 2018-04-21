@@ -138,6 +138,10 @@ route pool authentication mode = do
         AcceptJSON ->
           Spock.json $ ApiV1.GetProjects projects
 
+  Spock.get "project/new" $
+    authenticated authentication pool $ \_ -> do
+      View.render $ View.newproject
+
   Spock.get ("project" <//> Spock.var) $ \project ->
     authenticated authentication pool $ \_ -> do
       builds <- liftDbError $ Build.byProject pool (Project project)
