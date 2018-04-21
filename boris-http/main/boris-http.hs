@@ -29,7 +29,7 @@ main = do
     mkEnv = do
      orDie renderRegionError discoverAWSEnv
 
-  Boot.Boot mode authentication builds logs projectx pool defaults <-
+  Boot.Boot mode authentication builds logs pool defaults <-
     Nest.force $ Boot.boot mkEnv
 
   orDie Traction.renderDbError $
@@ -42,13 +42,13 @@ main = do
 
   routes <- case (settings, defaults) of
     (Just _, _) ->
-      pure $ Route.application pool authentication builds logs projectx mode
+      pure $ Route.application pool authentication builds logs mode
     (Nothing, Just s) -> do
       orDie Traction.renderDbError $
         Traction.runDb pool $ Query.setSettings s
-      pure $ Route.application pool authentication builds logs projectx mode
+      pure $ Route.application pool authentication builds logs mode
     (Nothing, Nothing) -> do
-      pure $ Route.configure pool authentication builds logs projectx mode
+      pure $ Route.configure pool authentication builds logs mode
 
   app <- Spock.spockAsApp $ Spock.spockConfigT Spock.defaultSpockConfig id routes
 

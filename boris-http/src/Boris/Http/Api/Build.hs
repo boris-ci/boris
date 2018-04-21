@@ -91,8 +91,8 @@ queued pool project build =
   Traction.runDb pool $
   Query.getQueued project build
 
-submit :: DbPool -> Settings -> AuthenticatedBy -> BuildService -> ProjectMode -> Project -> Build -> Maybe Ref -> EitherT BuildError IO (Maybe BuildId)
-submit pool settings authenticated buildx projectx project build ref = do
+submit :: DbPool -> Settings -> AuthenticatedBy -> BuildService -> Project -> Build -> Maybe Ref -> EitherT BuildError IO (Maybe BuildId)
+submit pool settings authenticated buildx project build ref = do
   repository' <- firstT BuildDbError $
     Project.pick pool settings authenticated project
   case repository' of

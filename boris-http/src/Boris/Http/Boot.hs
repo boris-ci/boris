@@ -6,7 +6,6 @@ module Boris.Http.Boot (
 
   , Mode (..)
   , AuthenticationMode (..)
-  , ProjectMode (..)
   , BuildService (..)
   , LogService (..)
   ) where
@@ -67,13 +66,8 @@ data LogService =
     DBLogs
   | DevNull
 
-data ProjectMode =
-    WhitelistProjectMode Env Address
-  | UserProjectMode
-  | SingleProjectMode Project Repository
-
 data Boot =
-  Boot Mode AuthenticationMode BuildService LogService ProjectMode DbPool (Maybe Settings)
+  Boot Mode AuthenticationMode BuildService LogService DbPool (Maybe Settings)
 
 boot :: MonadIO m => IO Env -> Parser m Boot
 boot mkEnv = do
@@ -100,18 +94,12 @@ boot mkEnv = do
     , ("std", devnull)
     ]) `Nest.withDefault` devnull
 
-  project <- join $ Nest.setting "BORIS_PROJECT_MODE" (Map.fromList [
-      ("user", user)
-    , ("single", single)
-    , ("whitelist", whitelist mkEnv)
-    ]) `Nest.withDefault` whitelist mkEnv
-
   settings <- Nest.option $ Nest.setting "BORIS_TENANCY" (Map.fromList [
       ("single", SingleTenantSettings)
     , ("multi", MultiTenantSettings)
     ])
 
-  pure $ Boot mode auth worker logs project pool settings
+  pure $ Boot mode auth worker logs pool settings
 
 github :: MonadIO m => Parser m AuthenticationMode
 github = do
@@ -166,20 +154,6 @@ local = do
 devnull :: Monad m => Parser m LogService
 devnull =
   pure DevNull
-
-whitelist :: MonadIO m => IO Env -> Parser m ProjectMode
-whitelist mkEnv =
-  WhitelistProjectMode <$> liftIO mkEnv <*> address "BORIS_CONFIG_LOCATION"
-
-user :: Monad m => Parser m ProjectMode
-user =
-  pure UserProjectMode
-
-single :: Monad m => Parser m ProjectMode
-single =
-  SingleProjectMode
-    <$> (Project <$> Nest.string "BORIS_SINGLE_PROJECT_NAME")
-    <*> (Repository <$> Nest.string "BORIS_SINGLE_PROJECT_REPOSITORY")
 
 postgres :: MonadIO m => Parser m DbPool
 postgres = do

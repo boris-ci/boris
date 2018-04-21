@@ -54,8 +54,8 @@ init mode =
       Spock.middleware RequestLogger.logStdout
       Spock.middleware . StaticEmbedded.static $ $(FileEmbed.embedDir "assets")
 
-configure :: DbPool -> AuthenticationMode -> BuildService -> LogService -> ProjectMode -> Mode -> Spock.SpockT IO ()
-configure pool authentication buildx logx projectx mode = do
+configure :: DbPool -> AuthenticationMode -> BuildService -> LogService -> Mode -> Spock.SpockT IO ()
+configure pool authentication buildx logx mode = do
   init mode
 
   Spock.get "configure" $ do
@@ -75,15 +75,15 @@ configure pool authentication buildx logx projectx mode = do
       Just _ -> do
         pure ()
       Nothing -> do
-        Spock.redirect "/configure") $ route pool authentication buildx logx projectx mode
+        Spock.redirect "/configure") $ route pool authentication buildx logx mode
 
-application :: DbPool -> AuthenticationMode -> BuildService -> LogService -> ProjectMode -> Mode -> Spock.SpockT IO ()
-application pool authentication buildx logx projectx mode = do
+application :: DbPool -> AuthenticationMode -> BuildService -> LogService -> Mode -> Spock.SpockT IO ()
+application pool authentication buildx logx mode = do
   init mode
-  route pool authentication buildx logx projectx mode
+  route pool authentication buildx logx mode
 
-route :: DbPool -> AuthenticationMode -> BuildService -> LogService -> ProjectMode -> Mode -> Spock.SpockT IO ()
-route pool authentication buildx logx projectx mode = do
+route :: DbPool -> AuthenticationMode -> BuildService -> LogService -> Mode -> Spock.SpockT IO ()
+route pool authentication buildx logx mode = do
   Spock.get Spock.root $ do
     withAuthentication authentication pool $ \a -> case a of
       Authenticated _ _ ->
@@ -190,7 +190,7 @@ route pool authentication buildx logx projectx mode = do
           ContentTypeForm -> do
             ref <- fmap Ref <$> Spock.param "ref"
             i <- liftError Build.renderBuildError $
-              Build.submit pool settings a buildx projectx project build ref
+              Build.submit pool settings a buildx project build ref
             case i of
               Nothing -> do
                 Spock.setStatus HTTP.notFound404
@@ -206,7 +206,7 @@ route pool authentication buildx logx projectx mode = do
                 Spock.json $ object ["error" .= ("could not parse ref." :: Text)]
               Just (ApiV1.PostBuildRequest ref) -> do
                 i <- liftError Build.renderBuildError $
-                  Build.submit pool settings a buildx projectx project build ref
+                  Build.submit pool settings a buildx project build ref
                 case i of
                   Nothing ->
                     Spock.setStatus HTTP.notFound404
@@ -252,7 +252,7 @@ route pool authentication buildx logx projectx mode = do
                 Spock.json $ object ["error" .= ("could not parse ref." :: Text)]
               Just (ApiV1.PostDiscover project guts) -> do
                 liftError Discover.renderCompleteError $
-                  Discover.complete pool settings a buildx projectx discoverId project guts
+                  Discover.complete pool settings a buildx discoverId project guts
                 Spock.setStatus HTTP.ok200
                 Spock.json ()
 

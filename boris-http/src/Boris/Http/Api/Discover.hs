@@ -40,8 +40,8 @@ renderCompleteError err =
    CompleteServiceError e ->
       mconcat ["Discover service error: ", Service.renderServiceError e]
 
-complete :: DbPool -> Settings -> AuthenticatedBy -> BuildService -> ProjectMode -> BuildId -> Project -> [DiscoverInstance] -> EitherT CompleteError IO ()
-complete pool settings authenticated  buildx projectx buildid project discovers = do
+complete :: DbPool -> Settings -> AuthenticatedBy -> BuildService -> BuildId -> Project -> [DiscoverInstance] -> EitherT CompleteError IO ()
+complete pool settings authenticated  buildx buildid project discovers = do
   for_ discovers $ \(DiscoverInstance build ref commit) -> do
     current <- firstT CompleteDbError . Traction.runDb pool $
       Query.getProjectCommitSeen project commit
