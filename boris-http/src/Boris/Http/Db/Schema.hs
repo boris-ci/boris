@@ -131,7 +131,7 @@ schema = [
 
   , Migration "create-account-projects" [sql|
       CREATE TABLE account_projects (
-          account BIGINT NOT NULL REFEENCES account(id)
+          account BIGINT NOT NULL REFERENCES account(id)
         , project BIGING NOT NULL REFERENCES project(id)
         , PRIMARY KEY (account, project)
         )
