@@ -54,8 +54,8 @@ init mode =
       Spock.middleware RequestLogger.logStdout
       Spock.middleware . StaticEmbedded.static $ $(FileEmbed.embedDir "assets")
 
-configure :: DbPool -> AuthenticationMode -> BuildService -> LogService -> Mode -> Spock.SpockT IO ()
-configure pool authentication buildx logx mode = do
+configure :: DbPool -> AuthenticationMode -> BuildService -> Mode -> Spock.SpockT IO ()
+configure pool authentication buildx mode = do
   init mode
 
   Spock.get "configure" $ do
@@ -75,15 +75,15 @@ configure pool authentication buildx logx mode = do
       Just _ -> do
         pure ()
       Nothing -> do
-        Spock.redirect "/configure") $ route pool authentication buildx logx mode
+        Spock.redirect "/configure") $ route pool authentication buildx mode
 
-application :: DbPool -> AuthenticationMode -> BuildService -> LogService -> Mode -> Spock.SpockT IO ()
-application pool authentication buildx logx mode = do
+application :: DbPool -> AuthenticationMode -> BuildService -> Mode -> Spock.SpockT IO ()
+application pool authentication buildx mode = do
   init mode
-  route pool authentication buildx logx mode
+  route pool authentication buildx mode
 
-route :: DbPool -> AuthenticationMode -> BuildService -> LogService -> Mode -> Spock.SpockT IO ()
-route pool authentication buildx logx mode = do
+route :: DbPool -> AuthenticationMode -> BuildService -> Mode -> Spock.SpockT IO ()
+route pool authentication buildx mode = do
   Spock.get Spock.root $ do
     withAuthentication authentication pool $ \a -> case a of
       Authenticated _ _ ->
@@ -428,7 +428,7 @@ route pool authentication buildx logx mode = do
     authenticated authentication pool $ \_ -> do
 
       log' <- liftDbError $
-        Build.logOf pool logx (BuildId buildId)
+        Build.logOf pool (BuildId buildId)
 
       withAccept $ \case
         AcceptHTML -> do

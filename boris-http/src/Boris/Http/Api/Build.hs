@@ -138,19 +138,12 @@ byProject pool project =
   Traction.runDb pool $
     Query.getProjects project
 
-logOf :: DbPool -> LogService -> BuildId -> EitherT DbError IO (Maybe LogData)
-logOf pool logs i =
+logOf :: DbPool -> BuildId -> EitherT DbError IO (Maybe LogData)
+logOf pool i =
   Traction.runDb pool $ do
     d <- Query.fetch i
-    case d of
-      Nothing ->
-        pure Nothing
-      Just _ -> do
-        case logs of
-          DBLogs -> do
-            Just <$> Query.fetchLogData i
-          DevNull ->
-            pure Nothing
+    for d $ \_ ->
+      Query.fetchLogData i
 
 avow :: DbPool -> BuildId -> Ref -> Commit -> EitherT DbError IO ()
 avow pool i ref commit =

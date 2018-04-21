@@ -7,7 +7,6 @@ module Boris.Http.Boot (
   , Mode (..)
   , AuthenticationMode (..)
   , BuildService (..)
-  , LogService (..)
   ) where
 
 import           Boris.Core.Data
@@ -62,12 +61,8 @@ data BuildService =
   | EcsBuildService
   | LocalBuildService (Chan.Chan Request)
 
-data LogService =
-    DBLogs
-  | DevNull
-
 data Boot =
-  Boot Mode AuthenticationMode BuildService LogService DbPool (Maybe Settings)
+  Boot Mode AuthenticationMode BuildService DbPool (Maybe Settings)
 
 boot :: MonadIO m => IO Env -> Parser m Boot
 boot mkEnv = do
@@ -89,17 +84,12 @@ boot mkEnv = do
     , ("local", local)
     ]) `Nest.withDefault` sqs mkEnv
 
-  logs <- join $ Nest.setting "BORIS_LOG_SERVICE" (Map.fromList [
-      ("null", devnull)
-    , ("std", devnull)
-    ]) `Nest.withDefault` devnull
-
   settings <- Nest.option $ Nest.setting "BORIS_TENANCY" (Map.fromList [
       ("single", SingleTenantSettings)
     , ("multi", MultiTenantSettings)
     ])
 
-  pure $ Boot mode auth worker logs pool settings
+  pure $ Boot mode auth worker pool settings
 
 github :: MonadIO m => Parser m AuthenticationMode
 github = do
@@ -150,10 +140,6 @@ local = do
     in
       go
   pure $ LocalBuildService channel
-
-devnull :: Monad m => Parser m LogService
-devnull =
-  pure DevNull
 
 postgres :: MonadIO m => Parser m DbPool
 postgres = do
