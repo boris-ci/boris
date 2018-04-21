@@ -1,104 +1,72 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Boris.Http.Api.Project (
-    ConfigError (..)
+    picker
   , pick
   , list
   , discover
-  , renderConfigError
   ) where
 
 import           Boris.Core.Data
 import           Boris.Http.Boot
+import           Boris.Http.Data
 import qualified Boris.Http.Db.Query as Query
 import qualified Boris.Http.Service as Service
 
 import           Boris.Queue (Request (..), RequestDiscover (..))
 
-import           Control.Monad.IO.Class (liftIO)
-import           Control.Monad.Morph (hoist)
-import           Control.Monad.Trans.Class (lift)
-import           Control.Monad.Trans.Resource (runResourceT)
-
-import           Data.Conduit (($$+-), ($=+))
-import qualified Data.Conduit.List as CL
-import qualified Data.Conduit.Text as CT
-
-import           Mismi (Error, renderError, runAWST)
-import qualified Mismi.S3 as S3
+import qualified Data.List as List
 
 import           P
 
 import           System.IO (IO)
 
-import           Traction.Control (DbPool)
+import           Traction.Control (DbPool, DbError)
 import qualified Traction.Control as Traction
 
-import           X.Control.Monad.Trans.Either (EitherT, left, mapEitherT)
+import           X.Control.Monad.Trans.Either (EitherT)
 
+picker :: Project -> [Definition] -> Maybe Repository
+picker project =
+  fmap definitionRepository . List.find ((==) project . definitionProject)
 
-data ConfigError =
-    ConfigFileNotFoundError ProjectMode
-  | ConfigAwsError Error
-  | ConfigParseError Text
+pick :: DbPool -> Settings -> AuthenticatedBy -> Project -> EitherT DbError IO (Maybe Repository)
+pick pool settings authenticated project =
+  Traction.runDb pool $ case settings of
+    SingleTenantSettings ->
+      case authenticated of
+        AuthenticatedByDesign ->
+          picker project <$> Query.getAllProjects
+        AuthenticatedByOAuth _session user ->
+           picker project <$> Query.getAccountProjects (userId user)
+    MultiTenantSettings ->
+      case authenticated of
+        AuthenticatedByDesign ->
+          pure Nothing
+        AuthenticatedByOAuth _session user ->
+          picker project <$> Query.getAccountProjects (userId user)
 
-pick :: ProjectMode -> Project -> EitherT ConfigError IO (Maybe Repository)
-pick mode project =
-  case mode of
-    WhitelistProjectMode env location -> do
-      registration <- runAWST env ConfigAwsError $ do
-        attempt <- lift $ S3.read' location
-        source <- fromMaybeM (left $ ConfigFileNotFoundError mode) $
-          attempt
-        mapEitherT (liftIO . runResourceT) $ (hoist lift $ source)
-          $=+ CT.decodeUtf8
-          $=+ CT.lines
-          $=+ CL.mapM (\t -> fromMaybeM (left $ ConfigParseError t) $ parseRegistration t)
-          $=+ CL.filter ((==) project . registrationProject)
-          $$+- CL.head
-      pure $ registrationRepository <$> registration
-    UserProjectMode ->
-      -- FIX MTH add in db backed users.
-      pure Nothing
-    SingleProjectMode p r ->
-      pure $ if project == p then Just r else Nothing
-
-list :: ProjectMode -> EitherT ConfigError IO [Project]
-list mode =
-  case mode of
-    WhitelistProjectMode env location ->
-      runAWST env ConfigAwsError $ do
-        attempt <- lift $ S3.read' location
-        source <- fromMaybeM (left $ ConfigFileNotFoundError mode) $
-          attempt
-        mapEitherT (liftIO . runResourceT) $ (hoist lift $ source)
-          $=+ CT.decodeUtf8
-          $=+ CT.lines
-          $=+ CL.mapM (\t -> fromMaybeM (left $ ConfigParseError t) $ parseRegistration t)
-          $=+ CL.map registrationProject
-          $$+- CL.consume
-    UserProjectMode ->
-      -- FIX MTH add in db back users
-      pure []
-    SingleProjectMode p _ ->
-      pure [p]
-
-renderConfigError :: ConfigError -> Text
-renderConfigError err =
-  case err of
-    ConfigFileNotFoundError (WhitelistProjectMode _ l) ->
-      mconcat ["Service is mis-configured, repository configuration could not be found: ", S3.addressToText l]
-    ConfigFileNotFoundError _ ->
-      mconcat ["Service is mis-configured, config file was not found (but it looks like an alternative project mode is active)."]
-    ConfigAwsError e ->
-      mconcat ["Service could not retrieve repository configuration: ", renderError e]
-    ConfigParseError t ->
-      mconcat ["Service could not parse repostository configuraiton: ", t]
+list :: DbPool -> Settings -> AuthenticatedBy -> EitherT DbError IO [Project]
+list pool settings authenticated =
+  (fmap . fmap) definitionProject . Traction.runDb pool $ case settings of
+    SingleTenantSettings ->
+      case authenticated of
+        AuthenticatedByDesign ->
+          Query.getAllProjects
+        AuthenticatedByOAuth _session user ->
+          Query.getAccountProjects (userId user)
+    MultiTenantSettings ->
+      case authenticated of
+        AuthenticatedByDesign ->
+          pure []
+        AuthenticatedByOAuth _session user ->
+          Query.getAccountProjects (userId user)
 
 -- FIX MTH error type
-discover :: DbPool -> BuildService -> ProjectMode -> Project -> EitherT Text IO (Maybe BuildId)
-discover pool buildx projectx project = do
-  r <- firstT renderConfigError (pick projectx project)
+discover :: DbPool -> Settings -> AuthenticatedBy -> BuildService -> Project -> EitherT Text IO (Maybe BuildId)
+discover pool settings authenticated buildx project = do
+  r <- firstT Traction.renderDbError $
+    pick pool settings authenticated project
   case r of
     Nothing ->
       pure Nothing
