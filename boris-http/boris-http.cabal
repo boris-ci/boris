@@ -90,7 +90,6 @@ library
 
                     Boris.Http.Route
                     Boris.Http.Spock
-                    Boris.Http.Service
                     Boris.Http.View
 
 executable boris-http

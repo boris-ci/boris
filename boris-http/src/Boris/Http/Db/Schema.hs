@@ -55,6 +55,10 @@ schema = [
       CREATE TABLE discover (
           discover_id BIGINT PRIMARY KEY
         , project TEXT NOT NULL
+        , queued_time TIMESTAMP WITH TIME ZONE
+        , start_time TIMESTAMP WITH TIME ZONE
+        , end_time TIMESTAMP WITH TIME ZONE
+        , heartbeat_time TIMESTAMP WITH TIME ZONE
         )
     |]
   , Migration "create-discover-commit-build" [sql|

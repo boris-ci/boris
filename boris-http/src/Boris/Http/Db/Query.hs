@@ -75,8 +75,8 @@ register project build buildid =
 discover :: MonadDb m => BuildId -> Project -> m ()
 discover buildid project =
   void $ Traction.execute [sql|
-      INSERT INTO discover (discover_id, project)
-           VALUES (?::integer, ?)
+      INSERT INTO discover (discover_id, project, queued_time)
+           VALUES (?::integer, ?, now())
     |] (renderBuildId buildid, renderProject project)
 
 fetch :: MonadDb m => BuildId -> m (Maybe BuildData)

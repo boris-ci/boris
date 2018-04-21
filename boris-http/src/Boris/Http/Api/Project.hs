@@ -8,12 +8,8 @@ module Boris.Http.Api.Project (
   ) where
 
 import           Boris.Core.Data
-import           Boris.Http.Boot
 import           Boris.Http.Data
 import qualified Boris.Http.Db.Query as Query
-import qualified Boris.Http.Service as Service
-
-import           Boris.Queue (Request (..), RequestDiscover (..))
 
 import qualified Data.List as List
 
@@ -63,19 +59,16 @@ list pool settings authenticated =
           Query.getAccountProjects (userId user)
 
 -- FIX MTH error type
-discover :: DbPool -> Settings -> AuthenticatedBy -> BuildService -> Project -> EitherT Text IO (Maybe BuildId)
-discover pool settings authenticated buildx project = do
+discover :: DbPool -> Settings -> AuthenticatedBy -> Project -> EitherT Text IO (Maybe BuildId)
+discover pool settings authenticated project = do
   r <- firstT Traction.renderDbError $
     pick pool settings authenticated project
   case r of
     Nothing ->
       pure Nothing
-    Just repository -> do
+    Just _repository -> do
       i <- firstT Traction.renderDbError . Traction.runDb pool $
         Query.tick
       firstT Traction.renderDbError . Traction.runDb pool $
         Query.discover i project
-      let req = RequestDiscover' $ RequestDiscover i project repository
-      firstT Service.renderServiceError $
-        Service.put buildx req
       pure (Just i)

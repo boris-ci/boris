@@ -6,7 +6,6 @@ module Boris.Http.Boot (
 
   , Mode (..)
   , AuthenticationMode (..)
-  , BuildService (..)
   ) where
 
 import           Boris.Core.Data
@@ -56,13 +55,8 @@ data AuthenticationMode =
     GithubAuthentication Manager GithubClient GithubSecret
   | NoAuthentication
 
-data BuildService =
-    SqsBuildService Env BuildQueue
-  | EcsBuildService
-  | LocalBuildService (Chan.Chan Request)
-
 data Boot =
-  Boot Mode AuthenticationMode BuildService DbPool (Maybe Settings)
+  Boot Mode AuthenticationMode DbPool (Maybe Settings)
 
 boot :: MonadIO m => IO Env -> Parser m Boot
 boot mkEnv = do
@@ -78,18 +72,12 @@ boot mkEnv = do
     , ("none", pure NoAuthentication)
     ]) `Nest.withDefault` github
 
-  worker <- join $ Nest.setting "BORIS_BUILD_SERVICE" (Map.fromList [
-      ("sqs", sqs mkEnv)
-    , ("ecs", ecs)
-    , ("local", local)
-    ]) `Nest.withDefault` sqs mkEnv
-
   settings <- Nest.option $ Nest.setting "BORIS_TENANCY" (Map.fromList [
       ("single", SingleTenantSettings)
     , ("multi", MultiTenantSettings)
     ])
 
-  pure $ Boot mode auth worker pool settings
+  pure $ Boot mode auth pool settings
 
 github :: MonadIO m => Parser m AuthenticationMode
 github = do
@@ -97,49 +85,6 @@ github = do
   client <- GithubClient <$> Nest.string "BORIS_GITHUB_CLIENT"
   secret <- GithubSecret <$> Nest.string "BORIS_GITHUB_SECRET"
   pure $ GithubAuthentication manager client secret
-
-sqs :: MonadIO m => IO Env -> Parser m BuildService
-sqs mkEnv =
-  SqsBuildService
-    <$> liftIO mkEnv
-    <*> (BuildQueue <$> Nest.string "BORIS_BUILD_QUEUE")
-
-ecs :: Monad m => Parser m BuildService
-ecs =
-  pure EcsBuildService
-
-local :: MonadIO m => Parser m BuildService
-local = do
-  port <- Port <$> Nest.numeric "PORT" `Nest.withDefault` 9999
-  mgr <- liftIO $ newManager tlsManagerSettings
-  t <- balanceTableStatic $ BalanceTable [BalanceEntry (Host "localhost") port]
-  let http = BalanceConfig t mempty mgr
-  channel <- liftIO $ Chan.newChan
-  liftIO . void . Async.async $
-    let
-      go = do
-        request <- Chan.readChan channel
-        case request of
-          RequestBuild' (RequestBuild buildId project repository build ref) -> do
-            result <- runEitherT $
-              Build.builder Service.Std (Service.PushBuild http) (WorkspacePath "tmp") buildId project repository build ref
-            case result of
-              Left err ->
-                Text.putStrLn . Build.renderBuilderError $ err
-              Right _ ->
-                pure ()
-          RequestDiscover' (RequestDiscover buildId project repository) -> do
-            result <- runEitherT $
-              Discover.discover Service.Std (Service.PushDiscover http) (WorkspacePath "tmp") buildId project repository
-            case result of
-              Left err ->
-                Text.putStrLn . Discover.renderDiscoverError $ err
-              Right _ ->
-                pure ()
-        go
-    in
-      go
-  pure $ LocalBuildService channel
 
 postgres :: MonadIO m => Parser m DbPool
 postgres = do
