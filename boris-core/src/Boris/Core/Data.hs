@@ -81,7 +81,7 @@ newtype Environment =
 
 data Source =
     GitHubSource
-  | ManualSource
+  | BorisSource
     deriving (Eq, Ord, Show, Enum, Bounded)
 
 sourceToInt :: Source -> Int64
@@ -89,7 +89,7 @@ sourceToInt s =
   case s of
     GitHubSource ->
       0
-    ManualSource ->
+    BorisSource ->
       1
 
 sourceFromInt :: Int64 -> Maybe Source
@@ -98,7 +98,7 @@ sourceFromInt n =
     0 ->
       Just GitHubSource
     1 ->
-      Just ManualSource
+      Just BorisSource
     _ ->
       Nothing
 
@@ -112,6 +112,7 @@ newtype OwnerName =
       getOwnerName :: Int64
     } deriving (Eq, Ord, Show)
 
+-- FIX this isn't right anymore, need to update to reflect sketch
 data OwnerType =
     GitHubOwner
   | BorisUser

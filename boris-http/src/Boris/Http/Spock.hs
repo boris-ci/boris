@@ -121,9 +121,9 @@ authenticated :: AuthenticationMode -> DbPool -> (AuthenticatedBy -> Spock.Actio
 authenticated mode pool handler =
   withAuthentication mode pool $ \x -> case x of
     Authenticated s u ->
-      handler (AuthenticatedByOAuth s u)
-    AuthenticatedNone ->
-      handler AuthenticatedByDesign
+      handler (AuthenticatedByGithub s u)
+    AuthenticatedNone u ->
+      handler (AuthenticatedByDesign u)
     NotAuthenticated -> do
       Spock.setStatus HTTP.status403
       Spock.html "not authorized"
@@ -149,4 +149,4 @@ withAuthentication mode pool handler =
             Just (AuthenticatedUser account session) ->
               handler $ Authenticated session account
     NoAuthentication ->
-      handler AuthenticatedNone
+      handler $ AuthenticatedNone (Identified (UserId 0) BorisSystemUser)

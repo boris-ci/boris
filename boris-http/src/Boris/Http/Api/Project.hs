@@ -32,32 +32,32 @@ pick pool settings authenticated project =
   Traction.runDb pool $ case settings of
     SingleTenantSettings ->
       case authenticated of
-        AuthenticatedByDesign ->
+        AuthenticatedByDesign _ ->
           picker project <$> Query.getAllProjects
-        AuthenticatedByOAuth _session user ->
-           picker project <$> Query.getAccountProjects (userId user)
+        AuthenticatedByGithub _session user ->
+           picker project <$> Query.getAccountProjects (userIdOf user)
     MultiTenantSettings ->
       case authenticated of
-        AuthenticatedByDesign ->
+        AuthenticatedByDesign _ ->
           pure Nothing
-        AuthenticatedByOAuth _session user ->
-          picker project <$> Query.getAccountProjects (userId user)
+        AuthenticatedByGithub _session user ->
+          picker project <$> Query.getAccountProjects (userIdOf user)
 
 list :: DbPool -> Settings -> AuthenticatedBy -> EitherT DbError IO [Project]
 list pool settings authenticated =
   (fmap . fmap) definitionProject . Traction.runDb pool $ case settings of
     SingleTenantSettings ->
       case authenticated of
-        AuthenticatedByDesign ->
+        AuthenticatedByDesign _ ->
           Query.getAllProjects
-        AuthenticatedByOAuth _session user ->
-          Query.getAccountProjects (userId user)
+        AuthenticatedByGithub _session user ->
+          Query.getAccountProjects (userIdOf user)
     MultiTenantSettings ->
       case authenticated of
-        AuthenticatedByDesign ->
+        AuthenticatedByDesign _ ->
           pure []
-        AuthenticatedByOAuth _session user ->
-          Query.getAccountProjects (userId user)
+        AuthenticatedByGithub _session user ->
+          Query.getAccountProjects (userIdOf user)
 
 -- FIX MTH error type
 discover :: DbPool -> Settings -> AuthenticatedBy -> Project -> EitherT Text IO (Maybe BuildId)
@@ -76,4 +76,9 @@ discover pool settings authenticated project = do
 
 new :: DbPool -> Settings -> AuthenticatedBy -> Project -> Repository -> EitherT DbError IO ()
 new pool settings authenticated project repository =
-  error "todo"
+  Traction.runDb pool $
+    case authenticated of
+      AuthenticatedByGithub _ u ->
+        Query.createProject (OwnedByGithubUser <$> u) project repository
+      AuthenticatedByDesign u ->
+        Query.createProject (OwnedByBoris <$> u) project repository
