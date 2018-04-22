@@ -457,3 +457,10 @@ getAccountProjects account = do
            (Repository repository)
       Nothing ->
         Traction.liftDb $ Traction.failWith (Traction.DbNoResults q)
+
+createProject :: MonadDb m => Project -> Repository -> m ()
+createProject project repository =
+  void $ Traction.execute [sql|
+      INSERT INTO project (source, owner, name, repository, enabled)
+           VALUES ('boris', ?, ?, ?, true)
+    |] (error "owner", renderProject project, renderRepository repository)

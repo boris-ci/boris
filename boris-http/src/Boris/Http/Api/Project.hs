@@ -5,6 +5,7 @@ module Boris.Http.Api.Project (
   , pick
   , list
   , discover
+  , new
   ) where
 
 import           Boris.Core.Data
@@ -72,3 +73,7 @@ discover pool settings authenticated project = do
       firstT Traction.renderDbError . Traction.runDb pool $
         Query.discover i project
       pure (Just i)
+
+new :: DbPool -> Settings -> AuthenticatedBy -> Project -> Repository -> EitherT DbError IO ()
+new pool settings authenticated project repository =
+  error "todo"

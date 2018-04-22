@@ -138,6 +138,22 @@ route pool authentication mode = do
         AcceptJSON ->
           Spock.json $ ApiV1.GetProjects projects
 
+  Spock.post "project" $
+    authenticated authentication pool $ \a -> do
+      settings <- getSettings pool
+      withContentType $ \content ->
+        case content of
+          ContentTypeForm -> do
+            -- FIX project name validation
+            project <- Project <$> Spock.param' "project"
+            -- FIX repository validation
+            repository <- Repository <$> Spock.param' "repository"
+            liftDbError $
+              Project.new pool settings a project repository
+            Spock.redirect $ "/project/" <> renderProject project
+          ContentTypeJSON -> do
+            error "todo"
+
   Spock.get "project/new" $
     authenticated authentication pool $ \_ -> do
       View.render $ View.newproject
