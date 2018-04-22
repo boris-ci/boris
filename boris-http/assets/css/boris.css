@@ -74,3 +74,14 @@ div#footer {
 .hidden {
     display: none;
 }
+
+input[type=text] {
+    width:100%;
+    font-size: 20px;
+    border:2px solid #555;
+    border-radius:4px;
+    margin:8px 0;
+    outline:none;
+    padding:8px;
+    box-sizing:border-box;
+}

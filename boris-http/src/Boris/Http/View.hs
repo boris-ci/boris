@@ -4,6 +4,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Boris.Http.View (
     dashboard
+  , newproject
   , configure
   , status
   , projects
@@ -68,6 +69,14 @@ dashboard =
       ]
   in
     renderPage <$> renderTemplate (bmx `usingContext` context) dashboard'
+
+newproject :: Either BMXError Text
+newproject =
+  let
+    context = [
+      ]
+  in
+    renderPage <$> renderTemplate (bmx `usingContext` context) newproject'
 
 configure :: Either BMXError Text
 configure =
@@ -268,6 +277,10 @@ login' =
 frame' :: Template
 frame' =
   $(templateFile "template/frame.hbs")
+
+newproject' :: Template
+newproject' =
+  $(templateFile "template/newproject.hbs")
 
 bmx :: (Applicative m, Monad m) => BMXState m
 bmx =
