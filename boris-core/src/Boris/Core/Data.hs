@@ -26,8 +26,6 @@ module Boris.Core.Data (
   , Registration (..)
   , BuildResult (..)
   , Acknowledge (..)
-  , WorkspacePath (..)
-  , Workspace (..)
   , BuildCancelled (..)
   , BuildData (..)
   , Result (..)
@@ -39,11 +37,6 @@ module Boris.Core.Data (
   , parseBuildResult
   , renderRegistration
   , parseRegistration
-  , pathOf
-  , pathOfMirror
-  , pathOfWorkingCopy
-  , repositoryOfMirror
-  , repositoryOfWorkingCopy
   , sortBuildIds
   , newBuild
   ) where
@@ -195,17 +188,6 @@ newtype Commit =
       renderCommit :: Text
     } deriving (Eq, Show, Ord)
 
-newtype WorkspacePath =
-  WorkspacePath {
-      renderWorkspacePath :: Text
-    } deriving (Eq, Show)
-
-data Workspace =
-  Workspace {
-      workspacePath :: WorkspacePath
-    , workspaceId :: BuildId
-    } deriving (Eq, Show)
-
 data Registration =
   Registration {
       registrationProject :: Project
@@ -251,26 +233,6 @@ parseRegistration t =
       Just $ Registration (Project p) (Repository r)
     _ ->
       Nothing
-
-pathOfMirror :: Workspace -> FilePath
-pathOfMirror =
-  (</> "mirror") . pathOf
-
-repositoryOfMirror :: Workspace -> LocalRepository
-repositoryOfMirror =
-  LocalRepository . T.pack . pathOfMirror
-
-pathOfWorkingCopy :: Workspace -> FilePath
-pathOfWorkingCopy =
-  (</> "work") . pathOf
-
-repositoryOfWorkingCopy :: Workspace -> LocalRepository
-repositoryOfWorkingCopy =
-  LocalRepository . T.pack . pathOfWorkingCopy
-
-pathOf :: Workspace -> FilePath
-pathOf w =
-  (T.unpack . renderWorkspacePath . workspacePath $ w) </> (T.unpack . renderBuildId . workspaceId $ w)
 
 sortBuildIds :: [BuildId] -> [BuildId]
 sortBuildIds =
