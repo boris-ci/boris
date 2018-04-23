@@ -95,7 +95,7 @@ projectP :: Parser Project
 projectP =
   fmap Project . argument textRead . mconcat $ [
       metavar "PROJECT"
-    , help "Project name, this relates to the project name configured in boris, e.g. boris, mismi."
+    , help "Project name, this relates to the project name configured in boris, e.g. boris."
     ]
 
 repositoryP :: Parser Repository

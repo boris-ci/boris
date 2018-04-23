@@ -7,6 +7,7 @@ module Boris.Core.Serial.Ref (
   ) where
 
 import           Boris.Core.Data
+import           Boris.Core.Data.Configuration
 
 import           Control.Lens ((^?))
 

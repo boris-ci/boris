@@ -11,6 +11,7 @@ module Boris.Http.Api.Discover (
 import qualified Data.List as List
 
 import           Boris.Core.Data
+import           Boris.Core.Data.Instance
 import qualified Boris.Http.Db.Query as Query
 
 import           P

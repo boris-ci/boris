@@ -17,20 +17,14 @@ module Boris.Core.Data (
   , ProjectId (..)
   , Project (..)
   , Build (..)
-  , BuildNamePattern
   , BuildId (..)
   , Repository (..)
   , LocalRepository (..)
   , Commit (..)
   , Ref (..)
   , Pattern (..)
-  , Command (..)
-  , BuildPattern (..)
-  , Specification (..)
   , Registration (..)
   , BuildResult (..)
-  , BuildInstance (..)
-  , DiscoverInstance (..)
   , Acknowledge (..)
   , WorkspacePath (..)
   , Workspace (..)
@@ -56,9 +50,6 @@ module Boris.Core.Data (
   , repositoryOfWorkingCopy
   , sortBuildIds
   , newBuild
-  , renderBuildNamePattern
-  , parseBuildNamePattern
-  , matchesBuild
   , renderDBLogData
   , renderDBLogs
   ) where
@@ -172,10 +163,6 @@ newtype Build =
       renderBuild :: Text
     } deriving (Eq, Show, Ord)
 
-newtype BuildNamePattern =
-  BuildNamePattern G.Pattern
-    deriving (Eq, Show)
-
 newtype BuildId =
   BuildId {
       renderBuildId :: Text
@@ -223,42 +210,6 @@ data Workspace =
   Workspace {
       workspacePath :: WorkspacePath
     , workspaceId :: BuildId
-    } deriving (Eq, Show)
-
-data Command =
-  Command {
-      commandName :: Text
-    , commandArgs :: [Text]
-    } deriving (Eq, Show)
-
-data BuildPattern =
-  BuildPattern {
-      buildNamePattern :: BuildNamePattern
-    , buildPattern :: Pattern
-    } deriving (Eq, Show)
-
-data BuildInstance =
-  BuildInstance {
-      buildSpecification :: Specification
-    , buildRef :: Ref
-    , buildCommit :: Commit
-    } deriving (Eq, Show)
-
-data DiscoverInstance =
-  DiscoverInstance {
-      discoverBuild :: Build
-    , discoverRef :: Ref
-    , discoverCommit :: Commit
-    } deriving (Eq, Ord, Show)
-
-data Specification =
-  Specification {
-      specificationBuild :: Build
-    , specificationPre :: [Command]
-    , specificationCommand :: [Command]
-    , specificationPost :: [Command]
-    , specificationSuccess :: [Command]
-    , specificationFailure :: [Command]
     } deriving (Eq, Show)
 
 data Registration =
@@ -336,31 +287,6 @@ newBuild b =
   emptyOrValue (T.isInfixOf "/" b) $
     Build b
 
-renderBuildNamePattern :: BuildNamePattern -> Text
-renderBuildNamePattern (BuildNamePattern g) =
-  T.pack . G.decompile $ g
-
-parseBuildNamePattern :: Text -> Either Text BuildNamePattern
-parseBuildNamePattern =
-  let
-    options =
-      G.CompOptions {
-          G.characterClasses = False
-        , G.characterRanges = False
-        , G.numberRanges = False
-        , G.wildcards = True
-        , G.recursiveWildcards = False
-        , G.pathSepInRanges = False
-        , G.errorRecovery = False
-        }
-  in
-    bimap T.pack BuildNamePattern . G.tryCompileWith options . T.unpack
-
-matchesBuild :: BuildNamePattern -> Build -> Bool
-matchesBuild (BuildNamePattern glob) build =
-  G.match
-    glob
-    (T.unpack $ renderBuild build)
 
 data BuildCancelled =
     BuildCancelled

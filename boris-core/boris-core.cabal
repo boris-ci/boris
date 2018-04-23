@@ -35,6 +35,9 @@ library
 
   exposed-modules:
                     Boris.Core.Data
+                    Boris.Core.Data.Configuration
+                    Boris.Core.Data.Instance
+
                     Boris.Core.Serial.Ref
                     Boris.Core.Serial.Command
 
