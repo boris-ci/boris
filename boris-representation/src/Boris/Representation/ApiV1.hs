@@ -296,7 +296,7 @@ instance FromJSON CreateProject where
   parseJSON=
     withObject "CreateProject" $ \o ->
       CreateProject
-        <$> (fmap Project $ o .: "projects")
+        <$> (fmap Project $ o .: "project")
         <*> (fmap Repository $ o .: "repository")
 
 data GetProject =
