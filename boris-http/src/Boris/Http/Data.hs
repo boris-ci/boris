@@ -6,6 +6,7 @@ module Boris.Http.Data (
   , GithubClient (..)
   , GithubSecret (..)
   , GithubUser (..)
+  , GithubOrganisation (..)
   , GithubCode (..)
   , GithubOAuth (..)
   , GithubId (..)

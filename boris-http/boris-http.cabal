@@ -19,14 +19,8 @@ library
                     , ambiata-boris-queue
                     , ambiata-boris-service
                     , ambiata-boris-representation
-                    , ambiata-jebediah
-                    , ambiata-mismi-core
-                    , ambiata-mismi-cloudwatch-logs
-                    , ambiata-mismi-s3
-                    , ambiata-mismi-s3-core
                     , ambiata-p
                     , ambiata-snooze
-                    , ambiata-spine
                     , ambiata-x-aeson
                     , ambiata-x-eithert
                     , async                           >= 2.0        && < 2.2
@@ -108,9 +102,6 @@ executable boris-http
                     , ambiata-boris-core
                     , ambiata-boris-http
                     , ambiata-boris-queue
-                    , ambiata-mismi-core
-                    , ambiata-mismi-dynamodb
-                    , ambiata-mismi-s3
                     , ambiata-p
                     , ambiata-twine
                     , ambiata-x-eithert
@@ -182,12 +173,7 @@ test-suite test-io
                     , ambiata-boris-queue
                     , ambiata-disorder-core
                     , ambiata-disorder-corpus
-                    , ambiata-jebediah
-                    , ambiata-mismi-core
-                    , ambiata-mismi-core-test
                     , ambiata-p
-                    , ambiata-spine
-                    , ambiata-spine-test
                     , ambiata-x-eithert
                     , hedgehog                        == 0.5.*
                     , mmorph

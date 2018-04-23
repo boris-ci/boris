@@ -88,8 +88,6 @@ test-suite test-io
                     , ambiata-boris-git
                     , ambiata-disorder-core
                     , ambiata-disorder-corpus
-                    , ambiata-mismi-core
-                    , ambiata-mismi-core-test
                     , ambiata-tine
                     , ambiata-p
                     , ambiata-x-eithert

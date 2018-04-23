@@ -1,1 +1,4 @@
-../framework/ghci
+:set prompt "λ> "
+:set -Wall
+:set -XOverloadedStrings
+:set -XScopedTypeVariables
