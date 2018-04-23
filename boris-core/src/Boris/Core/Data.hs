@@ -29,15 +29,11 @@ module Boris.Core.Data (
   , WorkspacePath (..)
   , Workspace (..)
   , BuildCancelled (..)
-  , DBLogData (..)
-  , LogData (..)
   , BuildData (..)
   , Result (..)
   , BuildTree (..)
   , BuildTreeRef (..)
   , QueueSize (..)
-  , Agent (..)
-  , AgentId (..)
   , Settings (..)
   , renderBuildResult
   , parseBuildResult
@@ -50,8 +46,6 @@ module Boris.Core.Data (
   , repositoryOfWorkingCopy
   , sortBuildIds
   , newBuild
-  , renderDBLogData
-  , renderDBLogs
   ) where
 
 import qualified Data.List as L
@@ -308,28 +302,6 @@ data BuildData =
     , buildDataCancelled :: Maybe BuildCancelled
     } deriving (Eq, Ord, Show)
 
-data LogData =
-    DBLog [DBLogData]
-    deriving (Eq, Ord, Show)
-
-data DBLogData =
-  DBLogData {
-      logEntryTimeStamp :: UTCTime
-    , logEntry :: Text
-    } deriving (Eq, Ord, Show)
-
-renderTime :: UTCTime -> Text
-renderTime =
-  T.pack . formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ"
-
-renderDBLogData :: DBLogData -> Text
-renderDBLogData dbl =
-  mconcat [ renderTime $ logEntryTimeStamp dbl, "        ", logEntry dbl ]
-
-renderDBLogs :: [DBLogData] -> Text
-renderDBLogs ls =
-  T.intercalate "\n" $ renderDBLogData <$> ls
-
 data Result =
   Result {
       resultBuildId :: !BuildId
@@ -356,17 +328,6 @@ data BuildTreeRef =
 newtype QueueSize =
   QueueSize {
       getQueueSize :: Int
-    } deriving (Eq, Ord, Show)
-
-
-data Agent =
-  Agent {
-      agentTags :: [Text]
-    } deriving (Eq, Ord, Show)
-
-newtype AgentId =
-  AgentId {
-      agentId :: Int64
     } deriving (Eq, Ord, Show)
 
 data Settings =

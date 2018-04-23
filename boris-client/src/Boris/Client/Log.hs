@@ -7,6 +7,7 @@ module Boris.Client.Log (
 import           Boris.Client.Http (BorisHttpClientError (..))
 import qualified Boris.Client.Http as H
 import           Boris.Core.Data
+import           Boris.Core.Data.Log
 import           Boris.Representation.ApiV1
 
 import           P

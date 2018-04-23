@@ -38,6 +38,8 @@ library
                     Boris.Core.Data.Agent
                     Boris.Core.Data.Configuration
                     Boris.Core.Data.Instance
+                    Boris.Core.Data.Log
+                    Boris.Core.Data.Time
 
                     Boris.Core.Serial.Ref
                     Boris.Core.Serial.Command

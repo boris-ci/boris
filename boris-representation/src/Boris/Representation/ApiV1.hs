@@ -24,6 +24,7 @@ module Boris.Representation.ApiV1 (
 
 import           Boris.Core.Data
 import           Boris.Core.Data.Instance
+import           Boris.Core.Data.Log
 
 import           Data.Aeson (FromJSON (..), ToJSON (..), Value, object, withObject, (.:), (.:?), (.=))
 

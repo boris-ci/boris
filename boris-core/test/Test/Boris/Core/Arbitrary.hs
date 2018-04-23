@@ -8,6 +8,8 @@ import qualified Data.Text as T
 import           Disorder.Corpus
 
 import           Boris.Core.Data
+import           Boris.Core.Data.Configuration
+import           Boris.Core.Data.Log
 
 import           P
 

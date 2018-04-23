@@ -43,6 +43,7 @@ module Boris.Http.Db.Query (
 
 
 import           Boris.Core.Data
+import           Boris.Core.Data.Log
 import           Boris.Http.Data
 
 import qualified Data.Text as Text
