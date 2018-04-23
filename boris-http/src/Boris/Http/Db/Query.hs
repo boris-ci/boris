@@ -10,7 +10,6 @@ module Boris.Http.Db.Query (
   , cancel
   , register
   , acknowledge
-  , acknowledge'
   , complete
   , heartbeat
   , index
@@ -49,8 +48,6 @@ import           Boris.Http.Data
 import qualified Data.Text as Text
 
 import           Database.PostgreSQL.Simple ((:.) (..))
-
-import           Jebediah.Data (LogGroup (..), LogStream (..))
 
 import           P
 
@@ -222,19 +219,8 @@ cancel buildid =
          AND cancelled IS NULL
     |] (Traction.Only . renderBuildId $ buildid)
 
-acknowledge :: MonadDb m => BuildId -> LogGroup -> LogStream -> m Acknowledge
-acknowledge buildid group stream =
-  fmap (bool Accept AlreadyRunning . (==) (0 :: Int64)) $ Traction.execute [sql|
-          UPDATE build
-             SET start_time = now(),
-                 log_group = ?,
-                 log_stream = ?
-           WHERE build_id = ?::integer
-             AND start_time IS NULL
-    |] (logGroup group, logStream stream, renderBuildId buildid)
-
-acknowledge' :: MonadDb m => BuildId -> m Acknowledge
-acknowledge' buildid =
+acknowledge :: MonadDb m => BuildId -> m Acknowledge
+acknowledge buildid =
   fmap (bool Accept AlreadyRunning . (==) (0 :: Int64)) $ Traction.execute [sql|
           UPDATE build
              SET start_time = now()

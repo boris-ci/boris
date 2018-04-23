@@ -12,8 +12,6 @@ import           Control.Monad.IO.Class (MonadIO (..))
 import           Hedgehog
 import qualified Hedgehog.Gen as Gen
 
-import           Jebediah.Data (LogGroup (..), LogStream (..))
-
 import           P
 
 import           System.IO (IO)
@@ -55,11 +53,9 @@ prop_acknowledge =
     project <- forAll Gen.genProject
     build <- forAll Gen.genBuild
     buildid <- forAll Gen.genBuildId
-    group <- LogGroup <$> forAll (Gen.element ["fred", "barney"])
-    stream <- LogStream <$> forAll (Gen.element ["1", "2", "3"])
     actual <- db $ do
       Query.register project build buildid
-      ack <- Query.acknowledge buildid group stream
+      ack <- Query.acknowledge buildid
       result <- Query.fetch buildid
       pure $ (ack, isJust . buildDataStartTime <$> result)
     actual === (Accept, Just True)
@@ -70,12 +66,10 @@ prop_acknowledge_reject =
     project <- forAll Gen.genProject
     build <- forAll Gen.genBuild
     buildid <- forAll Gen.genBuildId
-    group <- LogGroup <$> forAll (Gen.element ["fred", "barney"])
-    stream <- LogStream <$> forAll (Gen.element ["1", "2", "3"])
     actual <- db $ do
       Query.register project build buildid
-      ack1 <- Query.acknowledge buildid group stream
-      ack2 <- Query.acknowledge buildid group stream
+      ack1 <- Query.acknowledge buildid
+      ack2 <- Query.acknowledge buildid
       pure $ (ack1, ack2)
     actual === (Accept, AlreadyRunning)
 
@@ -133,9 +127,9 @@ prop_user =
     actual <- db $ do
       user1 <- Query.addUser github1
       muser1 <- Query.userByGithubId (githubUserId github1)
-      Query.updateUser (user1 { userGithub = github2 })
+      Query.updateUser (user1 { userOf = github2 })
       muser2 <- Query.userByGithubId (githubUserId github2)
-      pure (userGithub user1, userGithub <$> muser1, userGithub <$> muser2)
+      pure (userOf user1, userOf <$> muser1, userOf <$> muser2)
     actual === (github1, Just github1, Just github2)
 
 prop_session :: Property
@@ -147,7 +141,7 @@ prop_session =
     let session = Session sessionId oauth
     (user, actual) <- db $ do
       user <- Query.addUser github
-      Query.newSession session user
+      Query.newSession session (userIdOf user)
       Query.tickSession sessionId
       result <- Query.getSession sessionId
       pure (user, result)

@@ -19,7 +19,6 @@ library
                     , ambiata-boris-client
                     , ambiata-boris-git
                     , ambiata-boris-queue
-                    , ambiata-jebediah
                     , ambiata-mismi-cloudwatch-logs
                     , ambiata-mismi-core
                     , ambiata-mismi-sqs

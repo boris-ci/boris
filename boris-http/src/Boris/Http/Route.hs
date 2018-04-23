@@ -140,7 +140,6 @@ route pool authentication mode = do
 
   Spock.post "project" $
     authenticated authentication pool $ \a -> do
-      settings <- getSettings pool
       withContentType $ \content ->
         case content of
           ContentTypeForm -> do
@@ -149,7 +148,7 @@ route pool authentication mode = do
             -- FIX repository validation
             repository <- Repository <$> Spock.param' "repository"
             liftDbError $
-              Project.new pool settings a project repository
+              Project.new pool a project repository
             Spock.redirect $ "/project/" <> renderProject project
           ContentTypeJSON -> do
             e <- Spock.jsonBody
@@ -162,7 +161,7 @@ route pool authentication mode = do
                 Spock.json $ object ["error" .= ("could not parse create project." :: Text)]
               Just (ApiV1.CreateProject project repository) -> do
                 liftDbError $
-                  Project.new pool settings a project repository
+                  Project.new pool a project repository
                 Spock.setStatus HTTP.created201
                 Spock.setHeader "Location" $ "/project/" <> renderProject project
                 Spock.json $ ApiV1.GetProject project []

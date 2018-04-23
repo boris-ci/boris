@@ -7,8 +7,6 @@ import qualified Boris.Http.Db.Query as Query
 
 import qualified Nest
 
-import           Mismi (discoverAWSEnv, renderRegionError)
-
 import           P
 
 import qualified System.IO as IO
@@ -25,12 +23,8 @@ import Network.Wai.Handler.Warp (runSettings, defaultSettings, setPort, setOnExc
 
 main :: IO ()
 main = do
-  let
-    mkEnv = do
-     orDie renderRegionError discoverAWSEnv
-
   Boot.Boot mode authentication pool defaults <-
-    Nest.force $ Boot.boot mkEnv
+    Nest.force $ Boot.boot
 
   orDie Traction.renderDbError $
     Schema.initialise pool

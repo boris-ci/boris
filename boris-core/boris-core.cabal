@@ -13,7 +13,6 @@ description:           boris-core
 library
   build-depends:
                       base                            >= 3          && < 5
-                    , ambiata-jebediah
                     , ambiata-p
                     , ambiata-x-htoml
                     , containers                      == 0.5.*
@@ -57,7 +56,6 @@ test-suite test
                     , ambiata-boris-core
                     , ambiata-disorder-core
                     , ambiata-disorder-corpus
-                    , ambiata-jebediah
                     , ambiata-p
                     , hedgehog                        == 0.5.*
                     , text                            == 1.2.*

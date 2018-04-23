@@ -11,7 +11,6 @@ module Boris.Http.Api.Discover (
 import qualified Data.List as List
 
 import           Boris.Core.Data
-import           Boris.Http.Data
 import qualified Boris.Http.Db.Query as Query
 
 import           P
@@ -35,7 +34,8 @@ renderCompleteError err =
 
 complete :: DbPool -> BuildId -> Project -> [DiscoverInstance] -> EitherT CompleteError IO ()
 complete pool buildid project discovers = do
-  for_ discovers $ \(DiscoverInstance build ref commit) -> do
+  -- FIX ref should be handled
+  for_ discovers $ \(DiscoverInstance build _ref commit) -> do
     current <- firstT CompleteDbError . Traction.runDb pool $
       Query.getProjectCommitSeen project commit
     already <- firstT CompleteDbError . Traction.runDb pool $

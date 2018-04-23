@@ -94,7 +94,7 @@ submit pool settings authenticated project build ref = do
     Just _repository -> do
       let
         -- FIX this needs to be stored with register
-        normalised = with ref $ \rr ->
+        _normalised = with ref $ \rr ->
           if Text.isPrefixOf "refs/" . renderRef $ rr then rr else Ref . ((<>) "refs/heads/") . renderRef $ rr
       firstT BuildDbError . Traction.runDb pool $ do
         i <- Query.tick
@@ -109,7 +109,7 @@ heartbeat pool  buildId =
 acknowledge :: DbPool -> BuildId -> EitherT DbError IO Acknowledge
 acknowledge pool buildId =
   Traction.runDb pool $
-    Query.acknowledge' buildId
+    Query.acknowledge buildId
 
 cancel :: DbPool -> BuildId -> EitherT DbError IO (Maybe ())
 cancel pool i =

@@ -74,8 +74,8 @@ discover pool settings authenticated project = do
         Query.discover i project
       pure (Just i)
 
-new :: DbPool -> Settings -> AuthenticatedBy -> Project -> Repository -> EitherT DbError IO ()
-new pool settings authenticated project repository =
+new :: DbPool -> AuthenticatedBy -> Project -> Repository -> EitherT DbError IO ()
+new pool authenticated project repository =
   Traction.runDb pool $
     case authenticated of
       AuthenticatedByGithub _ u ->

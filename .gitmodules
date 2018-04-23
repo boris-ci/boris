@@ -10,9 +10,6 @@
 [submodule "lib/mismi"]
 	path = lib/mismi
 	url = git@github.com:ambiata/mismi
-[submodule "lib/jebediah"]
-	path = lib/jebediah
-	url = git@github.com:markhibberd/jebediah
 [submodule "lib/twine"]
 	path = lib/twine
 	url = git@github.com:ambiata/twine
@@ -25,9 +22,6 @@
 [submodule "lib/bmx.hs"]
 	path = lib/bmx.hs
 	url = git@github.com:ambiata/bmx.hs
-[submodule "lib/spine"]
-	path = lib/spine
-	url = git@github.com:markhibberd/spine
 [submodule "lib/traction"]
 	path = lib/traction
 	url = git@github.com:markhibberd/traction
