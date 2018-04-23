@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE DeriveFunctor #-}
 module Boris.Http.Data (
     ErrorId (..)
   , newErrorId
@@ -11,6 +12,9 @@ module Boris.Http.Data (
   , GithubLogin (..)
   , GithubName (..)
   , GithubEmail (..)
+  , OwnedBy (..)
+  , BorisSystemUser (..)
+  , Identified (..)
   , UserId (..)
   , User (..)
   , AuthenticatedUser (..)
@@ -92,20 +96,45 @@ data GithubUser =
     , githubUserEmail :: Maybe GithubEmail
     } deriving (Eq, Show)
 
+data GithubOrganisation =
+  GithubOrganisation {
+      githubOrganisationId :: GithubId
+    , githubOrganisationName :: GithubName
+    } deriving (Eq, Show)
+
 newtype UserId =
   UserId {
       getUserId :: Int
     } deriving (Eq, Ord, Show)
 
+data Identified a =
+  Identified {
+      userIdOf :: UserId
+    , userOf :: a
+    } deriving (Eq, Show, Functor)
+
 data User =
-  User {
-      userId :: UserId
-    , userGithub :: GithubUser
-    } deriving (Eq, Show)
+    UserFromGithub GithubUser
+  | UserFormBoris BorisSystemUser
+    deriving (Eq, Show)
+
+data OwnedBy =
+    OwnedByGithubUser GithubUser
+  | OwnedByGithubOrganisation GithubOrganisation
+  | OwnedByBoris BorisSystemUser
+    deriving (Eq, Show)
+
+data BorisSystemUser =
+    BorisSystemUser
+    deriving (Eq, Show)
+
+data BorisServiceAccount =
+    BorisServiceAccount
+    deriving (Eq, Show)
 
 data AuthenticatedUser =
   AuthenticatedUser {
-      authenticatedUser :: User
+      authenticatedUser :: Identified GithubUser
     , authenticatedSession :: Session
     } deriving (Eq, Show)
 
@@ -121,16 +150,19 @@ data Session =
     } deriving (Eq, Ord, Show)
 
 data Authenticated =
-    Authenticated Session User
-  | AuthenticatedNone
+    Authenticated Session (Identified GithubUser)
+  | AuthenticatedNone (Identified BorisSystemUser)
   | NotAuthenticated
   | WasAuthenticated SessionId
     deriving (Eq, Show)
 
 data AuthenticatedBy =
-    AuthenticatedByOAuth Session User
-  | AuthenticatedByDesign
+    AuthenticatedByGithub Session (Identified GithubUser)
+  | AuthenticatedByDesign (Identified BorisSystemUser)
+-- TODO: This will need to be a thing once agents are involved...
+--  | AuthenticatedByServiceAccount UserId BorisServiceAccount
     deriving (Eq, Show)
+
 
 newSessionToken :: MonadIO m => m SessionId
 newSessionToken =

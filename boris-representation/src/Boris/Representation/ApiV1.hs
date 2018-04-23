@@ -19,6 +19,7 @@ module Boris.Representation.ApiV1 (
   , PostCompleteRequest (..)
   , PostCompleteResponse (..)
   , GetLogs (..)
+  , CreateProject (..)
   ) where
 
 import           Boris.Core.Data
@@ -277,6 +278,26 @@ instance FromJSON GetProjects where
     withObject "GetProjects" $ \o ->
       fmap GetProjects $
         o .: "projects" >>= pure . fmap Project
+
+data CreateProject =
+    CreateProject {
+        createProjectName :: Project
+      , createProjectRepository :: Repository
+      } deriving (Eq, Ord, Show)
+
+instance ToJSON CreateProject where
+  toJSON (CreateProject p r) =
+    object [
+        "project" .= renderProject p
+      , "repository" .= renderRepository r
+      ]
+
+instance FromJSON CreateProject where
+  parseJSON=
+    withObject "CreateProject" $ \o ->
+      CreateProject
+        <$> (fmap Project $ o .: "project")
+        <*> (fmap Repository $ o .: "repository")
 
 data GetProject =
     GetProject {

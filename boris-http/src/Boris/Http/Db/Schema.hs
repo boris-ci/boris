@@ -117,6 +117,11 @@ schema = [
         )
     |]
 
+  , Migration "insert-boris-system-owner" [sql|
+      INSERT INTO owner (id, name, type)
+           VALUES (0, 'boris', 1)
+    |]
+
   , Migration "create-projects" [sql|
       CREATE TABLE project (
           id SERIAL PRIMARY KEY

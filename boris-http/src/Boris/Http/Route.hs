@@ -87,7 +87,7 @@ route pool authentication mode = do
     withAuthentication authentication pool $ \a -> case a of
       Authenticated _ _ ->
         View.render View.dashboard
-      AuthenticatedNone ->
+      AuthenticatedNone _ ->
         View.render View.dashboard
       NotAuthenticated -> do
         Spock.redirect "/login"
@@ -152,7 +152,20 @@ route pool authentication mode = do
               Project.new pool settings a project repository
             Spock.redirect $ "/project/" <> renderProject project
           ContentTypeJSON -> do
-            error "todo"
+            e <- Spock.jsonBody
+            -- FIX project name validation
+            -- FIX repository validation
+            case e of
+              Nothing -> do
+                -- FIX unhax
+                Spock.setStatus HTTP.status400
+                Spock.json $ object ["error" .= ("could not parse create project." :: Text)]
+              Just (ApiV1.CreateProject project repository) -> do
+                liftDbError $
+                  Project.new pool settings a project repository
+                Spock.setStatus HTTP.created201
+                Spock.setHeader "Location" $ "/project/" <> renderProject project
+                Spock.json $ ApiV1.GetProject project []
 
   Spock.get "project/new" $
     authenticated authentication pool $ \_ -> do

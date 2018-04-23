@@ -39,6 +39,7 @@ module Boris.Http.Db.Query (
   , setSettings
   , getAllProjects
   , getAccountProjects
+  , createProject
   ) where
 
 
@@ -290,7 +291,7 @@ results = do
       (Ref <$> r)
       (bool BuildKo BuildOk br)
 
-userByGithubId :: MonadDb m => GithubId -> m (Maybe User)
+userByGithubId :: MonadDb m => GithubId -> m (Maybe (Identified GithubUser))
 userByGithubId uid = do
   x <- Traction.unique [sql|
       SELECT id, github_id, github_login, github_name, github_email
@@ -298,7 +299,7 @@ userByGithubId uid = do
        WHERE github_id = ?
     |] (Traction.Only $ githubId uid)
   pure . with x $ \(i, guid, login, name, email) ->
-    User
+    Identified
       (UserId i)
       (GithubUser
         (GithubId guid)
@@ -306,7 +307,7 @@ userByGithubId uid = do
         (GithubName <$> name)
         (GithubEmail <$> email))
 
-updateUser :: MonadDb m => User -> m ()
+updateUser :: MonadDb m => Identified GithubUser -> m ()
 updateUser user = do
   void $ Traction.execute [sql|
       UPDATE account
@@ -316,13 +317,13 @@ updateUser user = do
            , github_email = ?
            , updated = now()
        WHERE id = ?
-    |] (githubId . githubUserId . userGithub $ user
-      , githubLogin . githubUserLogin . userGithub $ user
-      , fmap githubName . githubUserName. userGithub $ user
-      , fmap githubEmail . githubUserEmail . userGithub $ user
-      , getUserId . userId $ user)
+    |] (githubId . githubUserId . userOf $ user
+      , githubLogin . githubUserLogin . userOf $ user
+      , fmap githubName . githubUserName. userOf $ user
+      , fmap githubEmail . githubUserEmail . userOf $ user
+      , getUserId . userIdOf $ user)
 
-addUser :: MonadDb m => GithubUser -> m User
+addUser :: MonadDb m => GithubUser -> m (Identified GithubUser)
 addUser user = do
   i <- Traction.value $ Traction.mandatory [sql|
       INSERT INTO account (github_id, github_login, github_name, github_email)
@@ -332,15 +333,15 @@ addUser user = do
       , githubLogin . githubUserLogin $ user
       , fmap githubName . githubUserName $ user
       , fmap githubEmail . githubUserEmail $ user)
-  pure $ User (UserId i) user
+  pure $ Identified (UserId i) user
 
-newSession :: MonadDb m => Session -> User -> m ()
+newSession :: MonadDb m => Session -> UserId -> m ()
 newSession session user = do
   void $ Traction.execute [sql|
       INSERT INTO session (id, account, oauth)
            VALUES (?, ?, ?)
     |] (getSessionId . sessionIdentifier $ session
-      , getUserId . userId $ user
+      , getUserId user
       , githubOAuth . sessionOAuth $ session)
 
 tickSession :: MonadDb m => SessionId -> m ()
@@ -381,7 +382,7 @@ getSession session = do
     |] (Traction.Only $ getSessionId $ session)
   pure . with x $ \(i, oauth, guid, login, name, email) ->
     AuthenticatedUser
-      (User
+      (Identified
         (UserId i)
         (GithubUser
           (GithubId guid)
@@ -458,9 +459,9 @@ getAccountProjects account = do
       Nothing ->
         Traction.liftDb $ Traction.failWith (Traction.DbNoResults q)
 
-createProject :: MonadDb m => Project -> Repository -> m ()
-createProject project repository =
+createProject :: MonadDb m => (Identified OwnedBy) -> Project -> Repository -> m ()
+createProject owner project repository =
   void $ Traction.execute [sql|
       INSERT INTO project (source, owner, name, repository, enabled)
-           VALUES ('boris', ?, ?, ?, true)
-    |] (error "owner", renderProject project, renderRepository repository)
+           VALUES (?, ?, ?, ?, true)
+    |] (sourceToInt BorisSource, getUserId . userIdOf $ owner, renderProject project, renderRepository repository)

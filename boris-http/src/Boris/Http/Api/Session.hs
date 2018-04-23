@@ -108,18 +108,18 @@ authenticate pool manager client secret code = do
       firstT AuthenticationDbError . Traction.runDb pool $
         Query.addUser githubUser
     Just u ->
-      if githubUser == userGithub u then
+      if githubUser == userOf u then
         pure u
       else do
         firstT AuthenticationDbError . Traction.runDb pool $
-          Query.updateUser (u { userGithub = githubUser})
+          Query.updateUser (u { userOf = githubUser})
         pure u
   s <- newSessionToken
   let
     session = Session s (GithubOAuth access)
 
   firstT AuthenticationDbError . Traction.runDb pool $
-    Query.newSession session u
+    Query.newSession session (userIdOf u)
   pure session
 
 newtype AccessToken =
