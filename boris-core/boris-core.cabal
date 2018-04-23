@@ -35,6 +35,7 @@ library
 
   exposed-modules:
                     Boris.Core.Data
+                    Boris.Core.Data.Agent
                     Boris.Core.Data.Configuration
                     Boris.Core.Data.Instance
 
