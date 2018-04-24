@@ -11,6 +11,7 @@ import           Boris.Core.Data
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Repository
+import           Boris.Core.Data.Tenant
 import qualified Boris.Http.Api.Build as Build
 import qualified Boris.Http.Api.Discover as Discover
 import qualified Boris.Http.Api.Project as Project

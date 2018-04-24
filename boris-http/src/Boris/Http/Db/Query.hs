@@ -47,6 +47,7 @@ import           Boris.Core.Data.Build
 import           Boris.Core.Data.Log
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Repository
+import           Boris.Core.Data.Tenant
 import           Boris.Http.Data
 
 import           Database.PostgreSQL.Simple ((:.) (..))

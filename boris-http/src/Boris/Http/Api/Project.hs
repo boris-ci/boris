@@ -12,6 +12,7 @@ import           Boris.Core.Data
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Repository
+import           Boris.Core.Data.Tenant
 import           Boris.Http.Data
 import qualified Boris.Http.Db.Query as Query
 

@@ -1,8 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Boris.Core.Data (
-    Registration (..)
-  , BuildResult (..)
+    BuildResult (..)
   , Acknowledge (..)
   , BuildCancelled (..)
   , BuildData (..)
@@ -10,11 +9,8 @@ module Boris.Core.Data (
   , BuildTree (..)
   , BuildTreeRef (..)
   , QueueSize (..)
-  , Settings (..)
   , renderBuildResult
   , parseBuildResult
-  , renderRegistration
-  , parseRegistration
   ) where
 
 import           Boris.Core.Data.Build
@@ -25,13 +21,6 @@ import qualified Data.Text as T
 import           Data.Time (UTCTime)
 
 import           P
-
-
-data Registration =
-  Registration {
-      registrationProject :: Project
-    , registrationRepository :: Repository
-    } deriving (Eq, Show)
 
 data BuildResult =
     BuildOk
@@ -60,19 +49,6 @@ data Acknowledge =
     Accept
   | AlreadyRunning
     deriving (Eq, Ord, Show, Enum, Bounded)
-
-renderRegistration :: Registration -> Text
-renderRegistration r =
-  T.intercalate "=" [renderProject . registrationProject $ r, renderRepository . registrationRepository $ r]
-
-parseRegistration :: Text -> Maybe Registration
-parseRegistration t =
-  case T.splitOn "=" t of
-    [p,r] ->
-      Just $ Registration (Project p) (Repository r)
-    _ ->
-      Nothing
-
 
 data BuildCancelled =
     BuildCancelled
@@ -121,8 +97,3 @@ newtype QueueSize =
   QueueSize {
       getQueueSize :: Int
     } deriving (Eq, Ord, Show)
-
-data Settings =
-    SingleTenantSettings
-  | MultiTenantSettings
-    deriving (Eq, Ord, Show)

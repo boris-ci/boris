@@ -9,6 +9,7 @@ module Boris.Http.Boot (
   ) where
 
 import           Boris.Core.Data
+import           Boris.Core.Data.Tenant
 import           Boris.Http.Data
 
 import           Control.Monad.IO.Class (MonadIO (..))
