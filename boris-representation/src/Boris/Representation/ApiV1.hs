@@ -23,6 +23,11 @@ module Boris.Representation.ApiV1 (
   ) where
 
 import           Boris.Core.Data
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Instance
+import           Boris.Core.Data.Log
+import           Boris.Core.Data.Project
+import           Boris.Core.Data.Repository
 
 import           Data.Aeson (FromJSON (..), ToJSON (..), Value, object, withObject, (.:), (.:?), (.=))
 

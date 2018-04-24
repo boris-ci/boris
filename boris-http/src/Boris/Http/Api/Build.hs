@@ -24,6 +24,9 @@ import qualified Data.Text as Text
 import qualified Data.Time as Time
 
 import           Boris.Core.Data
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Project
+import           Boris.Core.Data.Log
 import qualified Boris.Http.Api.Project as Project
 import           Boris.Http.Data
 import qualified Boris.Http.Db.Query as Query

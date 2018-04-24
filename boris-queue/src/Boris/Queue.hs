@@ -20,6 +20,9 @@ import           Control.Lens (ix, to, (.~), (^.), (^?))
 import           Control.Monad.Trans.Class (lift)
 
 import           Boris.Core.Data
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Project
+import           Boris.Core.Data.Repository
 
 import           Data.Aeson (Value (..), object, withObject, (.:), (.:?), (.=))
 import           Data.Aeson.Types (Parser)

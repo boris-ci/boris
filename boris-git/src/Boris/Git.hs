@@ -11,6 +11,8 @@ module Boris.Git (
   ) where
 
 import           Boris.Core.Data
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Repository
 
 import           Control.Monad.IO.Class (liftIO)
 

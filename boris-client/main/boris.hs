@@ -5,6 +5,9 @@ import           BuildInfo_ambiata_boris_client
 import           DependencyInfo_ambiata_boris_client
 
 import           Boris.Core.Data
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Log
+import           Boris.Core.Data.Project
 import           Boris.Client.Http (renderBorisHttpClientError)
 import qualified Boris.Client.Build as B
 import qualified Boris.Client.Project as P

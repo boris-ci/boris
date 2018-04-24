@@ -35,6 +35,16 @@ library
 
   exposed-modules:
                     Boris.Core.Data
+                    Boris.Core.Data.Agent
+                    Boris.Core.Data.Build
+                    Boris.Core.Data.Configuration
+                    Boris.Core.Data.Instance
+                    Boris.Core.Data.Log
+                    Boris.Core.Data.Project
+                    Boris.Core.Data.Repository
+                    Boris.Core.Data.Time
+                    Boris.Core.Data.Workspace
+
                     Boris.Core.Serial.Ref
                     Boris.Core.Serial.Command
 
