@@ -22,9 +22,9 @@ import           BMX (BMXError, renderBMXError)
 import           BMX (BMXState, Template, partialFromTemplate, renderPage, renderTemplate, templateFile)
 import           BMX (BMXValue (..), defaultState, usingContext, usingPartials)
 
-import           Boris.Core.Data (Build (..), BuildCancelled (..), BuildData (..), BuildId (..), BuildResult (..),
-                                  BuildTree (..), BuildTreeRef (..), Commit (..), Project (..), Ref (..), Result (..),
-                                  renderBuildResult, sortBuildIds)
+import           Boris.Core.Data
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Project
 import           Boris.Http.Data
 
 import           Control.Monad.IO.Class (MonadIO (..))

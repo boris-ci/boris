@@ -5,7 +5,7 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Test.Boris.Core.Data where
 
-import           Boris.Core.Data
+import           Boris.Core.Data.Build
 
 
 import           Data.List (sort)

@@ -4,7 +4,8 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Test.Boris.Core.Serial.Ref where
 
-import           Boris.Core.Data
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Configuration
 import           Boris.Core.Serial.Ref
 
 import qualified Data.Text as T

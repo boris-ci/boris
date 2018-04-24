@@ -6,7 +6,7 @@ module Boris.Core.Serial.Ref (
   , renderBorisPatternConfigError
   ) where
 
-import           Boris.Core.Data
+import           Boris.Core.Data.Build
 import           Boris.Core.Data.Configuration
 
 import           Control.Lens ((^?))

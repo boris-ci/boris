@@ -10,7 +10,8 @@ module Boris.Core.Data.Workspace (
   , repositoryOfWorkingCopy
   ) where
 
-import           Boris.Core.Data
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Repository
 
 import qualified Data.Text as Text
 

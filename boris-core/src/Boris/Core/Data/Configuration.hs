@@ -7,11 +7,12 @@ module Boris.Core.Data.Configuration (
   , BuildNamePattern
   , renderBuildNamePattern
   , parseBuildNamePattern
+  , matchesBuild
   ) where
 
-import qualified Data.Text as Text
+import           Boris.Core.Data.Build
 
-import           Boris.Core.Data
+import qualified Data.Text as Text
 
 import           P
 
@@ -41,7 +42,7 @@ data BuildPattern =
 
 newtype BuildNamePattern =
   BuildNamePattern {
-      getBuildNamePattern :: Glob.Pattern
+      _getBuildNamePattern :: Glob.Pattern
     } deriving (Eq, Show)
 
 renderBuildNamePattern :: BuildNamePattern -> Text

@@ -4,7 +4,7 @@ module Boris.Core.Data.Instance (
   , DiscoverInstance (..)
   ) where
 
-import           Boris.Core.Data
+import           Boris.Core.Data.Build
 import           Boris.Core.Data.Configuration
 
 import           P

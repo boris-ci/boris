@@ -8,6 +8,9 @@ module Boris.Http.Route (
   ) where
 
 import           Boris.Core.Data
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Project
+import           Boris.Core.Data.Repository
 import qualified Boris.Http.Api.Build as Build
 import qualified Boris.Http.Api.Discover as Discover
 import qualified Boris.Http.Api.Project as Project

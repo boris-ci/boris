@@ -10,7 +10,7 @@ module Boris.Core.Data.Log (
 import           Boris.Core.Data.Time
 
 import qualified Data.Text as Text
-import           Data.Time (UTCTime, formatTime, defaultTimeLocale)
+import           Data.Time (UTCTime)
 
 import           P
 

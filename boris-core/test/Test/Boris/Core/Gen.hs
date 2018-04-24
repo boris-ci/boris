@@ -4,8 +4,10 @@
 module Test.Boris.Core.Gen where
 
 import           Boris.Core.Data
+import           Boris.Core.Data.Build
 import           Boris.Core.Data.Configuration
 import           Boris.Core.Data.Log
+import           Boris.Core.Data.Project
 
 import           Data.Text (Text)
 import qualified Data.Text as Text
