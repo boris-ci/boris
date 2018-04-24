@@ -266,7 +266,7 @@ refP =
 
 buildIdP :: Parser BuildId
 buildIdP =
-  fmap BuildId . argument textRead . mconcat $ [
+  fmap BuildId . argument auto . mconcat $ [
       metavar "BUILD_ID"
     , help "Unique build identifier."
     ]

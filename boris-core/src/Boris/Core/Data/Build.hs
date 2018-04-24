@@ -8,6 +8,7 @@ module Boris.Core.Data.Build (
   , Pattern (..)
   , sortBuildIds
   , newBuild
+  , renderBuildId
   ) where
 
 import qualified Data.List as List
@@ -18,20 +19,17 @@ import           P
 newtype Build =
   Build {
       renderBuild :: Text
-    } deriving (Eq, Show, Ord)
+    } deriving (Eq, Ord, Show)
 
 newtype BuildId =
   BuildId {
-      renderBuildId :: Text -- FIX Int64
-    } deriving (Eq, Show)
+      getBuildId :: Int64
+    } deriving (Eq, Ord, Show)
 
--- FIX
-instance Ord BuildId where
-  compare b1 b2 =
-    let
-      asInt = (readMaybe :: [Char] -> Maybe Int) . Text.unpack . renderBuildId
-    in
-      asInt b1 `compare` asInt b2
+
+renderBuildId :: BuildId -> Text
+renderBuildId =
+  Text.pack . show . getBuildId
 
 newtype Ref =
   Ref {
