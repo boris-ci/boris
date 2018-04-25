@@ -34,8 +34,8 @@ genCommit =
 
 genBuildId :: Gen BuildId
 genBuildId =
-  fmap (BuildId . Text.pack . show) $
-    Gen.int (Range.constant 0 99999)
+  BuildId <$>
+    Gen.int64 (Range.constant 0 99999)
 
 genBuild :: Gen Build
 genBuild =

@@ -35,7 +35,7 @@ instance Arbitrary BuildNamePattern where
 
 instance Arbitrary BuildId where
   arbitrary =
-    (BuildId . T.pack . show) <$> choose (1 :: Int, 10000)
+    BuildId <$> choose (1 :: Int64, 10000)
 
 instance Arbitrary BuildResult where
   arbitrary =
