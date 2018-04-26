@@ -12,6 +12,8 @@ import           Boris.Http.Db.Schema
 import           Control.Monad.IO.Class (MonadIO (..))
 import           Control.Monad.Morph (hoist, lift)
 
+import qualified Nest
+
 import           P
 
 import           Traction.Control
@@ -23,7 +25,12 @@ import           System.IO (IO)
 
 mkPool :: MonadIO m => m DbPool
 mkPool =
-  liftIO $ newPool "dbname=boris_test host=docker.for.mac.localhost user=boris_test password=boris_test port=5432"
+  liftIO $ do
+    dbstring <- Nest.force $
+      Nest.string "BORIS_POSTGRES"
+        `Nest.withDefault`
+          "dbname=boris_test host=localhost user=boris_test password=boris_test port=5432"
+    newPool dbstring
 
 db :: Db a -> PropertyT IO a
 db x = do

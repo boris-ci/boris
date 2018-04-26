@@ -1,4 +1,0 @@
-#!/bin/sh -eux
-
-
-curl http://localhost:10080/project/demo/build/fail -H 'Content-Type: application/vnd.ambiata.boris.v1+json' -d '{}' -X POST -v

@@ -1,68 +1,16 @@
 #!/bin/sh -eux
 
 ROOT="$(git rev-parse --show-toplevel)"
-LOCAL_TMP="$ROOT/tmp"
-LOCAL_GIT="$ROOT/tmp/git"
-#DB_STRING="dbname=boris_test host=localhost user=boris_test password=boris_test port=5432"
-DB_STRING="dbname=boris_test host=docker.for.mac.localhost user=boris_test password=boris_test port=5432"
-
 export PORT=9999
-
 export BORIS_MODE=development
+export BORIS_POSTGRES="dbname=boris_test host=localhost user=boris_test password=boris_dev port=5432"
+export BORIS_TENANCY="single"
+export BORIS_AUTHENTICATION=none # or github
 
-export BORIS_AUTHENTICATION=none
-#export BORIS_AUTHENTICATION=github
-#. $ROOT/.env
-
-export BORIS_BUILD_SERVICE=local
-export BORIS_BUILD_SERVICE_NOTIFICATION=http
-
-export BORIS_DISCOVER_SERVICE=local
-export BORIS_DISCOVER_SERVICE_NOTIFICATION=http
-
-export BORIS_LOG_SERVICE=std
-
-export BORIS_PROJECT_MODE=single
-export BORIS_SINGLE_PROJECT_NAME=demo
-export BORIS_SINGLE_PROJECT_REPOSITORY="$LOCAL_GIT"
-
-export BORIS_STORE=postgres
-export BORIS_POSTGRES="$DB_STRING"
-
-rm -rf "$LOCAL_GIT"
-mkdir -p "$LOCAL_GIT"
-
-cat > "$LOCAL_GIT/boris-git.toml" <<EOF
-[boris]
-  version = 1
-
-[build.dist]
-  git = "refs/heads/master"
-
-[build.fail]
-  git = "refs/heads/master"
-EOF
-
-cat > "$LOCAL_GIT/boris.toml" <<EOF
-[boris]
-  version = 1
-
-[build.dist]
-
-[build.fail]
-EOF
-
-cat > "$LOCAL_GIT/master.toml" <<EOF
-[master]
-  runner = "/bin/echo"
-  version = 1
-
-[build.dist]
-
-[build.fail]
-
-EOF
-
-(cd "$LOCAL_GIT" && git init && git add -A . && git commit -m "first") || exit $?
+# used to overide BORIS_POSTGRES/BORIS_AUTHENTICATION and
+# provide secrets for github when required.
+if [ -f $ROOT/.env ]; then
+    . $ROOT/.env
+fi
 
 ./mafia quick -p main/boris-http.hs
