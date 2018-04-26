@@ -82,6 +82,6 @@ new pool authenticated project repository =
   Traction.runDb pool $
     case authenticated of
       AuthenticatedByGithub _ u ->
-        Query.createProject (OwnedByGithubUser <$> u) project repository
+        Query.createProject (OwnedByGithubUser <$> fmap githubUserLogin u) project repository
       AuthenticatedByDesign u ->
         Query.createProject (OwnedByBoris <$> u) project repository

@@ -20,14 +20,14 @@ import           P
 
 
 data Source =
-    GitHubSource
+    GithubSource
   | BorisSource
     deriving (Eq, Ord, Show, Enum, Bounded)
 
 sourceToInt :: Source -> Int64
 sourceToInt s =
   case s of
-    GitHubSource ->
+    GithubSource ->
       0
     BorisSource ->
       1
@@ -36,7 +36,7 @@ sourceFromInt :: Int64 -> Maybe Source
 sourceFromInt n =
   case n of
     0 ->
-      Just GitHubSource
+      Just GithubSource
     1 ->
       Just BorisSource
     _ ->
@@ -52,32 +52,31 @@ newtype OwnerName =
       getOwnerName :: Int64
     } deriving (Eq, Ord, Show)
 
--- FIX this isn't right anymore, need to update to reflect sketch
 data OwnerType =
-    GitHubOwner
-  | BorisUser
-  | BorisSystem
+    GithubUserOwnerType
+  | GithubOrganisationOwnerType
+  | BorisOwnerType
     deriving (Eq, Ord, Show, Enum, Bounded)
 
 ownerTypeToInt :: OwnerType -> Int64
 ownerTypeToInt o =
   case o of
-    GitHubOwner ->
+    BorisOwnerType ->
       0
-    BorisUser ->
+    GithubUserOwnerType ->
       1
-    BorisSystem ->
+    GithubOrganisationOwnerType ->
       2
 
 ownerTypeFromInt :: Int64 -> Maybe OwnerType
 ownerTypeFromInt n =
   case n of
     0 ->
-      Just GitHubOwner
+      Just BorisOwnerType
     1 ->
-      Just BorisUser
+      Just GithubUserOwnerType
     2 ->
-      Just BorisSystem
+      Just GithubOrganisationOwnerType
     _ ->
       Nothing
 

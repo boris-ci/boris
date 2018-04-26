@@ -119,7 +119,7 @@ schema = [
 
   , Migration "insert-boris-system-owner" [sql|
       INSERT INTO owner (id, name, type)
-           VALUES (0, 'boris', 1)
+           VALUES (0, 'boris', 0)
     |]
 
   , Migration "create-projects" [sql|
@@ -138,6 +138,7 @@ schema = [
       CREATE TABLE account_projects (
           account BIGINT NOT NULL REFERENCES account(id)
         , project BIGINT NOT NULL REFERENCES project(id)
+        , permission INT NOT NULL
         , PRIMARY KEY (account, project)
         )
     |]

@@ -14,6 +14,7 @@ module Boris.Http.View (
   , build
   , serverError
   , scoreboard
+  , settings
   , login
   , render
   ) where
@@ -61,21 +62,29 @@ render x =
       Spock.html content
 
 
-dashboard :: Either BMXError Text
-dashboard =
+dashboard :: AuthenticatedBy -> Either BMXError Text
+dashboard a =
   let
     context = [
       ]
   in
-    renderPage <$> renderTemplate (bmx `usingContext` context) dashboard'
+    renderPage <$> renderTemplate (authenticated a context) dashboard'
 
-newproject :: Either BMXError Text
-newproject =
+newproject :: AuthenticatedBy -> Either BMXError Text
+newproject a =
   let
     context = [
       ]
   in
-    renderPage <$> renderTemplate (bmx `usingContext` context) newproject'
+    renderPage <$> renderTemplate (authenticated a context) newproject'
+
+settings :: AuthenticatedBy -> Either BMXError Text
+settings a =
+  let
+    context = [
+      ]
+  in
+    renderPage <$> renderTemplate (authenticated a context) settings'
 
 configure :: Either BMXError Text
 configure =
@@ -83,7 +92,7 @@ configure =
     context = [
       ]
   in
-    renderPage <$> renderTemplate (bmx `usingContext` context) configure'
+    renderPage <$> renderTemplate (unauthenticated `usingContext` context) configure'
 
 -- FIX error id
 serverError :: ErrorId -> Either BMXError Text
@@ -93,10 +102,10 @@ serverError e =
         ("error", BMXString . errorId $ e)
       ]
   in
-    renderPage <$> renderTemplate (bmx `usingContext` context) serverError'
+    renderPage <$> renderTemplate (unauthenticated `usingContext` context) serverError'
 
-status :: [Result] -> Either BMXError Text
-status bs =
+status :: AuthenticatedBy -> [Result] -> Either BMXError Text
+status a bs =
   let
     buildSort b = (resultProject b, resultBuild b)
     context = [
@@ -108,11 +117,11 @@ status bs =
             ]
       ]
   in
-    renderPage <$> renderTemplate (bmx `usingContext` context) status'
+    renderPage <$> renderTemplate (authenticated a context) status'
 
 
-scoreboard :: [Result] -> Either BMXError Text
-scoreboard bs =
+scoreboard :: AuthenticatedBy -> [Result] -> Either BMXError Text
+scoreboard a bs =
   let
     allOk = all ((== BuildOk) . resultBuildResult) bs
     buildClass = case allOk of
@@ -122,29 +131,29 @@ scoreboard bs =
         (,) "buildClass" $ BMXString buildClass
       ]
   in
-    renderPage <$> renderTemplate (bmx `usingContext` context) scoreboard'
+    renderPage <$> renderTemplate (authenticated a context) scoreboard'
 
-projects :: [Project] -> Either BMXError Text
-projects p =
+projects :: AuthenticatedBy -> [Project] -> Either BMXError Text
+projects a p =
   let
     context = [
         ("projects", BMXList ((BMXString . renderProject) <$> sortOn renderProject p))
       ]
   in
-    renderPage <$> renderTemplate (bmx `usingContext` context) projects'
+    renderPage <$> renderTemplate (authenticated a context) projects'
 
-project :: Project -> [Build] -> Either BMXError Text
-project p bs =
+project :: AuthenticatedBy -> Project -> [Build] -> Either BMXError Text
+project a p bs =
   let
     context = [
         ("project", BMXString (renderProject p))
       , ("builds", BMXList ((BMXString . renderBuild) <$> sortOn renderBuild bs))
       ]
   in
-    renderPage <$> renderTemplate (bmx `usingContext` context) project'
+    renderPage <$> renderTemplate (authenticated a context) project'
 
-builds :: BuildTree -> [BuildId] -> Either BMXError Text
-builds (BuildTree p b refs) queued =
+builds :: AuthenticatedBy -> BuildTree -> [BuildId] -> Either BMXError Text
+builds a (BuildTree p b refs) queued =
   let
     sorted =
       reverse $ sortOn (\(BuildTreeRef _ is) -> head . sortBuildIds $ is) refs
@@ -161,10 +170,10 @@ builds (BuildTree p b refs) queued =
       , ("queued", BMXList ((BMXString . renderBuildId) <$> sortBuildIds queued))
       ]
   in
-    renderPage <$> renderTemplate (bmx `usingContext` context) builds'
+    renderPage <$> renderTemplate (authenticated a context) builds'
 
-commit :: Project -> Commit -> [BuildData] -> Either BMXError Text
-commit p c bs =
+commit :: AuthenticatedBy -> Project -> Commit -> [BuildData] -> Either BMXError Text
+commit a p c bs =
   let
     byBuild =
       M.toList . mapFromListGrouped . fmap (\b -> (buildDataBuild b, buildDataId b)) $ bs
@@ -177,10 +186,10 @@ commit p c bs =
         ]))
       ]
   in
-    renderPage <$> renderTemplate (bmx `usingContext` context) commit'
+    renderPage <$> renderTemplate (authenticated a context) commit'
 
-build :: BuildData -> Either BMXError Text
-build b =
+build :: AuthenticatedBy -> BuildData -> Either BMXError Text
+build a b =
   let
     context = [
         ("project", BMXString (renderProject . buildDataProject $ b))
@@ -200,7 +209,7 @@ build b =
       , ("cancel", BMXBool ((isNothing . buildDataResult $ b) && (notCancelled (buildDataCancelled b))))
       ]
   in
-    renderPage <$> renderTemplate (bmx `usingContext` context) build'
+    renderPage <$> renderTemplate (authenticated a context) build'
 
   where
     notCancelled :: Maybe BuildCancelled -> Bool
@@ -215,7 +224,7 @@ login client =
        ("client", BMXString (githubClient client))
      ]
   in
-    renderPage <$> renderTemplate (bmx `usingContext` context) login'
+    renderPage <$> renderTemplate (unauthenticated `usingContext` context) login'
 
 renderTime :: UTCTime -> Text
 renderTime =
@@ -277,10 +286,29 @@ frame' :: Template
 frame' =
   $(templateFile "template/frame.hbs")
 
+frameAuthenticated' :: Template
+frameAuthenticated' =
+  $(templateFile "template/frame-authenticated.hbs")
+
 newproject' :: Template
 newproject' =
   $(templateFile "template/newproject.hbs")
 
-bmx :: (Applicative m, Monad m) => BMXState m
-bmx =
+settings' :: Template
+settings' =
+  $(templateFile "template/settings.hbs")
+
+unauthenticated :: (Applicative m, Monad m) => BMXState m
+unauthenticated =
   defaultState `usingPartials` [("frame", partialFromTemplate frame')]
+
+authenticated :: (Applicative m, Monad m) => AuthenticatedBy -> [(Text, BMXValue)] -> BMXState m
+authenticated a context =
+  defaultState
+    `usingPartials` [("frame", partialFromTemplate frameAuthenticated')]
+    `usingContext` (join [context, [("username",
+       case a of
+         AuthenticatedByGithub _ u ->
+           BMXString . githubLogin . githubUserLogin . userOf $ u
+         AuthenticatedByDesign _ ->
+           BMXString "boris")]])

@@ -13,6 +13,7 @@ import           Boris.Core.Data.Repository
 import           Boris.Core.Data.Tenant
 import qualified Boris.Http.Api.Build as Build
 import qualified Boris.Http.Api.Discover as Discover
+import qualified Boris.Http.Api.Github as Github
 import qualified Boris.Http.Api.Project as Project
 import qualified Boris.Http.Api.Result as Result
 import qualified Boris.Http.Api.Session as Session
@@ -88,10 +89,10 @@ route :: DbPool -> AuthenticationMode -> Mode -> Spock.SpockT IO ()
 route pool authentication mode = do
   Spock.get Spock.root $ do
     withAuthentication authentication pool $ \a -> case a of
-      Authenticated _ _ ->
-        View.render View.dashboard
-      AuthenticatedNone _ ->
-        View.render View.dashboard
+      Authenticated s u ->
+        View.render $ View.dashboard (AuthenticatedByGithub s u)
+      AuthenticatedNone u ->
+        View.render $ View.dashboard (AuthenticatedByDesign u)
       NotAuthenticated -> do
         Spock.redirect "/login"
       WasAuthenticated _ -> do
@@ -125,10 +126,28 @@ route pool authentication mode = do
       NoAuthentication -> do
         Spock.redirect $ "/"
 
+  Spock.get "settings" $
+    authenticated authentication pool $ \a -> case a of
+      AuthenticatedByGithub _ _ ->
+        View.render $ View.settings a
+      AuthenticatedByDesign _ ->
+        Spock.redirect $ "/"
+
+
+  -- FIX CSRF
+  Spock.post "settings/import" $
+    authenticated authentication pool $ \a -> case a of
+      AuthenticatedByGithub s u -> do
+        liftError Github.renderImportError $
+          Github.importRepositories pool s u
+        Spock.redirect $ "/project"
+      AuthenticatedByDesign _ ->
+        Spock.redirect $ "/"
+
   Spock.get "status" $
-    authenticated authentication pool $ \_ -> do
+    authenticated authentication pool $ \a -> do
       builds <- liftDbError . Traction.runDb pool $ Result.status
-      View.render $ View.status builds
+      View.render $ View.status a builds
 
   Spock.get "project" $
     authenticated authentication pool $ \a -> do
@@ -137,7 +156,7 @@ route pool authentication mode = do
         Project.list pool settings a
       withAccept $ \case
         AcceptHTML ->
-          View.render $ View.projects projects
+          View.render $ View.projects a projects
         AcceptJSON ->
           Spock.json $ ApiV1.GetProjects projects
 
@@ -170,15 +189,15 @@ route pool authentication mode = do
                 Spock.json $ ApiV1.GetProject project []
 
   Spock.get "project/new" $
-    authenticated authentication pool $ \_ -> do
-      View.render $ View.newproject
+    authenticated authentication pool $ \a -> do
+      View.render $ View.newproject a
 
   Spock.get ("project" <//> Spock.var) $ \project ->
-    authenticated authentication pool $ \_ -> do
+    authenticated authentication pool $ \a -> do
       builds <- liftDbError $ Build.byProject pool (Project project)
       withAccept $ \case
         AcceptHTML ->
-          View.render $ View.project (Project project) builds
+          View.render $ View.project a (Project project) builds
         AcceptJSON ->
           Spock.json $ ApiV1.GetProject (Project project) builds
 
@@ -198,7 +217,7 @@ route pool authentication mode = do
           Spock.json ()
 
   Spock.get ("project" <//> Spock.var <//> "build" <//> Spock.var) $ \project' build'  ->
-    authenticated authentication pool $ \_ -> do
+    authenticated authentication pool $ \a -> do
       let
         project = Project project'
         build = Build build'
@@ -207,7 +226,7 @@ route pool authentication mode = do
       withAccept $ \case
         AcceptHTML -> do
           queued <- liftDbError $ Build.queued pool project build
-          View.render $ View.builds builds queued
+          View.render $ View.builds a builds queued
         AcceptJSON ->
           Spock.json $ ApiV1.GetBuilds builds
 
@@ -251,7 +270,7 @@ route pool authentication mode = do
 
 
   Spock.get ("project" <//> Spock.var <//> "commit" <//> Spock.var) $ \project' commit' ->
-    authenticated authentication pool $ \_ -> do
+    authenticated authentication pool $ \a -> do
       let
         project = Project project'
         commit = Commit commit'
@@ -260,7 +279,7 @@ route pool authentication mode = do
       withAccept $ \case
         AcceptHTML -> do
           datas <- for builds $ \i -> liftDbError (Build.byId pool i)
-          View.render $ View.commit project commit (catMaybes datas)
+          View.render $ View.commit a project commit (catMaybes datas)
         AcceptJSON ->
           Spock.json $ ApiV1.GetCommit project builds
 
@@ -290,7 +309,7 @@ route pool authentication mode = do
                 Spock.json ()
 
   Spock.get ("build" <//> Spock.var) $ \buildId' ->
-    authenticated authentication pool $ \_ -> do
+    authenticated authentication pool $ \a -> do
       let
         buildId = BuildId buildId'
 
@@ -303,7 +322,7 @@ route pool authentication mode = do
               Spock.setStatus HTTP.notFound404
               Spock.html "TODO: 404 page."
             Just b ->
-              View.render $ View.build b
+              View.render $ View.build a b
         AcceptJSON ->
           case build of
             Nothing -> do
@@ -447,12 +466,12 @@ route pool authentication mode = do
                 Spock.setStatus HTTP.noContent204
 
   Spock.get "scoreboard" $
-    authenticated authentication pool $ \_ -> do
+    authenticated authentication pool $ \a -> do
       results <- liftDbError . Traction.runDb pool $
         Result.scoreboard
       withAccept $ \case
         AcceptHTML ->
-          View.render $ View.scoreboard results
+          View.render $ View.scoreboard a results
         AcceptJSON ->
           Spock.json $ ApiV1.GetScoreboard results
 

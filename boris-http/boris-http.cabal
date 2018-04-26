@@ -70,6 +70,7 @@ library
   exposed-modules:
                     Boris.Http.Api.Build
                     Boris.Http.Api.Discover
+                    Boris.Http.Api.Github
                     Boris.Http.Api.Project
                     Boris.Http.Api.Result
                     Boris.Http.Api.Session

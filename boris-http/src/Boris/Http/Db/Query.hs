@@ -39,6 +39,8 @@ module Boris.Http.Db.Query (
   , getAllProjects
   , getAccountProjects
   , createProject
+  , importProject
+  , linkProject
   ) where
 
 
@@ -453,3 +455,72 @@ createProject owner project repository =
       INSERT INTO project (source, owner, name, repository, enabled)
            VALUES (?, ?, ?, ?, true)
     |] (sourceToInt BorisSource, getUserId . userIdOf $ owner, renderProject project, renderRepository repository)
+
+createOrGetOwnedBy :: MonadDb m => OwnedBy -> m (Identified OwnedBy)
+createOrGetOwnedBy o =
+  case o of
+   OwnedByGithubUser u -> do
+     n <- (fmap . fmap) UserId . Traction.values $ Traction.unique [sql|
+         SELECT o.id
+           FROM owner o
+          WHERE o.name = ?
+            AND o.type = ?
+       |] (githubLogin u, ownerTypeToInt GithubUserOwnerType)
+     case n of
+       Nothing ->  do
+         nn <- fmap UserId . Traction.value $ Traction.mandatory [sql|
+           INSERT INTO owner (name, type)
+                VALUES (?, ?)
+             RETURNING id
+         |] (githubLogin u, ownerTypeToInt GithubUserOwnerType)
+         pure $ Identified nn o
+       Just nn ->
+         pure $ Identified nn o
+   OwnedByGithubOrganisation u -> do
+     n <- (fmap . fmap) UserId . Traction.values $ Traction.unique [sql|
+         SELECT o.id
+           FROM owner o
+          WHERE o.name = ?
+            AND o.type = ?
+       |] (githubName u, ownerTypeToInt GithubOrganisationOwnerType)
+     case n of
+       Nothing -> do
+         nn <- fmap UserId . Traction.value $ Traction.mandatory [sql|
+           INSERT INTO owner (name, type)
+                VALUES (?, ?)
+             RETURNING id
+         |] (githubName u, ownerTypeToInt GithubOrganisationOwnerType)
+         pure $ Identified nn o
+       Just nn ->
+         pure $ Identified nn o
+   OwnedByBoris _ ->
+     pure $ Identified (UserId 0) o
+
+importProject :: MonadDb m => OwnedBy -> Project -> Repository -> m ProjectId
+importProject owner project repository = do
+  identified <- createOrGetOwnedBy owner
+  exists <- (fmap . fmap) ProjectId . Traction.values $ Traction.unique [sql|
+         SELECT p.id
+           FROM project p
+          WHERE p.source = ?
+            AND p.owner = ?
+            AND p.name = ?
+       |] (sourceToInt GithubSource, getUserId . userIdOf $ identified, renderProject project)
+
+  case exists of
+    Nothing ->
+      fmap ProjectId . Traction.value $ Traction.mandatory [sql|
+          INSERT INTO project (source, owner, name, repository, enabled)
+               VALUES (?, ?, ?, ?, false)
+            RETURNING id
+        |] (sourceToInt GithubSource, getUserId . userIdOf $ identified, renderProject project, renderRepository repository)
+    Just projectId ->
+      pure projectId
+
+
+linkProject :: MonadDb m => ProjectId -> UserId -> Permission -> m ()
+linkProject project user permission = do
+  void $ Traction.execute [sql|
+      INSERT INTO account_project (account, project, permission)
+           VALUES (?, ?, ?)
+    |] (getProjectId project, getUserId user, permissionToInt permission)
