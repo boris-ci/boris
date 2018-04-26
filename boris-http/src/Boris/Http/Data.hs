@@ -24,6 +24,9 @@ module Boris.Http.Data (
   , Authenticated (..)
   , AuthenticatedBy (..)
   , newSessionToken
+  , Permission (..)
+  , permissionToInt
+  , permissionFromInt
   ) where
 
 import           Control.Monad.IO.Class (MonadIO (..))
@@ -120,8 +123,8 @@ data User =
     deriving (Eq, Show)
 
 data OwnedBy =
-    OwnedByGithubUser GithubUser
-  | OwnedByGithubOrganisation GithubOrganisation
+    OwnedByGithubUser GithubLogin
+  | OwnedByGithubOrganisation GithubName
   | OwnedByBoris BorisSystemUser
     deriving (Eq, Show)
 
@@ -169,3 +172,31 @@ newSessionToken :: MonadIO m => m SessionId
 newSessionToken =
   liftIO $
     SessionId . Text.decodeUtf8 . Base16.encode <$> Entropy.getEntropy 16
+
+data Permission =
+    Admin
+  | Write
+  | Read
+    deriving (Eq, Ord, Show, Enum, Bounded)
+
+permissionToInt :: Permission -> Int
+permissionToInt p =
+  case p of
+    Admin ->
+      0
+    Write ->
+      1
+    Read ->
+      2
+
+permissionFromInt :: Int -> Maybe Permission
+permissionFromInt n =
+  case n of
+    0 ->
+      Just Admin
+    1 ->
+      Just Write
+    2 ->
+      Just Read
+    _ ->
+      Nothing
