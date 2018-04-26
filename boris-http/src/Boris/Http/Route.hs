@@ -194,7 +194,7 @@ route pool authentication mode = do
 
   Spock.get ("project" <//> Spock.var) $ \project ->
     authenticated authentication pool $ \a -> do
-      builds <- liftDbError $ Build.byProject pool (Project project)
+      builds <- liftDbError $ Build.byProject pool (ProjectReference project)
       withAccept $ \case
         AcceptHTML ->
           View.render $ View.project a (Project project) builds

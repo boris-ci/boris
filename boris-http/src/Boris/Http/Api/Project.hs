@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Boris.Http.Api.Project (
     picker
+  , byReference
   , pick
   , list
   , discover
@@ -45,6 +46,23 @@ pick pool tenant authenticated project =
           pure Nothing
         AuthenticatedByGithub _session user ->
           picker project <$> Query.getAccountProjects (userIdOf user)
+
+byReference :: DbPool -> Tenant -> AuthenticatedBy -> ProjectReference -> EitherT DbError IO (Maybe Definition)
+byReference pool tenant authenticated project =
+  Traction.runDb pool $ case tenant of
+    SingleTenant ->
+      case authenticated of
+        AuthenticatedByDesign _ ->
+          error "todo"
+        AuthenticatedByGithub _session user ->
+          error "todo"
+    MultiTenant ->
+      case authenticated of
+        AuthenticatedByDesign _ ->
+          error "todo"
+        AuthenticatedByGithub _session user ->
+          error "todo"
+
 
 list :: DbPool -> Tenant -> AuthenticatedBy -> EitherT DbError IO [Definition]
 list pool tenant authenticated =

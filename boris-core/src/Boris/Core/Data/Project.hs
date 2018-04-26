@@ -14,6 +14,7 @@ module Boris.Core.Data.Project (
   , Definition (..)
   , ProjectId (..)
   , Project (..)
+  , ProjectReference (..)
   ) where
 
 import           Boris.Core.Data.Repository
@@ -109,6 +110,11 @@ data Definition =
 newtype Project =
   Project {
       renderProject :: Text
+    } deriving (Eq, Show, Ord)
+
+newtype ProjectReference =
+  ProjectReference {
+      renderProjectReference :: Text
     } deriving (Eq, Show, Ord)
 
 newtype ProjectId =
