@@ -5,6 +5,6 @@
             <h3>projects</h3>
             {{/if}}
             {{#each projects}}
-            <div><a href="/project/{{this}}">{{this}}</a></div>
+            <div><a href="/project/{{this.qualified}}">{{this.short}}</a></div>
             {{/each}}
 {{/frame}}
