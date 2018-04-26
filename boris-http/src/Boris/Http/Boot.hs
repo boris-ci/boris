@@ -8,7 +8,7 @@ module Boris.Http.Boot (
   , AuthenticationMode (..)
   ) where
 
-import           Boris.Core.Data
+import           Boris.Core.Data.Tenant
 import           Boris.Http.Data
 
 import           Control.Monad.IO.Class (MonadIO (..))
@@ -38,7 +38,7 @@ data AuthenticationMode =
   | NoAuthentication
 
 data Boot =
-  Boot Mode AuthenticationMode DbPool (Maybe Settings)
+  Boot Mode AuthenticationMode DbPool (Maybe Tenant)
 
 boot :: MonadIO m => Parser m Boot
 boot = do
@@ -55,8 +55,8 @@ boot = do
     ]) `Nest.withDefault` github
 
   settings <- Nest.option $ Nest.setting "BORIS_TENANCY" (Map.fromList [
-      ("single", SingleTenantSettings)
-    , ("multi", MultiTenantSettings)
+      ("single", SingleTenant)
+    , ("multi", MultiTenant)
     ])
 
   pure $ Boot mode auth pool settings

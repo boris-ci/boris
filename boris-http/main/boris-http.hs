@@ -29,17 +29,17 @@ main = do
   orDie Traction.renderDbError $
     Schema.initialise pool
 
-  settings <- orDie Traction.renderDbError $
-    Traction.runDb pool Query.getSettings
+  tenant <- orDie Traction.renderDbError $
+    Traction.runDb pool Query.getTenant
 
   port <- Nest.force $ Nest.numeric "PORT" `Nest.withDefault` 10080
 
-  routes <- case (settings, defaults) of
+  routes <- case (tenant, defaults) of
     (Just _, _) ->
       pure $ Route.application pool authentication mode
-    (Nothing, Just s) -> do
+    (Nothing, Just t) -> do
       orDie Traction.renderDbError $
-        Traction.runDb pool $ Query.setSettings s
+        Traction.runDb pool $ Query.setTenant t
       pure $ Route.application pool authentication mode
     (Nothing, Nothing) -> do
       pure $ Route.configure pool authentication mode

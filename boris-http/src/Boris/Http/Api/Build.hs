@@ -23,10 +23,10 @@ import           Control.Monad.IO.Class (MonadIO (..))
 import qualified Data.Text as Text
 import qualified Data.Time as Time
 
-import           Boris.Core.Data
 import           Boris.Core.Data.Build
-import           Boris.Core.Data.Project
 import           Boris.Core.Data.Log
+import           Boris.Core.Data.Project
+import           Boris.Core.Data.Tenant
 import qualified Boris.Http.Api.Project as Project
 import           Boris.Http.Data
 import qualified Boris.Http.Db.Query as Query
@@ -87,10 +87,10 @@ queued pool project build =
   Traction.runDb pool $
   Query.getQueued project build
 
-submit :: DbPool -> Settings -> AuthenticatedBy -> Project -> Build -> Maybe Ref -> EitherT BuildError IO (Maybe BuildId)
-submit pool settings authenticated project build ref = do
+submit :: DbPool -> Tenant -> AuthenticatedBy -> Project -> Build -> Maybe Ref -> EitherT BuildError IO (Maybe BuildId)
+submit pool tenant authenticated project build ref = do
   repository' <- firstT BuildDbError $
-    Project.pick pool settings authenticated project
+    Project.pick pool tenant authenticated project
   case repository' of
     Nothing ->
       pure Nothing

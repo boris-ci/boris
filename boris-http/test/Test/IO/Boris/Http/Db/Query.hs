@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Test.IO.Boris.Http.Db.Query  where
 
-import           Boris.Core.Data
+import           Boris.Core.Data.Build
 import           Boris.Http.Data
 import qualified Boris.Http.Db.Query as Query
 

@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Test.Boris.Core.Gen where
 
-import           Boris.Core.Data
+import           Boris.Core.Data.Agent
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Configuration
 import           Boris.Core.Data.Log
