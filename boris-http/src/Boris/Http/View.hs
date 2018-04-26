@@ -133,11 +133,24 @@ scoreboard a bs =
   in
     renderPage <$> renderTemplate (authenticated a context) scoreboard'
 
-projects :: AuthenticatedBy -> [Project] -> Either BMXError Text
-projects a p =
+
+projects :: AuthenticatedBy -> [Definition] -> Either BMXError Text
+projects a definitions =
   let
     context = [
-        ("projects", BMXList ((BMXString . renderProject) <$> sortOn renderProject p))
+        ("projects", BMXList $ with (sortOn (\d -> (definitionSource d, definitionOwner d, definitionProject d)) definitions) $ \d ->
+          BMXContext $ [
+            ("qualified", BMXString . mconcat $ [
+                  renderSource . definitionSource $ d
+                , ":", getOwnerName . ownerName . definitionOwner $ d
+                , ":", renderProject . definitionProject $ d
+                ])
+          , ("short", BMXString . mconcat $ [
+                  getOwnerName . ownerName . definitionOwner $ d
+                , "/", renderProject . definitionProject $ d
+                ])
+          , ("name", BMXString . renderProject . definitionProject $ d)
+          ])
       ]
   in
     renderPage <$> renderTemplate (authenticated a context) projects'

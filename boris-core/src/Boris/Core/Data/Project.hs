@@ -1,6 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Boris.Core.Data.Project (
     Source (..)
+  , renderSource
   , sourceFromInt
   , sourceToInt
   , Owner (..)
@@ -23,6 +25,14 @@ data Source =
     GithubSource
   | BorisSource
     deriving (Eq, Ord, Show, Enum, Bounded)
+
+renderSource :: Source -> Text
+renderSource s =
+  case s of
+    GithubSource ->
+      "github"
+    BorisSource ->
+      "boris"
 
 sourceToInt :: Source -> Int64
 sourceToInt s =
@@ -49,7 +59,7 @@ newtype OwnerId =
 
 newtype OwnerName =
   OwnerName {
-      getOwnerName :: Int64
+      getOwnerName :: Text
     } deriving (Eq, Ord, Show)
 
 data OwnerType =

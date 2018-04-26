@@ -69,9 +69,12 @@ importRepositories pool session login = do
       Nothing ->
         pure ()
       Just repository -> do
+        liftIO . Text.putStrLn . mconcat $ [
+            "Importing ", name, "/", renderProject project
+          ]
         permission <- mapEitherT liftIO . firstT ImportGithubError $
           permissionOn (Github.OAuth . githubOAuth . sessionOAuth $ session) (Github.simpleOwnerLogin sowner) (Github.repoName r) (githubUserLogin . userOf $ login)
-        pid <- firstT ImportDbError . Traction.runDb pool $ do
+        firstT ImportDbError . Traction.runDb pool $ do
           pid <- Query.importProject owner project repository
           case permission of
             GithubPermissionAdmin ->
@@ -82,7 +85,6 @@ importRepositories pool session login = do
               Query.linkProject pid (userIdOf login) Read
             GithubPermissionNone ->
               pure ()
-          pure pid
         liftIO . Text.putStrLn . mconcat $ [
             "Imported ", name, "/", renderProject project
           ]
@@ -97,7 +99,7 @@ data GithubPermission =
 instance FromJSON GithubPermission where
   parseJSON =
     withObject "GithubPermission" $ \o ->
-      o .: "permissions" >>= \p -> case (p :: Text) of
+      o .: "permission" >>= \p -> case (p :: Text) of
         "admin" ->
           pure GithubPermissionAdmin
         "write" ->

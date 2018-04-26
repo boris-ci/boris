@@ -46,9 +46,9 @@ pick pool tenant authenticated project =
         AuthenticatedByGithub _session user ->
           picker project <$> Query.getAccountProjects (userIdOf user)
 
-list :: DbPool -> Tenant -> AuthenticatedBy -> EitherT DbError IO [Project]
+list :: DbPool -> Tenant -> AuthenticatedBy -> EitherT DbError IO [Definition]
 list pool tenant authenticated =
-  (fmap . fmap) definitionProject . Traction.runDb pool $ case tenant of
+  Traction.runDb pool $ case tenant of
     SingleTenant ->
       case authenticated of
         AuthenticatedByDesign _ ->

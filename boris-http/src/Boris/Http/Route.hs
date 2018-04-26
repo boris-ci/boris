@@ -158,7 +158,7 @@ route pool authentication mode = do
         AcceptHTML ->
           View.render $ View.projects a projects
         AcceptJSON ->
-          Spock.json $ ApiV1.GetProjects projects
+          Spock.json $ ApiV1.GetProjects (definitionProject <$> projects)
 
   Spock.post "project" $
     authenticated authentication pool $ \a -> do

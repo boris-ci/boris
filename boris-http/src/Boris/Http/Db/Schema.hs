@@ -127,7 +127,7 @@ schema = [
           id SERIAL PRIMARY KEY
         , source INT NOT NULL
         , owner BIGINT NOT NULL REFERENCES owner(id)
-        , name TEXT UNIQUE NOT NULL
+        , name TEXT NOT NULL
         , repository TEXT NOT NULL
         , enabled BOOLEAN NOT NULL
         , UNIQUE (source, owner, name)

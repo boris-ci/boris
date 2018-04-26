@@ -435,6 +435,7 @@ getAccountProjects account = do
         FROM project p, owner o, account_projects ap
        WHERE ap.account = ?
          AND ap.project = p.id
+         AND o.id = p.owner
     |]
   x <- Traction.query q (Traction.Only $ getUserId account)
   for x $ \(i, source, name, repository, oid, oname, otype) ->
@@ -521,6 +522,8 @@ importProject owner project repository = do
 linkProject :: MonadDb m => ProjectId -> UserId -> Permission -> m ()
 linkProject project user permission = do
   void $ Traction.execute [sql|
-      INSERT INTO account_project (account, project, permission)
+      INSERT INTO account_projects (account, project, permission)
            VALUES (?, ?, ?)
-    |] (getProjectId project, getUserId user, permissionToInt permission)
+      ON CONFLICT (account, project)
+      DO UPDATE set permission = ?
+    |] (getUserId user, getProjectId project, permissionToInt permission, permissionToInt permission)

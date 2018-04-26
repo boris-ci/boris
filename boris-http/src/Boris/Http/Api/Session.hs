@@ -32,6 +32,8 @@ import qualified Network.HTTP.Types as HTTP
 import           P
 
 import           System.IO (IO)
+import qualified System.IO as IO
+
 
 import           Traction.Control (DbPool, DbError)
 import qualified Traction.Control as Traction
@@ -89,10 +91,13 @@ authenticate pool manager client secret code = do
           ]
     } manager
   access <- firstT AuthenticationGithubDecodeError . newEitherT . pure $
-    fmap getAccessToken . either (Left . Text.pack) Right . Aeson.eitherDecode . Client.responseBody $ response
+    either (Left . Text.pack) Right . Aeson.eitherDecode . Client.responseBody $ response
+
+  liftIO $ IO.print response
+  liftIO $ IO.print access
 
   user <- firstT AuthenticationGithubError . newEitherT $
-    Github.userInfoCurrent' $ Github.OAuth access
+    Github.userInfoCurrent' $ Github.OAuth (getAccessToken access)
 
   let
     githubUser =
@@ -116,18 +121,21 @@ authenticate pool manager client secret code = do
         pure u
   s <- newSessionToken
   let
-    session = Session s (GithubOAuth access)
+    session = Session s (GithubOAuth $ getAccessToken access)
 
   firstT AuthenticationDbError . Traction.runDb pool $
     Query.newSession session (userIdOf u)
   pure session
 
-newtype AccessToken =
+data AccessToken =
   AccessToken {
       getAccessToken :: ByteString
+    , getAccessTokenScopes :: [Text]
     } deriving (Eq, Ord, Show)
 
 instance Aeson.FromJSON AccessToken where
   parseJSON =
     Aeson.withObject "AccessToken" $ \o ->
-      AccessToken . Text.encodeUtf8 <$> o .: "access_token"
+      AccessToken
+        <$> (Text.encodeUtf8 <$> o .: "access_token")
+        <*> (Text.splitOn "," <$> o .: "scope")
