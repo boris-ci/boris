@@ -7,7 +7,6 @@ module Boris.Http.Route (
   , configure
   ) where
 
-import           Boris.Core.Data
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Repository
@@ -66,13 +65,13 @@ configure pool authentication mode = do
 
   Spock.post "configure" $ do
     m <- Spock.param "multi"
-    liftDbError $ Traction.runDb pool $ Query.setSettings $
-      bool SingleTenantSettings MultiTenantSettings $ isJust (m :: Maybe Text)
+    liftDbError $ Traction.runDb pool $ Query.setTenant $
+      bool SingleTenant MultiTenant $ isJust (m :: Maybe Text)
     Spock.redirect "/"
 
   Spock.prehook (do
     settings <- liftDbError . Traction.runDb pool $
-      Query.getSettings
+      Query.getTenant
 
     case settings of
       Just _ -> do
@@ -133,7 +132,7 @@ route pool authentication mode = do
 
   Spock.get "project" $
     authenticated authentication pool $ \a -> do
-      settings <- getSettings pool
+      settings <- getTenant pool
       projects <- liftDbError $
         Project.list pool settings a
       withAccept $ \case
@@ -185,7 +184,7 @@ route pool authentication mode = do
 
   Spock.post ("project" <//> Spock.var) $ \project ->
     authenticated authentication pool $ \a -> do
-      settings <- getSettings pool
+      settings <- getTenant pool
       buildId <- liftError id $
         Project.discover pool settings a (Project project)
       case buildId of
@@ -215,7 +214,7 @@ route pool authentication mode = do
 
   Spock.post ("project" <//> Spock.var <//> "build" <//> Spock.var) $ \project' build' ->
     authenticated authentication pool $ \a -> do
-      settings <- getSettings pool
+      settings <- getTenant pool
       let
         project = Project project'
         build = Build build'
@@ -477,10 +476,10 @@ route pool authentication mode = do
             Just logs -> do
               Spock.json $ ApiV1.GetLogs logs
 
-getSettings :: DbPool -> Spock.ActionT IO Settings
-getSettings pool =
+getTenant :: DbPool -> Spock.ActionT IO Tenant
+getTenant pool =
   liftDbError . Traction.runDb pool $
-    Query.demandSettings
+    Query.demandTenant
 
 newSession :: Mode -> SessionId -> Spock.ActionT IO ()
 newSession mode session =

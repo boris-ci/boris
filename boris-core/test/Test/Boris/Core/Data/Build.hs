@@ -3,13 +3,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
-module Test.Boris.Core.Data where
+module Test.Boris.Core.Data.Build where
 
 import           Boris.Core.Data.Build
 
 
 import           Data.List (sort)
-import qualified Data.Text as T
 
 import           Disorder.Core ((=/=))
 
@@ -19,10 +18,10 @@ import           Test.Boris.Core.Arbitrary ()
 import           Test.QuickCheck
 
 
-prop_build_id_sort (ids :: [Int]) =
+prop_build_id_sort (ids :: [Int64]) =
   to (reverse $ sort ids) === sortBuildIds (to ids)
   where
-    to = fmap (BuildId . T.pack . show)
+    to = fmap BuildId
 
 prop_build_id_ord =
   ordLaws (arbitrary :: Gen BuildId) compare

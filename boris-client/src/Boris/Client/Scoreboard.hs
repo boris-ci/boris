@@ -6,7 +6,6 @@ module Boris.Client.Scoreboard (
 
 import           Boris.Client.Http (BorisHttpClientError (..))
 import qualified Boris.Client.Http as H
-import           Boris.Core.Data
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Project
 

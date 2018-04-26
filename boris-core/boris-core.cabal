@@ -34,7 +34,6 @@ library
                     src
 
   exposed-modules:
-                    Boris.Core.Data
                     Boris.Core.Data.Agent
                     Boris.Core.Data.Build
                     Boris.Core.Data.Configuration

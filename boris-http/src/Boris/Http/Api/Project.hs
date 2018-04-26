@@ -8,7 +8,6 @@ module Boris.Http.Api.Project (
   , new
   ) where
 
-import           Boris.Core.Data
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Repository
@@ -31,32 +30,32 @@ picker :: Project -> [Definition] -> Maybe Repository
 picker project =
   fmap definitionRepository . List.find ((==) project . definitionProject)
 
-pick :: DbPool -> Settings -> AuthenticatedBy -> Project -> EitherT DbError IO (Maybe Repository)
-pick pool settings authenticated project =
-  Traction.runDb pool $ case settings of
-    SingleTenantSettings ->
+pick :: DbPool -> Tenant -> AuthenticatedBy -> Project -> EitherT DbError IO (Maybe Repository)
+pick pool tenant authenticated project =
+  Traction.runDb pool $ case tenant of
+    SingleTenant ->
       case authenticated of
         AuthenticatedByDesign _ ->
           picker project <$> Query.getAllProjects
         AuthenticatedByGithub _session user ->
            picker project <$> Query.getAccountProjects (userIdOf user)
-    MultiTenantSettings ->
+    MultiTenant ->
       case authenticated of
         AuthenticatedByDesign _ ->
           pure Nothing
         AuthenticatedByGithub _session user ->
           picker project <$> Query.getAccountProjects (userIdOf user)
 
-list :: DbPool -> Settings -> AuthenticatedBy -> EitherT DbError IO [Project]
-list pool settings authenticated =
-  (fmap . fmap) definitionProject . Traction.runDb pool $ case settings of
-    SingleTenantSettings ->
+list :: DbPool -> Tenant -> AuthenticatedBy -> EitherT DbError IO [Project]
+list pool tenant authenticated =
+  (fmap . fmap) definitionProject . Traction.runDb pool $ case tenant of
+    SingleTenant ->
       case authenticated of
         AuthenticatedByDesign _ ->
           Query.getAllProjects
         AuthenticatedByGithub _session user ->
           Query.getAccountProjects (userIdOf user)
-    MultiTenantSettings ->
+    MultiTenant ->
       case authenticated of
         AuthenticatedByDesign _ ->
           pure []
@@ -64,10 +63,10 @@ list pool settings authenticated =
           Query.getAccountProjects (userIdOf user)
 
 -- FIX MTH error type
-discover :: DbPool -> Settings -> AuthenticatedBy -> Project -> EitherT Text IO (Maybe BuildId)
-discover pool settings authenticated project = do
+discover :: DbPool -> Tenant -> AuthenticatedBy -> Project -> EitherT Text IO (Maybe BuildId)
+discover pool tenant authenticated project = do
   r <- firstT Traction.renderDbError $
-    pick pool settings authenticated project
+    pick pool tenant authenticated project
   case r of
     Nothing ->
       pure Nothing

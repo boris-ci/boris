@@ -33,16 +33,15 @@ module Boris.Http.Db.Query (
   , getSession
   , getSessionUser
   , getSessionOAuth
-  , demandSettings
-  , getSettings
-  , setSettings
+  , demandTenant
+  , getTenant
+  , setTenant
   , getAllProjects
   , getAccountProjects
   , createProject
   ) where
 
 
-import           Boris.Core.Data
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Log
 import           Boris.Core.Data.Project
@@ -380,33 +379,33 @@ getSession session = do
           (GithubEmail <$> email)))
       (Session session $ GithubOAuth oauth)
 
-getSettings :: MonadDb m => m (Maybe Settings)
-getSettings =
-  (fmap . fmap) (bool SingleTenantSettings MultiTenantSettings) . Traction.values $ Traction.unique_ [sql|
+getTenant :: MonadDb m => m (Maybe Tenant)
+getTenant =
+  (fmap . fmap) (bool SingleTenant MultiTenant) . Traction.values $ Traction.unique_ [sql|
       SELECT s.multi_tenant
         FROM settings s
     |]
 
-demandSettings :: MonadDb m => m Settings
-demandSettings =
-  fmap (bool SingleTenantSettings MultiTenantSettings) . Traction.value $ Traction.mandatory_ [sql|
+demandTenant :: MonadDb m => m Tenant
+demandTenant =
+  fmap (bool SingleTenant MultiTenant) . Traction.value $ Traction.mandatory_ [sql|
       SELECT s.multi_tenant
         FROM settings s
     |]
 
-setSettings :: MonadDb m => Settings -> m ()
-setSettings settings =
-  getSettings >>= \s -> case s of
+setTenant :: MonadDb m => Tenant -> m ()
+setTenant settings =
+  getTenant >>= \s -> case s of
     Nothing ->
       void $ Traction.execute [sql|
         INSERT INTO settings (multi_tenant)
              VALUES (?)
-      |] (Traction.Only $ MultiTenantSettings == settings)
+      |] (Traction.Only $ MultiTenant == settings)
     Just _ ->
       void $ Traction.execute [sql|
         UPDATE settings
            SET multi_tenant = ?
-      |] (Traction.Only $ MultiTenantSettings == settings)
+      |] (Traction.Only $ MultiTenant == settings)
 
 getAllProjects :: MonadDb m => m [Definition]
 getAllProjects = do

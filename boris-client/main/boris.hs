@@ -4,7 +4,7 @@
 import           BuildInfo_ambiata_boris_client
 import           DependencyInfo_ambiata_boris_client
 
-import           Boris.Core.Data
+import           Boris.Core.Data.Agent
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Log
 import           Boris.Core.Data.Project

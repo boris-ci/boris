@@ -1,13 +1,13 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Boris.Core.Data.Tenant (
-    Settings (..)
+    Tenant (..)
   ) where
 
 import           P
 
 
-data Settings =
-    SingleTenantSettings
-  | MultiTenantSettings
+data Tenant =
+    SingleTenant
+  | MultiTenant
     deriving (Eq, Ord, Show)

@@ -6,7 +6,7 @@ module Boris.Http.Api.Result (
   ) where
 
 
-import           Boris.Core.Data
+import           Boris.Core.Data.Build
 import qualified Boris.Http.Db.Query as Query
 
 import           P
