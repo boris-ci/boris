@@ -20,7 +20,6 @@ import qualified Boris.Http.Api.Result as Result
 import qualified Boris.Http.Api.Session as Session
 import           Boris.Http.Boot
 import           Boris.Http.Data
-import qualified Boris.Http.Db.Query as Query
 import qualified Boris.Http.Db.Settings as SettingsDb
 import           Boris.Http.Spock
 import qualified Boris.Http.View as View
@@ -196,9 +195,9 @@ route pool authentication mode = do
 
   Spock.get ("project" <//> Spock.var) $ \project ->
     authenticated authentication pool $ \a -> do
-      definition <- liftError Project.renderProjectReferenceResolveError $
+      result <- liftError Project.renderProjectReferenceResolveError $
         Project.byReference pool (ProjectReference project)
-      case definition of
+      case result of
         NoProjectReferenceResolution ->
           withAccept $ \case
             AcceptHTML -> do
@@ -221,14 +220,14 @@ route pool authentication mode = do
             , ":"
             , renderProject . definitionProject $ definition
             ]
-        QualifiedProjectReferenceResolution definition -> do
+        QualifiedProjectReferenceResolution _definition -> do
           builds <- liftDbError $ Build.byProject pool (error "todo") -- FIX MTH (definitionProjectId project)
           withAccept $ \case
             AcceptHTML ->
               View.render $ View.project a (Project project) builds
             AcceptJSON ->
               Spock.json $ ApiV1.GetProject (Project project) builds
-        AmbiguousProjectReferenceResolution definitions ->
+        AmbiguousProjectReferenceResolution _definitions ->
           -- MTH should we give some indication that things are ambiguous and require further qualification?
           withAccept $ \case
             AcceptHTML -> do
@@ -256,7 +255,7 @@ route pool authentication mode = do
     authenticated authentication pool $ \a -> do
       settings <- getTenant pool
       buildId <- liftError id $
-        Project.discover pool settings a (Project project)
+        Discover.discover pool settings a (Project project)
       case buildId of
         Nothing -> do
           -- TODO should have a body

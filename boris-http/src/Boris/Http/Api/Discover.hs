@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Boris.Http.Api.Discover (
     complete
+  , discover
 
   , CompleteError (..)
   , renderCompleteError
@@ -13,6 +14,9 @@ import qualified Data.List as List
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Instance
 import           Boris.Core.Data.Project
+import           Boris.Core.Data.Tenant
+import           Boris.Http.Data
+import qualified Boris.Http.Api.Project as Project
 import qualified Boris.Http.Db.Query as Query
 
 import           P
@@ -50,3 +54,18 @@ complete pool buildid project discovers = do
           -- FIX should this just call Build.submit? Permissions will be wierd.
           newId <- Query.tick
           Query.register project build newId
+
+-- FIX MTH error type
+discover :: DbPool -> Tenant -> AuthenticatedBy -> Project -> EitherT Text IO (Maybe BuildId)
+discover pool tenant authenticated project = do
+  r <- firstT Traction.renderDbError $
+    Project.pick pool tenant authenticated project
+  case r of
+    Nothing ->
+      pure Nothing
+    Just _repository -> do
+      i <- firstT Traction.renderDbError . Traction.runDb pool $
+        Query.tick
+      firstT Traction.renderDbError . Traction.runDb pool $
+        Query.discover i project
+      pure (Just i)

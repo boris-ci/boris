@@ -10,7 +10,7 @@ module Boris.Http.Api.Github (
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Repository
 import           Boris.Http.Data
-import qualified Boris.Http.Db.Query as Query
+import qualified Boris.Http.Db.Project as ProjectDb
 
 import           Control.Monad.IO.Class (MonadIO (..))
 
@@ -74,14 +74,14 @@ importRepositories pool session login = do
         permission <- mapEitherT liftIO . firstT ImportGithubError $
           permissionOn (Github.OAuth . githubOAuth . sessionOAuth $ session) (Github.simpleOwnerLogin sowner) (Github.repoName r) (githubUserLogin . userOf $ login)
         firstT ImportDbError . Traction.runDb pool $ do
-          pid <- Query.importProject owner project repository
+          pid <- ProjectDb.importProject owner project repository
           case permission of
             GithubPermissionAdmin ->
-              Query.linkProject pid (userIdOf login) Admin
+              ProjectDb.linkProject pid (userIdOf login) Admin
             GithubPermissionWrite ->
-              Query.linkProject pid (userIdOf login) Write
+              ProjectDb.linkProject pid (userIdOf login) Write
             GithubPermissionRead ->
-              Query.linkProject pid (userIdOf login) Read
+              ProjectDb.linkProject pid (userIdOf login) Read
             GithubPermissionNone ->
               pure ()
         liftIO . Text.putStrLn . mconcat $ [

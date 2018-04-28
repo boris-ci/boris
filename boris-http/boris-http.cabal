@@ -79,6 +79,7 @@ library
                     Boris.Http.Data
 
                     Boris.Http.Db.Account
+                    Boris.Http.Db.Project
                     Boris.Http.Db.Schema
                     Boris.Http.Db.Session
                     Boris.Http.Db.Settings
