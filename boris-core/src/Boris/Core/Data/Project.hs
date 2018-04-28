@@ -60,7 +60,7 @@ newtype OwnerId =
 
 newtype OwnerName =
   OwnerName {
-      getOwnerName :: Text
+      renderOwnerName :: Text
     } deriving (Eq, Ord, Show)
 
 data OwnerType =

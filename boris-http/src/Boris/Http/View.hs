@@ -142,11 +142,11 @@ projects a definitions =
           BMXContext $ [
             ("qualified", BMXString . mconcat $ [
                   renderSource . definitionSource $ d
-                , ":", getOwnerName . ownerName . definitionOwner $ d
+                , ":", renderOwnerName . ownerName . definitionOwner $ d
                 , ":", renderProject . definitionProject $ d
                 ])
           , ("short", BMXString . mconcat $ [
-                  getOwnerName . ownerName . definitionOwner $ d
+                  renderOwnerName . ownerName . definitionOwner $ d
                 , "/", renderProject . definitionProject $ d
                 ])
           , ("name", BMXString . renderProject . definitionProject $ d)

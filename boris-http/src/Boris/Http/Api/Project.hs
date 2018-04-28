@@ -2,11 +2,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Boris.Http.Api.Project (
     picker
+
+  , ProjectReferenceResolution (..)
   , byReference
   , pick
   , list
   , discover
   , new
+
+  , ProjectReferenceResolveError (..)
+  , renderProjectReferenceResolveError
   ) where
 
 import           Boris.Core.Data.Build
@@ -17,6 +22,7 @@ import           Boris.Http.Data
 import qualified Boris.Http.Db.Query as Query
 
 import qualified Data.List as List
+import qualified Data.Text as Text
 
 import           P
 
@@ -47,22 +53,55 @@ pick pool tenant authenticated project =
         AuthenticatedByGithub _session user ->
           picker project <$> Query.getAccountProjects (userIdOf user)
 
-byReference :: DbPool -> Tenant -> AuthenticatedBy -> ProjectReference -> EitherT DbError IO (Maybe Definition)
-byReference pool tenant authenticated project =
-  Traction.runDb pool $ case tenant of
-    SingleTenant ->
-      case authenticated of
-        AuthenticatedByDesign _ ->
-          error "todo"
-        AuthenticatedByGithub _session user ->
-          error "todo"
-    MultiTenant ->
-      case authenticated of
-        AuthenticatedByDesign _ ->
-          error "todo"
-        AuthenticatedByGithub _session user ->
-          error "todo"
+data ProjectReferenceResolveError =
+    ProjectReferenceResolveDbError DbError
+    deriving Show
 
+renderProjectReferenceResolveError :: ProjectReferenceResolveError -> Text
+renderProjectReferenceResolveError err =
+  case err of
+    ProjectReferenceResolveDbError e ->
+      mconcat ["Project reference resolve error via db: ", Traction.renderDbError e]
+
+data ProjectReferenceResolution =
+    NoProjectReferenceResolution
+  | ExactProjectReferenceResolution Definition
+  | QualifiedProjectReferenceResolution Definition
+  | AmbiguousProjectReferenceResolution [Definition]
+  | InvalidProjectReferenceResolution
+    deriving (Eq, Show)
+
+byReference :: DbPool -> ProjectReference -> EitherT ProjectReferenceResolveError IO ProjectReferenceResolution
+byReference pool ref =
+  case Text.splitOn ":" $ renderProjectReference ref of
+    [project] -> do
+      candidates <- firstT ProjectReferenceResolveDbError . Traction.runDb pool $
+        Query.getProjectsByProject (Project project)
+      case candidates of
+        [exact] ->
+          pure $ ExactProjectReferenceResolution exact
+        [] ->
+          pure $ NoProjectReferenceResolution
+        _ ->
+          pure $ AmbiguousProjectReferenceResolution candidates
+    [owner, project] -> do
+      candidates <- firstT ProjectReferenceResolveDbError . Traction.runDb pool $
+        Query.getProjectsByOwnerProject (OwnerName owner) (Project project)
+      case candidates of
+        [exact] ->
+          pure $ ExactProjectReferenceResolution exact
+        [] ->
+          pure $ NoProjectReferenceResolution
+        _ ->
+          pure $ AmbiguousProjectReferenceResolution candidates
+    ["github", owner, project] -> do
+      fmap (maybe NoProjectReferenceResolution QualifiedProjectReferenceResolution) . firstT ProjectReferenceResolveDbError . Traction.runDb pool $
+        Query.getProjectBySourceOwnerProject GithubSource (OwnerName owner) (Project project)
+    ["boris", owner, project] -> do
+      fmap (maybe NoProjectReferenceResolution QualifiedProjectReferenceResolution) . firstT ProjectReferenceResolveDbError . Traction.runDb pool $
+        Query.getProjectBySourceOwnerProject BorisSource (OwnerName owner) (Project project)
+    _ ->
+      pure InvalidProjectReferenceResolution
 
 list :: DbPool -> Tenant -> AuthenticatedBy -> EitherT DbError IO [Definition]
 list pool tenant authenticated =

@@ -14,12 +14,14 @@ import           Boris.Core.Data.Tenant
 import qualified Boris.Http.Api.Build as Build
 import qualified Boris.Http.Api.Discover as Discover
 import qualified Boris.Http.Api.Github as Github
+import           Boris.Http.Api.Project (ProjectReferenceResolution (..))
 import qualified Boris.Http.Api.Project as Project
 import qualified Boris.Http.Api.Result as Result
 import qualified Boris.Http.Api.Session as Session
 import           Boris.Http.Boot
 import           Boris.Http.Data
 import qualified Boris.Http.Db.Query as Query
+import qualified Boris.Http.Db.Settings as SettingsDb
 import           Boris.Http.Spock
 import qualified Boris.Http.View as View
 import qualified Boris.Representation.ApiV1 as ApiV1
@@ -66,13 +68,13 @@ configure pool authentication mode = do
 
   Spock.post "configure" $ do
     m <- Spock.param "multi"
-    liftDbError $ Traction.runDb pool $ Query.setTenant $
+    liftDbError $ Traction.runDb pool $ SettingsDb.setTenant $
       bool SingleTenant MultiTenant $ isJust (m :: Maybe Text)
     Spock.redirect "/"
 
   Spock.prehook (do
     settings <- liftDbError . Traction.runDb pool $
-      Query.getTenant
+      SettingsDb.getTenant
 
     case settings of
       Just _ -> do
@@ -194,12 +196,61 @@ route pool authentication mode = do
 
   Spock.get ("project" <//> Spock.var) $ \project ->
     authenticated authentication pool $ \a -> do
-      builds <- liftDbError $ Build.byProject pool (ProjectReference project)
-      withAccept $ \case
-        AcceptHTML ->
-          View.render $ View.project a (Project project) builds
-        AcceptJSON ->
-          Spock.json $ ApiV1.GetProject (Project project) builds
+      definition <- liftError Project.renderProjectReferenceResolveError $
+        Project.byReference pool (ProjectReference project)
+      case definition of
+        NoProjectReferenceResolution ->
+          withAccept $ \case
+            AcceptHTML -> do
+              Spock.setStatus HTTP.notFound404
+              Spock.html "TODO: 404 page."
+            AcceptJSON -> do
+              -- TODO should have a body
+              Spock.setStatus HTTP.status404
+              Spock.json ()
+        ExactProjectReferenceResolution definition ->
+          Spock.redirect . mconcat $ [
+              "project/"
+            , case definitionSource definition of
+                GithubSource ->
+                  "github"
+                BorisSource ->
+                  "boris"
+            , ":"
+            , renderOwnerName . ownerName . definitionOwner $ definition
+            , ":"
+            , renderProject . definitionProject $ definition
+            ]
+        QualifiedProjectReferenceResolution definition -> do
+          builds <- liftDbError $ Build.byProject pool (error "todo") -- FIX MTH (definitionProjectId project)
+          withAccept $ \case
+            AcceptHTML ->
+              View.render $ View.project a (Project project) builds
+            AcceptJSON ->
+              Spock.json $ ApiV1.GetProject (Project project) builds
+        AmbiguousProjectReferenceResolution definitions ->
+          -- MTH should we give some indication that things are ambiguous and require further qualification?
+          withAccept $ \case
+            AcceptHTML -> do
+              Spock.setStatus HTTP.notFound404
+              Spock.html "TODO: 404 page."
+            AcceptJSON -> do
+              -- TODO should have a body
+              Spock.setStatus HTTP.status404
+              Spock.json ()
+        InvalidProjectReferenceResolution ->
+          -- MTH shoudld we give some indication that the format is invalid?
+          withAccept $ \case
+            AcceptHTML -> do
+              Spock.setStatus HTTP.notFound404
+              Spock.html "TODO: 404 page."
+            AcceptJSON -> do
+              -- TODO should have a body
+              Spock.setStatus HTTP.status404
+              Spock.json ()
+
+
+
 
   Spock.post ("project" <//> Spock.var) $ \project ->
     authenticated authentication pool $ \a -> do
@@ -498,7 +549,7 @@ route pool authentication mode = do
 getTenant :: DbPool -> Spock.ActionT IO Tenant
 getTenant pool =
   liftDbError . Traction.runDb pool $
-    Query.demandTenant
+    SettingsDb.demandTenant
 
 newSession :: Mode -> SessionId -> Spock.ActionT IO ()
 newSession mode session =

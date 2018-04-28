@@ -10,7 +10,8 @@ module Boris.Http.Api.Session (
 
 
 import           Boris.Http.Data
-import qualified Boris.Http.Db.Query as Query
+import qualified Boris.Http.Db.Account as AccountDb
+import qualified Boris.Http.Db.Session as SessionDb
 
 import           Control.Monad.IO.Class (MonadIO (..))
 
@@ -60,13 +61,13 @@ renderAuthenticationError err =
 check :: DbPool -> Client.Manager -> GithubClient -> GithubSecret -> SessionId -> EitherT AuthenticationError IO (Maybe AuthenticatedUser)
 check pool _manager _client _secret sessionId = do
   a <- firstT AuthenticationDbError . Traction.runDb pool $
-    Query.getSession sessionId
+    SessionDb.getSession sessionId
   case a of
     Nothing ->
       pure Nothing
     Just _ -> do
       firstT AuthenticationDbError . Traction.runDb pool $
-        Query.tickSession sessionId
+        SessionDb.tickSession sessionId
       pure a
 
 authenticate :: DbPool -> Client.Manager -> GithubClient -> GithubSecret -> GithubCode -> EitherT AuthenticationError IO Session
@@ -93,9 +94,6 @@ authenticate pool manager client secret code = do
   access <- firstT AuthenticationGithubDecodeError . newEitherT . pure $
     either (Left . Text.pack) Right . Aeson.eitherDecode . Client.responseBody $ response
 
-  liftIO $ IO.print response
-  liftIO $ IO.print access
-
   user <- firstT AuthenticationGithubError . newEitherT $
     Github.userInfoCurrent' $ Github.OAuth (getAccessToken access)
 
@@ -107,30 +105,30 @@ authenticate pool manager client secret code = do
         (fmap GithubName . Github.userName $ user)
         (fmap GithubEmail . Github.userEmail $ user)
   mu <- firstT AuthenticationDbError . Traction.runDb pool $
-    Query.userByGithubId (githubUserId githubUser)
+    AccountDb.userByGithubId (githubUserId githubUser)
   u <- case mu of
     Nothing ->
       firstT AuthenticationDbError . Traction.runDb pool $
-        Query.addUser githubUser
+        AccountDb.addUser githubUser
     Just u ->
       if githubUser == userOf u then
         pure u
       else do
         firstT AuthenticationDbError . Traction.runDb pool $
-          Query.updateUser (u { userOf = githubUser})
+          AccountDb.updateUser (u { userOf = githubUser})
         pure u
   s <- newSessionToken
   let
     session = Session s (GithubOAuth $ getAccessToken access)
 
   firstT AuthenticationDbError . Traction.runDb pool $
-    Query.newSession session (userIdOf u)
+    SessionDb.newSession session (userIdOf u)
   pure session
 
 data AccessToken =
   AccessToken {
       getAccessToken :: ByteString
-    , getAccessTokenScopes :: [Text]
+    , _getAccessTokenScopes :: [Text]
     } deriving (Eq, Ord, Show)
 
 instance Aeson.FromJSON AccessToken where

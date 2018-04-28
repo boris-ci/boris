@@ -25,22 +25,14 @@ module Boris.Http.Db.Query (
   , getQueued
   , getBuildRefs
   , discover
-  , userByGithubId
-  , addUser
-  , updateUser
-  , newSession
-  , tickSession
-  , getSession
-  , getSessionUser
-  , getSessionOAuth
-  , demandTenant
-  , getTenant
-  , setTenant
   , getAllProjects
   , getAccountProjects
   , createProject
   , importProject
   , linkProject
+  , getProjectBySourceOwnerProject
+  , getProjectsByOwnerProject
+  , getProjectsByProject
   ) where
 
 
@@ -48,7 +40,6 @@ import           Boris.Core.Data.Build
 import           Boris.Core.Data.Log
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Repository
-import           Boris.Core.Data.Tenant
 import           Boris.Http.Data
 
 import           Database.PostgreSQL.Simple ((:.) (..))
@@ -121,13 +112,13 @@ fetchLogs i = do
       tm
       tt
 
-getProjects :: MonadDb m => Project -> m [Build]
+getProjects :: MonadDb m => ProjectId -> m [Build]
 getProjects project =
   (fmap . fmap) Build $ Traction.values $ Traction.query [sql|
       SELECT DISTINCT build
         FROM build
        WHERE project = ?
-    |] (Traction.Only $ renderProject project)
+    |] (Traction.Only $ getProjectId project)
 
 getProjectCommits :: MonadDb m => Project -> m [Commit]
 getProjectCommits project =
@@ -281,134 +272,6 @@ results = do
       (Ref <$> r)
       (bool BuildKo BuildOk br)
 
-userByGithubId :: MonadDb m => GithubId -> m (Maybe (Identified GithubUser))
-userByGithubId uid = do
-  x <- Traction.unique [sql|
-      SELECT id, github_id, github_login, github_name, github_email
-        FROM account
-       WHERE github_id = ?
-    |] (Traction.Only $ githubId uid)
-  pure . with x $ \(i, guid, login, name, email) ->
-    Identified
-      (UserId i)
-      (GithubUser
-        (GithubId guid)
-        (GithubLogin login)
-        (GithubName <$> name)
-        (GithubEmail <$> email))
-
-updateUser :: MonadDb m => Identified GithubUser -> m ()
-updateUser user = do
-  void $ Traction.execute [sql|
-      UPDATE account
-         SET github_id = ?
-           , github_login = ?
-           , github_name = ?
-           , github_email = ?
-           , updated = now()
-       WHERE id = ?
-    |] (githubId . githubUserId . userOf $ user
-      , githubLogin . githubUserLogin . userOf $ user
-      , fmap githubName . githubUserName. userOf $ user
-      , fmap githubEmail . githubUserEmail . userOf $ user
-      , getUserId . userIdOf $ user)
-
-addUser :: MonadDb m => GithubUser -> m (Identified GithubUser)
-addUser user = do
-  i <- Traction.value $ Traction.mandatory [sql|
-      INSERT INTO account (github_id, github_login, github_name, github_email)
-           VALUES (?, ?, ?, ?)
-        RETURNING id
-    |] (githubId . githubUserId $ user
-      , githubLogin . githubUserLogin $ user
-      , fmap githubName . githubUserName $ user
-      , fmap githubEmail . githubUserEmail $ user)
-  pure $ Identified (UserId i) user
-
-newSession :: MonadDb m => Session -> UserId -> m ()
-newSession session user = do
-  void $ Traction.execute [sql|
-      INSERT INTO session (id, account, oauth)
-           VALUES (?, ?, ?)
-    |] (getSessionId . sessionIdentifier $ session
-      , getUserId user
-      , githubOAuth . sessionOAuth $ session)
-
-tickSession :: MonadDb m => SessionId -> m ()
-tickSession session = do
-  void $ Traction.execute [sql|
-      UPDATE session
-         SET updated = now()
-       WHERE id = ?
-    |] (Traction.Only . getSessionId $ session)
-
-getSessionUser :: MonadDb m => SessionId -> m (Maybe UserId)
-getSessionUser session = do
-  (fmap . fmap) UserId . Traction.values $ Traction.unique [sql|
-      SELECT account
-        FROM session
-       WHERE id = ?
-         AND updated > now() - INTERVAL '1 day'
-    |] (Traction.Only $ getSessionId $ session)
-
-getSessionOAuth :: MonadDb m => SessionId -> m (Maybe GithubOAuth)
-getSessionOAuth session = do
-  (fmap . fmap) GithubOAuth . Traction.values $ Traction.unique [sql|
-      SELECT oauth
-        FROM session
-       WHERE id = ?
-         AND updated > now() - INTERVAL '1 day'
-    |] (Traction.Only $ getSessionId $ session)
-
-
-getSession :: MonadDb m => SessionId -> m (Maybe AuthenticatedUser)
-getSession session = do
-  x <- Traction.unique [sql|
-      SELECT s.account, s.oauth, a.github_id, a.github_login, a.github_name, a.github_email
-        FROM session s
-        JOIN account a ON s.account = a.id
-       WHERE s.id = ?
-         AND s.updated > now() - INTERVAL '1 day'
-    |] (Traction.Only $ getSessionId $ session)
-  pure . with x $ \(i, oauth, guid, login, name, email) ->
-    AuthenticatedUser
-      (Identified
-        (UserId i)
-        (GithubUser
-          (GithubId guid)
-          (GithubLogin login)
-          (GithubName <$> name)
-          (GithubEmail <$> email)))
-      (Session session $ GithubOAuth oauth)
-
-getTenant :: MonadDb m => m (Maybe Tenant)
-getTenant =
-  (fmap . fmap) (bool SingleTenant MultiTenant) . Traction.values $ Traction.unique_ [sql|
-      SELECT s.multi_tenant
-        FROM settings s
-    |]
-
-demandTenant :: MonadDb m => m Tenant
-demandTenant =
-  fmap (bool SingleTenant MultiTenant) . Traction.value $ Traction.mandatory_ [sql|
-      SELECT s.multi_tenant
-        FROM settings s
-    |]
-
-setTenant :: MonadDb m => Tenant -> m ()
-setTenant settings =
-  getTenant >>= \s -> case s of
-    Nothing ->
-      void $ Traction.execute [sql|
-        INSERT INTO settings (multi_tenant)
-             VALUES (?)
-      |] (Traction.Only $ MultiTenant == settings)
-    Just _ ->
-      void $ Traction.execute [sql|
-        UPDATE settings
-           SET multi_tenant = ?
-      |] (Traction.Only $ MultiTenant == settings)
-
 getAllProjects :: MonadDb m => m [Definition]
 getAllProjects = do
   let q = [sql|
@@ -416,6 +279,72 @@ getAllProjects = do
         FROM project p, owner o
     |]
   x <- Traction.query_ q
+  for x $ \(i, source, name, repository, oid, oname, otype) ->
+    case (,) <$> sourceFromInt source <*> ownerTypeFromInt otype of
+      Just (s, t) ->
+         pure $ Definition
+           (ProjectId i)
+           s
+           (Owner (OwnerId oid) (OwnerName oname) t)
+           (Project name)
+           (Repository repository)
+      Nothing ->
+        Traction.liftDb $ Traction.failWith (Traction.DbNoResults q)
+
+getProjectBySourceOwnerProject :: MonadDb m => Source -> OwnerName -> Project -> m (Maybe Definition)
+getProjectBySourceOwnerProject sourcex owner project = do
+  let q = [sql|
+      SELECT p.id, p.source, p.name, p.repository, o.id, o.name, o.type
+        FROM project p, owner o
+       WHERE p.owner = o.id
+         AND p.source = ?
+         AND o.name = ?
+         AND p.name = ?
+    |]
+  x <- Traction.unique q (sourceToInt sourcex, renderOwnerName owner, renderProject project)
+  for x $ \(i, source, name, repository, oid, oname, otype) ->
+    case (,) <$> sourceFromInt source <*> ownerTypeFromInt otype of
+      Just (s, t) ->
+         pure $ Definition
+           (ProjectId i)
+           s
+           (Owner (OwnerId oid) (OwnerName oname) t)
+           (Project name)
+           (Repository repository)
+      Nothing ->
+        Traction.liftDb $ Traction.failWith (Traction.DbNoResults q)
+
+getProjectsByOwnerProject :: MonadDb m => OwnerName -> Project -> m [Definition]
+getProjectsByOwnerProject owner project = do
+  let q = [sql|
+      SELECT p.id, p.source, p.name, p.repository, o.id, o.name, o.type
+        FROM project p, owner o
+       WHERE p.owner = o.id
+         AND o.name = ?
+         AND p.name = ?
+    |]
+  x <- Traction.query q (renderOwnerName owner, renderProject project)
+  for x $ \(i, source, name, repository, oid, oname, otype) ->
+    case (,) <$> sourceFromInt source <*> ownerTypeFromInt otype of
+      Just (s, t) ->
+         pure $ Definition
+           (ProjectId i)
+           s
+           (Owner (OwnerId oid) (OwnerName oname) t)
+           (Project name)
+           (Repository repository)
+      Nothing ->
+        Traction.liftDb $ Traction.failWith (Traction.DbNoResults q)
+
+getProjectsByProject :: MonadDb m => Project -> m [Definition]
+getProjectsByProject project = do
+  let q = [sql|
+      SELECT p.id, p.source, p.name, p.repository, o.id, o.name, o.type
+        FROM project p, owner o
+       WHERE p.owner = o.id
+         AND p.name = ?
+    |]
+  x <- Traction.query q (Traction.Only $ renderProject project)
   for x $ \(i, source, name, repository, oid, oname, otype) ->
     case (,) <$> sourceFromInt source <*> ownerTypeFromInt otype of
       Just (s, t) ->

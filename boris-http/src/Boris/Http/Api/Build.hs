@@ -126,7 +126,7 @@ byCommit pool project commit =
   Traction.runDb pool $
     Query.getProjectCommitBuildIds project commit
 
-byProject :: DbPool -> Project -> EitherT DbError IO [Build]
+byProject :: DbPool -> ProjectId -> EitherT DbError IO [Build]
 byProject pool project =
   Traction.runDb pool $
     Query.getProjects project

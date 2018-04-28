@@ -3,7 +3,7 @@
 import qualified Boris.Http.Boot as Boot
 import qualified Boris.Http.Route as Route
 import qualified Boris.Http.Db.Schema as Schema
-import qualified Boris.Http.Db.Query as Query
+import qualified Boris.Http.Db.Settings as SettingsDb
 
 import qualified Nest
 
@@ -30,7 +30,7 @@ main = do
     Schema.initialise pool
 
   tenant <- orDie Traction.renderDbError $
-    Traction.runDb pool Query.getTenant
+    Traction.runDb pool SettingsDb.getTenant
 
   port <- Nest.force $ Nest.numeric "PORT" `Nest.withDefault` 10080
 
@@ -39,7 +39,7 @@ main = do
       pure $ Route.application pool authentication mode
     (Nothing, Just t) -> do
       orDie Traction.renderDbError $
-        Traction.runDb pool $ Query.setTenant t
+        Traction.runDb pool $ SettingsDb.setTenant t
       pure $ Route.application pool authentication mode
     (Nothing, Nothing) -> do
       pure $ Route.configure pool authentication mode

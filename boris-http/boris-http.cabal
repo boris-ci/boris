@@ -78,7 +78,10 @@ library
                     Boris.Http.Boot
                     Boris.Http.Data
 
+                    Boris.Http.Db.Account
                     Boris.Http.Db.Schema
+                    Boris.Http.Db.Session
+                    Boris.Http.Db.Settings
                     Boris.Http.Db.Query
 
                     Boris.Http.Route
