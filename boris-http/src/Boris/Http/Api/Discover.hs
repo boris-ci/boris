@@ -17,9 +17,9 @@ import           Boris.Core.Data.Project
 import           Boris.Core.Data.Tenant
 import           Boris.Http.Data
 import qualified Boris.Http.Api.Project as Project
-import qualified Boris.Http.Db.BuildId as BuildIdDb
+import qualified Boris.Http.Db.Build as BuildDb
 import qualified Boris.Http.Db.Discover as DiscoverDb
-import qualified Boris.Http.Db.Query as Query
+import qualified Boris.Http.Db.Tick as TickDb
 
 import           P
 
@@ -45,7 +45,7 @@ complete pool buildid project discovers = do
   -- FIX ref should be handled
   for_ discovers $ \(DiscoverInstance build _ref commit) -> do
     current <- firstT CompleteDbError . Traction.runDb pool $
-      Query.getProjectCommitSeen project commit
+      BuildDb.getProjectCommitSeen project commit
     already <- firstT CompleteDbError . Traction.runDb pool $
       DiscoverDb.getProjectCommitDiscovered project commit
     if List.elem build current || List.elem build already
@@ -54,8 +54,8 @@ complete pool buildid project discovers = do
         firstT CompleteDbError . Traction.runDb pool $ do
           DiscoverDb.addProjectCommitDiscovered buildid build commit
           -- FIX should this just call Build.submit? Permissions will be wierd.
-          newId <- BuildIdDb.tick
-          Query.register project build newId
+          newId <- TickDb.tick
+          BuildDb.register project build newId
 
 -- FIX MTH error type
 discover :: DbPool -> Tenant -> AuthenticatedBy -> Project -> EitherT Text IO (Maybe BuildId)
@@ -67,7 +67,7 @@ discover pool tenant authenticated project = do
       pure Nothing
     Just _repository -> do
       i <- firstT Traction.renderDbError . Traction.runDb pool $
-        BuildIdDb.tick
+        TickDb.tick
       firstT Traction.renderDbError . Traction.runDb pool $
         DiscoverDb.discover i project
       pure (Just i)

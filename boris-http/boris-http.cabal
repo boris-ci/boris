@@ -79,14 +79,14 @@ library
                     Boris.Http.Data
 
                     Boris.Http.Db.Account
-                    Boris.Http.Db.BuildId
+                    Boris.Http.Db.Build
                     Boris.Http.Db.Discover
                     Boris.Http.Db.Log
                     Boris.Http.Db.Project
                     Boris.Http.Db.Schema
                     Boris.Http.Db.Session
                     Boris.Http.Db.Settings
-                    Boris.Http.Db.Query
+                    Boris.Http.Db.Tick
 
                     Boris.Http.Route
                     Boris.Http.Spock

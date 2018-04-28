@@ -29,9 +29,9 @@ import           Boris.Core.Data.Project
 import           Boris.Core.Data.Tenant
 import qualified Boris.Http.Api.Project as Project
 import           Boris.Http.Data
-import qualified Boris.Http.Db.BuildId as BuildIdDb
+import qualified Boris.Http.Db.Build as BuildDb
 import qualified Boris.Http.Db.Log as LogDb
-import qualified Boris.Http.Db.Query as Query
+import qualified Boris.Http.Db.Tick as TickDb
 
 import           P
 
@@ -54,7 +54,7 @@ renderBuildError err =
 byId :: DbPool -> BuildId -> EitherT DbError IO (Maybe BuildData)
 byId pool build =
   Traction.runDb pool $ do
-    result <- Query.fetch build
+    result <- BuildDb.fetch build
     for result $ \r ->
       case buildDataResult r of
         Nothing ->
@@ -71,7 +71,7 @@ byId pool build =
               now <- liftIO Time.getCurrentTime
               if Time.diffUTCTime now h > 120
                 then do
-                  Query.cancel build
+                  BuildDb.cancel build
                   pure $ r { buildDataResult = Just . fromMaybe BuildKo . buildDataResult $ r }
                 else
                   pure r
@@ -80,14 +80,14 @@ byId pool build =
 
 list :: DbPool -> Project -> Build -> EitherT DbError IO BuildTree
 list pool project build = Traction.runDb pool $ do
-  refs <- Query.getBuildRefs project build
+  refs <- BuildDb.getBuildRefs project build
   BuildTree project build <$> (for refs $ \ref ->
-    BuildTreeRef ref <$> Query.getBuildIds project build ref)
+    BuildTreeRef ref <$> BuildDb.getBuildIds project build ref)
 
 queued :: DbPool -> Project -> Build -> EitherT DbError IO [BuildId]
 queued pool project build =
   Traction.runDb pool $
-  Query.getQueued project build
+  BuildDb.getQueued project build
 
 submit :: DbPool -> Tenant -> AuthenticatedBy -> Project -> Build -> Maybe Ref -> EitherT BuildError IO (Maybe BuildId)
 submit pool tenant authenticated project build ref = do
@@ -102,50 +102,50 @@ submit pool tenant authenticated project build ref = do
         _normalised = with ref $ \rr ->
           if Text.isPrefixOf "refs/" . renderRef $ rr then rr else Ref . ((<>) "refs/heads/") . renderRef $ rr
       firstT BuildDbError . Traction.runDb pool $ do
-        i <- BuildIdDb.tick
-        Query.register project build i
+        i <- TickDb.tick
+        BuildDb.register project build i
         pure $ Just i
 
 heartbeat :: DbPool -> BuildId -> EitherT DbError IO BuildCancelled
 heartbeat pool  buildId =
   Traction.runDb pool $
-    Query.heartbeat buildId
+    BuildDb.heartbeat buildId
 
 acknowledge :: DbPool -> BuildId -> EitherT DbError IO Acknowledge
 acknowledge pool buildId =
   Traction.runDb pool $
-    Query.acknowledge buildId
+    BuildDb.acknowledge buildId
 
 cancel :: DbPool -> BuildId -> EitherT DbError IO (Maybe ())
 cancel pool i =
   Traction.runDb pool $ do
-    d <- Query.fetch i
+    d <- BuildDb.fetch i
     for d $ \_ ->
-        Query.cancel i
+        BuildDb.cancel i
 
 byCommit :: DbPool -> Project -> Commit -> EitherT DbError IO [BuildId]
 byCommit pool project commit =
   Traction.runDb pool $
-    Query.getProjectCommitBuildIds project commit
+    BuildDb.getProjectCommitBuildIds project commit
 
 byProject :: DbPool -> ProjectId -> EitherT DbError IO [Build]
 byProject pool project =
   Traction.runDb pool $
-    Query.getProjects project
+    BuildDb.getProjects project
 
 logOf :: DbPool -> BuildId -> EitherT DbError IO (Maybe LogData)
 logOf pool i =
   Traction.runDb pool $ do
-    d <- Query.fetch i
+    d <- BuildDb.fetch i
     for d $ \_ ->
       LogDb.fetchLogData i
 
 avow :: DbPool -> BuildId -> Ref -> Commit -> EitherT DbError IO ()
 avow pool i ref commit =
   Traction.runDb pool $
-    Query.index i ref commit
+    BuildDb.index i ref commit
 
 complete :: DbPool -> BuildId -> BuildResult -> EitherT DbError IO ()
 complete pool i result =
   void . Traction.runDb pool $
-    Query.complete i result
+    BuildDb.complete i result

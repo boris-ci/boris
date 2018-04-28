@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeOperators #-}
-module Boris.Http.Db.BuildId (
+module Boris.Http.Db.Tick (
     tick
   ) where
 

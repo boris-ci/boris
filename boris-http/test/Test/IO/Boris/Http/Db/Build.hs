@@ -1,13 +1,10 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
-module Test.IO.Boris.Http.Db.Query  where
+module Test.IO.Boris.Http.Db.Build  where
 
 import           Boris.Core.Data.Build
-import           Boris.Http.Data
-import qualified Boris.Http.Db.Query as Query
-
-import           Control.Monad.IO.Class (MonadIO (..))
+import qualified Boris.Http.Db.Build as BuildDb
 
 import           Hedgehog
 import qualified Hedgehog.Gen as Gen
@@ -17,7 +14,6 @@ import           P
 import           System.IO (IO)
 
 import qualified Test.Boris.Core.Gen as Gen
-import qualified Test.Boris.Http.Gen as Gen
 import           Test.IO.Boris.Http.Db.Test
 
 prop_fetch :: Property
@@ -27,8 +23,8 @@ prop_fetch =
     build <- forAll Gen.genBuild
     buildid <- forAll Gen.genBuildId
     actual <- db $ do
-      Query.register project build buildid
-      result <- Query.fetch buildid
+      BuildDb.register project build buildid
+      result <- BuildDb.fetch buildid
 
       pure $
         (buildDataProject <$> result, buildDataBuild <$> result, buildDataId <$> result)
@@ -41,9 +37,9 @@ prop_cancel =
     build <- forAll Gen.genBuild
     buildid <- forAll Gen.genBuildId
     actual <- db $ do
-      Query.register project build buildid
-      Query.cancel buildid
-      result <- Query.fetch buildid
+      BuildDb.register project build buildid
+      BuildDb.cancel buildid
+      result <- BuildDb.fetch buildid
       pure $ result >>= buildDataCancelled
     actual === Just BuildCancelled
 
@@ -54,9 +50,9 @@ prop_acknowledge =
     build <- forAll Gen.genBuild
     buildid <- forAll Gen.genBuildId
     actual <- db $ do
-      Query.register project build buildid
-      ack <- Query.acknowledge buildid
-      result <- Query.fetch buildid
+      BuildDb.register project build buildid
+      ack <- BuildDb.acknowledge buildid
+      result <- BuildDb.fetch buildid
       pure $ (ack, isJust . buildDataStartTime <$> result)
     actual === (Accept, Just True)
 
@@ -67,9 +63,9 @@ prop_acknowledge_reject =
     build <- forAll Gen.genBuild
     buildid <- forAll Gen.genBuildId
     actual <- db $ do
-      Query.register project build buildid
-      ack1 <- Query.acknowledge buildid
-      ack2 <- Query.acknowledge buildid
+      BuildDb.register project build buildid
+      ack1 <- BuildDb.acknowledge buildid
+      ack2 <- BuildDb.acknowledge buildid
       pure $ (ack1, ack2)
     actual === (Accept, AlreadyRunning)
 
@@ -81,9 +77,9 @@ prop_complete =
     buildid <- forAll Gen.genBuildId
     resultx <- forAll (Gen.element [BuildOk, BuildKo])
     actual <- db $ do
-      Query.register project build buildid
-      ref <- Query.complete buildid resultx
-      resultxx <- Query.fetch buildid
+      BuildDb.register project build buildid
+      ref <- BuildDb.complete buildid resultx
+      resultxx <- BuildDb.fetch buildid
       pure $ (ref, isJust $ resultxx >>= buildDataEndTime, resultxx >>= buildDataResult)
     actual === (Nothing, True, Just resultx)
 
@@ -94,12 +90,12 @@ prop_heartbeat =
     build <- forAll Gen.genBuild
     buildid <- forAll Gen.genBuildId
     actual <- db $ do
-      Query.register project build buildid
-      a <- Query.heartbeat buildid
-      b <- Query.heartbeat buildid
-      Query.cancel buildid
-      c <- Query.heartbeat buildid
-      result <- Query.fetch buildid
+      BuildDb.register project build buildid
+      a <- BuildDb.heartbeat buildid
+      b <- BuildDb.heartbeat buildid
+      BuildDb.cancel buildid
+      c <- BuildDb.heartbeat buildid
+      result <- BuildDb.fetch buildid
       pure $ (a, b, c, isJust $ result >>= buildDataHeartbeatTime, result >>= buildDataCancelled)
     actual === (BuildNotCancelled, BuildNotCancelled, BuildCancelled, True, Just BuildCancelled)
 
@@ -112,40 +108,12 @@ prop_index =
     ref <- forAll Gen.genRef
     commit <- forAll Gen.genCommit
     actual <- db $ do
-      Query.register project build buildid
-      Query.index buildid ref commit
-      result <- Query.fetch buildid
+      BuildDb.register project build buildid
+      BuildDb.index buildid ref commit
+      result <- BuildDb.fetch buildid
       pure $
         (buildDataProject <$> result, buildDataBuild <$> result, buildDataId <$> result, result >>= buildDataRef, result >>= buildDataCommit)
     actual === (Just project, Just build, Just buildid, Just ref, Just commit)
-
-prop_user :: Property
-prop_user =
-  property $ do
-    github1 <- forAll Gen.genGithubUser
-    github2 <- forAll Gen.genGithubUser
-    actual <- db $ do
-      user1 <- Query.addUser github1
-      muser1 <- Query.userByGithubId (githubUserId github1)
-      Query.updateUser (user1 { userOf = github2 })
-      muser2 <- Query.userByGithubId (githubUserId github2)
-      pure (userOf user1, userOf <$> muser1, userOf <$> muser2)
-    actual === (github1, Just github1, Just github2)
-
-prop_session :: Property
-prop_session =
-  property $ do
-    sessionId <- liftIO newSessionToken
-    github <- forAll Gen.genGithubUser
-    oauth <- forAll Gen.genGithubOAuth
-    let session = Session sessionId oauth
-    (user, actual) <- db $ do
-      user <- Query.addUser github
-      Query.newSession session (userIdOf user)
-      Query.tickSession sessionId
-      result <- Query.getSession sessionId
-      pure (user, result)
-    actual === (Just $ AuthenticatedUser user $ Session sessionId oauth)
 
 tests :: IO Bool
 tests =

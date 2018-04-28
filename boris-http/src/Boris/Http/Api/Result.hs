@@ -7,7 +7,7 @@ module Boris.Http.Api.Result (
 
 
 import           Boris.Core.Data.Build
-import qualified Boris.Http.Db.Query as Query
+import qualified Boris.Http.Db.Build as BuildDb
 
 import           P
 
@@ -16,7 +16,7 @@ import           Traction.Control (MonadDb)
 
 scoreboard :: MonadDb m => m [Result]
 scoreboard =
-  Query.results
+  BuildDb.results
 
 status :: MonadDb m => m [Result]
 status =
