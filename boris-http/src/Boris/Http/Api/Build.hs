@@ -30,6 +30,7 @@ import           Boris.Core.Data.Tenant
 import qualified Boris.Http.Api.Project as Project
 import           Boris.Http.Data
 import qualified Boris.Http.Db.BuildId as BuildIdDb
+import qualified Boris.Http.Db.Log as LogDb
 import qualified Boris.Http.Db.Query as Query
 
 import           P
@@ -137,7 +138,7 @@ logOf pool i =
   Traction.runDb pool $ do
     d <- Query.fetch i
     for d $ \_ ->
-      Query.fetchLogData i
+      LogDb.fetchLogData i
 
 avow :: DbPool -> BuildId -> Ref -> Commit -> EitherT DbError IO ()
 avow pool i ref commit =

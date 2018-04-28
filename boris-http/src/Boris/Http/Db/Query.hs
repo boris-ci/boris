@@ -4,8 +4,6 @@
 {-# LANGUAGE TypeOperators #-}
 module Boris.Http.Db.Query (
     fetch
-  , fetchLogs
-  , fetchLogData
   , cancel
   , register
   , acknowledge
@@ -28,7 +26,6 @@ module Boris.Http.Db.Query (
 
 
 import           Boris.Core.Data.Build
-import           Boris.Core.Data.Log
 import           Boris.Core.Data.Project
 
 import           Database.PostgreSQL.Simple ((:.) (..))
@@ -75,23 +72,6 @@ fetch i = do
       ht
       (bool BuildKo BuildOk <$> br)
       (bool BuildNotCancelled BuildCancelled <$> cancelled)
-
-fetchLogData :: MonadDb m => BuildId -> m LogData
-fetchLogData build =
-  fmap DBLog $
-    fetchLogs build
-
-fetchLogs :: MonadDb m => BuildId -> m [DBLogData]
-fetchLogs i = do
-  x <- Traction.query [sql|
-      SELECT logged_at, log_payload
-        FROM log
-       WHERE build_id = ?
-    |] (Traction.Only $ getBuildId i)
-  pure . with x $ \(tm, tt) ->
-    DBLogData
-      tm
-      tt
 
 getProjects :: MonadDb m => ProjectId -> m [Build]
 getProjects project =

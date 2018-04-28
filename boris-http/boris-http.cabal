@@ -80,6 +80,7 @@ library
 
                     Boris.Http.Db.Account
                     Boris.Http.Db.BuildId
+                    Boris.Http.Db.Log
                     Boris.Http.Db.Project
                     Boris.Http.Db.Schema
                     Boris.Http.Db.Session
