@@ -16,12 +16,9 @@ module Boris.Http.Db.Query (
   , getProjectRefs
   , getProjectCommitBuildIds
   , getProjectCommitSeen
-  , getProjectCommitDiscovered
-  , addProjectCommitDiscovered
   , getBuildIds
   , getQueued
   , getBuildRefs
-  , discover
   ) where
 
 
@@ -42,13 +39,6 @@ register project build buildid =
       INSERT INTO build (build_id, project, build, queued_time)
            VALUES (?, ?, ?, now())
     |] (getBuildId buildid, renderProject project, renderBuild build)
-
-discover :: MonadDb m => BuildId -> Project -> m ()
-discover buildid project =
-  void $ Traction.execute [sql|
-      INSERT INTO discover (discover_id, project, queued_time)
-           VALUES (?, ?, now())
-    |] (getBuildId buildid, renderProject project)
 
 fetch :: MonadDb m => BuildId -> m (Maybe BuildData)
 fetch i = do
@@ -115,23 +105,6 @@ getProjectCommitSeen project commit =
        WHERE project = ?
          AND commit = ?
     |] (renderProject project, renderCommit commit)
-
-getProjectCommitDiscovered :: MonadDb m => Project -> Commit -> m [Build]
-getProjectCommitDiscovered project commit =
-  (fmap . fmap) Build $ Traction.values $ Traction.query [sql|
-      SELECT DISTINCT build
-        FROM discover d, discover_commit c
-       WHERE d.discover_id = c.discover_id
-         AND d.project = ?
-         AND c.commit = ?
-    |] (renderProject project, renderCommit commit)
-
-addProjectCommitDiscovered :: MonadDb m => BuildId -> Build -> Commit -> m ()
-addProjectCommitDiscovered buildId build commit =
-  void $ Traction.execute [sql|
-      INSERT INTO discover_commit (discover_id, build, commit)
-           VALUES (?, ?, ?)
-    |] (getBuildId buildId, renderBuild build, renderCommit commit)
 
 getBuildIds :: MonadDb m => Project -> Build -> Ref -> m [BuildId]
 getBuildIds project build ref =

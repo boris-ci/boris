@@ -18,6 +18,7 @@ import           Boris.Core.Data.Tenant
 import           Boris.Http.Data
 import qualified Boris.Http.Api.Project as Project
 import qualified Boris.Http.Db.BuildId as BuildIdDb
+import qualified Boris.Http.Db.Discover as DiscoverDb
 import qualified Boris.Http.Db.Query as Query
 
 import           P
@@ -46,12 +47,12 @@ complete pool buildid project discovers = do
     current <- firstT CompleteDbError . Traction.runDb pool $
       Query.getProjectCommitSeen project commit
     already <- firstT CompleteDbError . Traction.runDb pool $
-      Query.getProjectCommitDiscovered project commit
+      DiscoverDb.getProjectCommitDiscovered project commit
     if List.elem build current || List.elem build already
       then pure ()
       else
         firstT CompleteDbError . Traction.runDb pool $ do
-          Query.addProjectCommitDiscovered buildid build commit
+          DiscoverDb.addProjectCommitDiscovered buildid build commit
           -- FIX should this just call Build.submit? Permissions will be wierd.
           newId <- BuildIdDb.tick
           Query.register project build newId
@@ -68,5 +69,5 @@ discover pool tenant authenticated project = do
       i <- firstT Traction.renderDbError . Traction.runDb pool $
         BuildIdDb.tick
       firstT Traction.renderDbError . Traction.runDb pool $
-        Query.discover i project
+        DiscoverDb.discover i project
       pure (Just i)
