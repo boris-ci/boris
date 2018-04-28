@@ -29,6 +29,7 @@ import           Boris.Core.Data.Project
 import           Boris.Core.Data.Tenant
 import qualified Boris.Http.Api.Project as Project
 import           Boris.Http.Data
+import qualified Boris.Http.Db.BuildId as BuildIdDb
 import qualified Boris.Http.Db.Query as Query
 
 import           P
@@ -100,7 +101,7 @@ submit pool tenant authenticated project build ref = do
         _normalised = with ref $ \rr ->
           if Text.isPrefixOf "refs/" . renderRef $ rr then rr else Ref . ((<>) "refs/heads/") . renderRef $ rr
       firstT BuildDbError . Traction.runDb pool $ do
-        i <- Query.tick
+        i <- BuildIdDb.tick
         Query.register project build i
         pure $ Just i
 

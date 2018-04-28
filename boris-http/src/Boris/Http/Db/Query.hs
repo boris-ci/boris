@@ -3,8 +3,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeOperators #-}
 module Boris.Http.Db.Query (
-    tick
-  , fetch
+    fetch
   , fetchLogs
   , fetchLogData
   , cancel
@@ -31,24 +30,14 @@ module Boris.Http.Db.Query (
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Log
 import           Boris.Core.Data.Project
-import           Boris.Core.Data.Repository
-import           Boris.Http.Data
 
 import           Database.PostgreSQL.Simple ((:.) (..))
 
 import           P
 
 import           Traction.Control (MonadDb)
-import qualified Traction.Control as Traction
 import           Traction.Sql (sql)
 import qualified Traction.Sql as Traction
-
-
-tick :: MonadDb m => m BuildId
-tick =
-  fmap BuildId . Traction.value $ Traction.mandatory_ [sql|
-      SELECT nextval('tick')
-    |]
 
 register :: MonadDb m => Project -> Build -> BuildId -> m ()
 register project build buildid =

@@ -17,6 +17,7 @@ import           Boris.Core.Data.Project
 import           Boris.Core.Data.Tenant
 import           Boris.Http.Data
 import qualified Boris.Http.Api.Project as Project
+import qualified Boris.Http.Db.BuildId as BuildIdDb
 import qualified Boris.Http.Db.Query as Query
 
 import           P
@@ -52,7 +53,7 @@ complete pool buildid project discovers = do
         firstT CompleteDbError . Traction.runDb pool $ do
           Query.addProjectCommitDiscovered buildid build commit
           -- FIX should this just call Build.submit? Permissions will be wierd.
-          newId <- Query.tick
+          newId <- BuildIdDb.tick
           Query.register project build newId
 
 -- FIX MTH error type
@@ -65,7 +66,7 @@ discover pool tenant authenticated project = do
       pure Nothing
     Just _repository -> do
       i <- firstT Traction.renderDbError . Traction.runDb pool $
-        Query.tick
+        BuildIdDb.tick
       firstT Traction.renderDbError . Traction.runDb pool $
         Query.discover i project
       pure (Just i)
