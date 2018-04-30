@@ -28,17 +28,17 @@ import qualified Traction.Sql as Traction
 getAllProjects :: MonadDb m => m [Definition]
 getAllProjects = do
   let q = [sql|
-      SELECT p.id, p.source, p.name, p.repository, o.id, o.name, o.type
-        FROM project p, owner o
+      SELECT p.id, p.source, p.owner_type, p.owner, p.name, p.repository
+        FROM project p
     |]
   x <- Traction.query_ q
-  for x $ \(i, source, name, repository, oid, oname, otype) ->
+  for x $ \(i, source, otype, owner, name, repository) ->
     case (,) <$> sourceFromInt source <*> ownerTypeFromInt otype of
       Just (s, t) ->
          pure $ Definition
            (ProjectId i)
            s
-           (Owner (OwnerId oid) (OwnerName oname) t)
+           (Owner (OwnerName owner) t)
            (Project name)
            (Repository repository)
       Nothing ->
@@ -55,13 +55,13 @@ getProjectBySourceOwnerProject sourcex owner project = do
          AND p.name = ?
     |]
   x <- Traction.unique q (sourceToInt sourcex, renderOwnerName owner, renderProject project)
-  for x $ \(i, source, name, repository, oid, oname, otype) ->
+  for x $ \(i, source, otype, owner, name, repository) ->
     case (,) <$> sourceFromInt source <*> ownerTypeFromInt otype of
       Just (s, t) ->
          pure $ Definition
            (ProjectId i)
            s
-           (Owner (OwnerId oid) (OwnerName oname) t)
+           (Owner (OwnerName owner) t)
            (Project name)
            (Repository repository)
       Nothing ->
@@ -77,13 +77,13 @@ getProjectsByOwnerProject owner project = do
          AND p.name = ?
     |]
   x <- Traction.query q (renderOwnerName owner, renderProject project)
-  for x $ \(i, source, name, repository, oid, oname, otype) ->
+  for x $ \(i, source, otype, owner, name, repository) ->
     case (,) <$> sourceFromInt source <*> ownerTypeFromInt otype of
       Just (s, t) ->
          pure $ Definition
            (ProjectId i)
            s
-           (Owner (OwnerId oid) (OwnerName oname) t)
+           (Owner (OwnerName owner) t)
            (Project name)
            (Repository repository)
       Nothing ->
@@ -98,13 +98,13 @@ getProjectsByProject project = do
          AND p.name = ?
     |]
   x <- Traction.query q (Traction.Only $ renderProject project)
-  for x $ \(i, source, name, repository, oid, oname, otype) ->
+  for x $ \(i, source, otype, owner, name, repository) ->
     case (,) <$> sourceFromInt source <*> ownerTypeFromInt otype of
       Just (s, t) ->
          pure $ Definition
            (ProjectId i)
            s
-           (Owner (OwnerId oid) (OwnerName oname) t)
+           (Owner (OwnerName owner) t)
            (Project name)
            (Repository repository)
       Nothing ->
@@ -120,13 +120,13 @@ getAccountProjects account = do
          AND o.id = p.owner
     |]
   x <- Traction.query q (Traction.Only $ getUserId account)
-  for x $ \(i, source, name, repository, oid, oname, otype) ->
+  for x $ \(i, source, otype, owner, name, repository) ->
     case (,) <$> sourceFromInt source <*> ownerTypeFromInt otype of
       Just (s, t) ->
          pure $ Definition
            (ProjectId i)
            s
-           (Owner (OwnerId oid) (OwnerName oname) t)
+           (Owner (OwnerName owner) t)
            (Project name)
            (Repository repository)
       Nothing ->

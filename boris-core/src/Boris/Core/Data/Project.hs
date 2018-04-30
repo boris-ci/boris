@@ -98,8 +98,7 @@ ownerTypeFromInt n =
 
 data Owner =
   Owner {
-      ownerId :: OwnerId
-    , ownerName :: OwnerName
+      ownerName :: OwnerName
     , ownerType :: OwnerType
     } deriving (Eq, Ord, Show)
 

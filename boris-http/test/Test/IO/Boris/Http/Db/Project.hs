@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Test.IO.Boris.Http.Db.Project where
 
-import           Boris.Core.Data.Build
+import           Boris.Core.Data.Project
 import qualified Boris.Http.Db.Project as ProjectDb
 
 import           Hedgehog
@@ -24,10 +24,12 @@ prop_create =
     owner <- forAll Gen.genOwnerName
     project <- forAll Gen.genProject
     repository <- forAll Gen.genRepository
-    p <- db $
-      ProjectDb.createProject t owner project repository
+    (p, ps) <- db $ do
+      p <- ProjectDb.createProject t owner project repository
+      ps <- ProjectDb.getAllProjects
+      pure (p, ps)
 
-    p === p
+    [p] === (definitionId <$> ps)
 
 tests :: IO Bool
 tests =

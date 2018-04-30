@@ -43,7 +43,7 @@ schema = [
         )
     |]
 
-  , Migration "create-account" [sql|
+  , Migration "create-github-account" [sql|
       CREATE TABLE github_account (
           id BIGINT PRIMARY KEY
         , github_id BIGINT NOT NULL
@@ -106,7 +106,7 @@ schema = [
         , permission INT NOT NULL
         , PRIMARY KEY (account, project)
         )
--    |]
+    |]
 
   , Migration "create-build" [sql|
       CREATE TABLE build (
