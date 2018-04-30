@@ -67,6 +67,7 @@ data OwnerType =
     GithubUserOwnerType
   | GithubOrganisationOwnerType
   | BorisOwnerType
+  | BorisGithubUserOwnerType
     deriving (Eq, Ord, Show, Enum, Bounded)
 
 ownerTypeToInt :: OwnerType -> Int64
@@ -74,10 +75,12 @@ ownerTypeToInt o =
   case o of
     BorisOwnerType ->
       0
-    GithubUserOwnerType ->
+    BorisGithubUserOwnerType ->
       1
-    GithubOrganisationOwnerType ->
+    GithubUserOwnerType ->
       2
+    GithubOrganisationOwnerType ->
+      3
 
 ownerTypeFromInt :: Int64 -> Maybe OwnerType
 ownerTypeFromInt n =
@@ -85,8 +88,10 @@ ownerTypeFromInt n =
     0 ->
       Just BorisOwnerType
     1 ->
-      Just GithubUserOwnerType
+      Just BorisGithubUserOwnerType
     2 ->
+      Just GithubUserOwnerType
+    3 ->
       Just GithubOrganisationOwnerType
     _ ->
       Nothing

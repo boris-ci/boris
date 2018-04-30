@@ -132,12 +132,13 @@ getAccountProjects account = do
       Nothing ->
         Traction.liftDb $ Traction.failWith (Traction.DbNoResults q)
 
-createProject :: MonadDb m => (Identified OwnedBy) -> Project -> Repository -> m ()
-createProject owner project repository =
-  void $ Traction.execute [sql|
-      INSERT INTO project (source, owner, name, repository, enabled)
-           VALUES (?, ?, ?, ?, true)
-    |] (sourceToInt BorisSource, getUserId . userIdOf $ owner, renderProject project, renderRepository repository)
+createProject :: MonadDb m => OwnerType -> OwnerName -> Project -> Repository -> m ProjectId
+createProject t owner project repository =
+  fmap ProjectId . Traction.value $ Traction.mandatory [sql|
+      INSERT INTO project (source, owner_type, owner, name, repository, enabled)
+           VALUES (?, ?, ?, ?, ?, true)
+        RETURNING id
+    |] (sourceToInt BorisSource, ownerTypeToInt t, renderOwnerName owner, renderProject project, renderRepository repository)
 
 createOrGetOwnedBy :: MonadDb m => OwnedBy -> m (Identified OwnedBy)
 createOrGetOwnedBy o =

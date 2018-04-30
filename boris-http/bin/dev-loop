@@ -1,0 +1,16 @@
+#!/bin/sh -eux
+
+ROOT="$(git rev-parse --show-toplevel)"
+export PORT=9999
+export BORIS_MODE=development
+export BORIS_POSTGRES="dbname=boris_test host=localhost user=boris_test password=boris_dev port=5432"
+export BORIS_TENANCY="single"
+export BORIS_AUTHENTICATION=none # or github
+
+# used to overide BORIS_POSTGRES/BORIS_AUTHENTICATION and
+# provide secrets for github when required.
+if [ -f $ROOT/.env ]; then
+    . $ROOT/.env
+fi
+
+./mafia watch -p test/test-io.hs -- -T Test.IO.Boris.Http.Db.Project.tests

@@ -37,6 +37,15 @@ schema = [
   , Migration "create-account" [sql|
       CREATE TABLE account (
           id SERIAL PRIMARY KEY
+        , type INT NOT NULL
+        , created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+        , updated TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+        )
+    |]
+
+  , Migration "create-account" [sql|
+      CREATE TABLE github_account (
+          id BIGINT PRIMARY KEY
         , github_id BIGINT NOT NULL
         , github_login TEXT NOT NULL
         , github_name TEXT
@@ -45,6 +54,7 @@ schema = [
         , updated TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
         )
     |]
+
 
   , Migration "create-session" [sql|
       CREATE TABLE session (
@@ -74,27 +84,17 @@ schema = [
         )
     |]
 
-  , Migration "create-owner" [sql|
-      CREATE TABLE owner (
-          id SERIAL PRIMARY KEY
-        , name TEXT UNIQUE NOT NULL
-        , type INT NOT NULL
-        )
-    |]
-
-  , Migration "insert-boris-system-owner" [sql|
-      INSERT INTO owner (id, name, type)
-           VALUES (0, 'boris', 0)
-    |]
-
   , Migration "create-projects" [sql|
       CREATE TABLE project (
           id SERIAL PRIMARY KEY
         , source INT NOT NULL
-        , owner BIGINT NOT NULL REFERENCES owner(id)
+        , owner_type INT NOT NULL
+        , owner TEXT NOT NULL
         , name TEXT NOT NULL
         , repository TEXT NOT NULL
         , enabled BOOLEAN NOT NULL
+        , created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+        , updated TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
         , UNIQUE (source, owner, name)
         )
     |]
@@ -106,7 +106,7 @@ schema = [
         , permission INT NOT NULL
         , PRIMARY KEY (account, project)
         )
-    |]
+-    |]
 
   , Migration "create-build" [sql|
       CREATE TABLE build (

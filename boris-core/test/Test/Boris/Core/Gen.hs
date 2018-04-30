@@ -5,9 +5,9 @@ module Test.Boris.Core.Gen where
 
 import           Boris.Core.Data.Agent
 import           Boris.Core.Data.Build
-import           Boris.Core.Data.Configuration
 import           Boris.Core.Data.Log
 import           Boris.Core.Data.Project
+import           Boris.Core.Data.Repository
 
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -43,6 +43,11 @@ genBuild =
       "master"
     , "branches"
     ]
+
+genRepository :: Gen Repository
+genRepository = do
+  sw <- Gen.element software
+  pure . Repository . mconcat $ ["git@localhost:", sw]
 
 genProject :: Gen Project
 genProject =
@@ -139,3 +144,21 @@ genDay =
 genDiffTime :: Gen DiffTime
 genDiffTime =
   fromRational . toRational <$> Gen.double (Range.linearFrac 0 86400)
+
+genSource :: Gen Source
+genSource =
+  Gen.enumBounded
+
+genOwnerType :: Gen OwnerType
+genOwnerType =
+  Gen.enumBounded
+
+genOwnerName :: Gen OwnerName
+genOwnerName =
+  OwnerName <$> Gen.element [
+      "homer"
+    , "marge"
+    , "bart"
+    , "lisa"
+    , "maggie"
+    ]
