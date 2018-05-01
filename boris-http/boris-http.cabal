@@ -51,6 +51,7 @@ library
                     , transformers                    >= 0.4        && < 0.6
                     , tz                              == 0.1.1.*
                     , unordered-containers            == 0.2.*
+                    , vector                          >= 0.11       && < 0.13
                     , vulcan                          == 0.*
                     , wai                             == 3.0.*
                     , wai-app-static                  == 3.1.*
