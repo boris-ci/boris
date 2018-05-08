@@ -84,6 +84,7 @@ executable boris
                     , data-default                    == 0.6.*
                     , http-client
                     , http-client-tls                 == 0.2.*
+                    , network-api-support             >= 0.3.0 && < 0.4
                     , old-locale
                     , optparse-applicative            >= 0.11       && < 0.15
                     , text

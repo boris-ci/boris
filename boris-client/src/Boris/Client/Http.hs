@@ -1,3 +1,5 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTSyntax #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Boris.Client.Http (
@@ -16,7 +18,9 @@ import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
 
+import           Network.Api.Support (RequestTransformer, addHeader, runRequestWith, basicResponder, parseBodyWith)
 import qualified Network.HTTP.Client as H
+import           Network.HTTP.Client.TLS (tlsManagerSettings)
 import           Network.HTTP.Types (Status (..))
 import qualified Network.HTTP.Types as HTTP
 
@@ -39,7 +43,7 @@ data BorisHttpClientError =
 
 borisVersion :: ByteString
 borisVersion =
-  "application/vnd.ambiata.boris.v1+json"
+  "application/vnd.boris.v1+json"
 
 delete :: BalanceConfig -> [Text] -> EitherT BorisHttpClientError IO ()
 delete b url = do
@@ -111,6 +115,40 @@ get b url = do
       hoistEither . first BorisHttpClientDecodeError $ decodeResponse res
     _ ->
      left $ BorisHttpClientUnhandledResponseError res
+
+data BorisRequest a where
+  BorisRequestAccept :: (FromJSON a) => HTTP.StdMethod -> Text -> RequestTransformer -> BorisRequest a
+
+data BorisResponse a =
+    BorisResponseError
+  | BorisResponseSuccess a
+  deriving (Eq, Show)
+
+data BorisClientSettings =
+  BorisClientSettings H.Manager Text
+
+newBorisClientSettings :: IO BorisClientSettings
+newBorisClientSettings =
+  BorisClientSettings <$> H.newManager tlsManagerSettings <*> pure "http://localhost:10080"
+
+request :: BorisClientSettings -> BorisRequest a -> IO (BorisResponse a)
+request (BorisClientSettings manager url) req =
+  case req of
+    BorisRequestAccept method path transform ->
+      runRequestWith manager method (url <> path) (mconcat [
+          addHeader ("Accept", "application.json")
+        , transform
+        ]) (basicResponder acceptResponder)
+
+acceptResponder :: FromJSON a => Int -> BL.ByteString -> BorisResponse a
+acceptResponder n body =
+  case n of
+    202 ->
+      parseBodyWith body (\_t -> BorisResponseError) (\_t -> BorisResponseError) BorisResponseSuccess
+    200 ->
+      parseBodyWith body (\_t -> BorisResponseError) (\_t -> BorisResponseError) BorisResponseSuccess
+    _ ->
+      BorisResponseError
 
 renderBorisHttpClientError :: BorisHttpClientError -> Text
 renderBorisHttpClientError err =
