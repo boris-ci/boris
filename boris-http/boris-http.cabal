@@ -56,9 +56,6 @@ library
             , wai-middleware-static           == 0.8.*
             , wai-middleware-static-embedded  == 0.1.*
 
-                    -- FUCK
-                    , Cabal == 2.*
-
   ghc-options:
                     -Wall
 
