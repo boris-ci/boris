@@ -17,7 +17,6 @@ import           Control.Monad.IO.Class (MonadIO (..))
 import           Data.Aeson (object, (.:), (.=))
 import qualified Data.Aeson as Aeson
 import           Data.ByteString (ByteString)
-import           Data.Default (def)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
@@ -71,11 +70,10 @@ check pool _manager _client _secret sessionId = do
 
 authenticate :: DbPool -> Client.Manager -> GithubClient -> GithubSecret -> GithubCode -> EitherT AuthenticationError IO Session
 authenticate pool manager client secret code = do
-  response <- liftIO $ Client.httpLbs def {
+  response <- liftIO $ Client.httpLbs Client.defaultRequest {
       Client.host = "github.com"
     , Client.port = 443
     , Client.secure = True
-    , Client.checkStatus = \_ _ _ -> Nothing
     , Client.redirectCount = 0
     , Client.method = HTTP.methodPost
     , Client.requestHeaders = [
@@ -130,7 +128,7 @@ authenticate pool manager client secret code = do
 data AccessToken =
   AccessToken {
       getAccessToken :: ByteString
-    , getAccessTokenScopes :: [Text]
+    , _getAccessTokenScopes :: [Text]
     } deriving (Eq, Ord, Show)
 
 instance Aeson.FromJSON AccessToken where

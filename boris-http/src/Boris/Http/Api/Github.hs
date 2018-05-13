@@ -15,7 +15,7 @@ import qualified Boris.Http.Db.Query as Query
 import           Control.Monad.IO.Class (MonadIO (..))
 
 import           Data.Aeson (FromJSON (..), withObject, (.:))
-import qualified Data.Aeson as Aeson
+--import qualified Data.Aeson as Aeson
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
@@ -114,6 +114,7 @@ permissionOn auth user repo login =
   newEitherT . Github.executeRequestMaybe (Just auth) $
     Github.query ["repos", Github.toPathPart user, Github.toPathPart repo, "collaborators", githubLogin login, "permission"] []
 
+{--
 collaboratorsOn :: Github.Auth -> Github.Name Github.Owner -> Github.Name Github.Repo -> EitherT Github.Error IO [PermissableUser]
 collaboratorsOn auth user repo =
   fmap Vector.toList . newEitherT . Github.executeRequestMaybe (Just auth) $
@@ -135,3 +136,5 @@ instance FromJSON PermissableUser where
         <*> (o .: "permissions" >>= withObject "Permissions" (\oo -> oo .: "admin"))
         <*> (o .: "permissions" >>= withObject "Permissions" (\oo -> oo .: "push"))
         <*> (o .: "permissions" >>= withObject "Permissions" (\oo -> oo .: "pull"))
+
+--}
