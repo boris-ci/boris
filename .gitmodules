@@ -1,18 +1,18 @@
 [submodule "lib/p"]
 	path = lib/p
-	url = git@github.com:ambiata/p
+	url = git@github.com:markhibberd/p
 [submodule "lib/disorder"]
 	path = lib/disorder
-	url = git@github.com:ambiata/disorder.hs
+	url = git@github.com:markhibberd/disorder.hs
 [submodule "lib/x"]
 	path = lib/x
-	url = git@github.com:ambiata/x
+	url = git@github.com:markhibberd/x
 [submodule "lib/mismi"]
 	path = lib/mismi
-	url = git@github.com:ambiata/mismi
+	url = git@github.com:markhibberd/mismi
 [submodule "lib/twine"]
 	path = lib/twine
-	url = git@github.com:ambiata/twine
+	url = git@github.com:markhibberd/twine
 [submodule "lib/tine"]
 	path = lib/tine
 	url = git@github.com:markhibberd/tine
@@ -21,7 +21,7 @@
 	url = git@github.com:markhibberd/snooze
 [submodule "lib/bmx.hs"]
 	path = lib/bmx.hs
-	url = git@github.com:ambiata/bmx.hs
+	url = git@github.com:markhibberd/bmx.hs
 [submodule "lib/traction"]
 	path = lib/traction
 	url = git@github.com:markhibberd/traction

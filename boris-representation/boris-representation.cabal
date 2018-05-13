@@ -18,10 +18,7 @@ library
                     , ambiata-p
                     , containers                      == 0.5.*
                     , text                            == 1.2.*
-                    , time                            >= 1.5        && < 1.7
-
-                    -- FUCK
-                    , Cabal == 1.24.*
+                    , time                            >= 1.5        && < 1.10
 
   ghc-options:
                     -Wall
@@ -55,5 +52,5 @@ test-suite test
                     , ambiata-disorder-corpus
                     , ambiata-p
                     , hedgehog                        == 0.5.*
-                    , mmorph                          == 1.0.*
+                    , mmorph
                     , text                            == 1.2.*
