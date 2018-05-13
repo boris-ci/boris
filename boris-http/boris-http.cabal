@@ -159,6 +159,12 @@ test-suite test-io
   hs-source-dirs:
                     test
 
+  other-modules:
+                    Test.Boris.Http.Gen
+                    Test.IO.Boris.Http.Db.Query
+                    Test.IO.Boris.Http.Db.Schema
+                    Test.IO.Boris.Http.Db.Test
+
   build-depends:
                       base                            >= 3          && < 5
                     , ambiata-boris-core
