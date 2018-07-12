@@ -6,10 +6,7 @@ module Boris.Build (
   , renderBuildError
   ) where
 
-import           Boris.Core.Data
-import           Boris.Core.Data.Build
 import           Boris.Core.Data.Configuration
-import           Boris.Core.Data.Repository
 import           Boris.Core.Data.Workspace
 
 import           Control.Monad.IO.Class (liftIO)

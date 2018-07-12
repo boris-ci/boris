@@ -10,7 +10,6 @@ module Boris.Git (
   , commitAt
   ) where
 
-import           Boris.Core.Data
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Repository
 
@@ -29,7 +28,6 @@ import           Tine.Conduit (Out)
 import qualified Tine.Conduit as X
 
 import           X.Control.Monad.Trans.Either (EitherT)
-
 
 bare :: Out -> Out -> Repository -> FilePath -> EitherT ExitCode IO LocalRepository
 bare sout serr r target = do

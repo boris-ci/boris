@@ -4,7 +4,8 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Test.IO.Boris.Git where
 
-import           Boris.Core.Data
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Repository
 import qualified Boris.Git as Git
 
 import qualified Data.Conduit.Binary as CB

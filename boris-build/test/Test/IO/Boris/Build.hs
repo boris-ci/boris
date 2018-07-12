@@ -5,7 +5,9 @@
 module Test.IO.Boris.Build where
 
 import           Boris.Build
-import           Boris.Core.Data
+import           Boris.Core.Data.Configuration
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Workspace
 
 import qualified Data.Conduit.Binary as CB
 import qualified Data.Text as T
@@ -139,7 +141,7 @@ prop_runBuild_multi_fail_post  b =
 prop_runBuild_multi b =
   testIO . withSystemTempDirectory "build"  $ \x -> do
     let
-      local = Workspace (WorkspacePath . T.pack $ x) (BuildId "1")
+      local = Workspace (WorkspacePath . T.pack $ x) (BuildId 1)
       t = pathOfWorkingCopy local
 
     D.createDirectoryIfMissing True t
@@ -171,7 +173,7 @@ prop_runBuild_multi b =
 check :: FilePath -> (Either BuildError (), Bool, Bool, Bool, Bool, Bool) -> Specification -> IO Property
 check x expected specification = do
   let
-    local = Workspace (WorkspacePath . T.pack $ x) (BuildId "1")
+    local = Workspace (WorkspacePath . T.pack $ x) (BuildId 1)
     t = pathOfWorkingCopy local
 
 
