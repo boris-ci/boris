@@ -6,7 +6,7 @@ module Boris.Core.Serial.Toml (
     mapping
   ) where
 
-import           Control.Monad (forM)
+import           Control.Monad (forM, forM_)
 import           Control.Monad.Except (catchError, throwError)
 import           Control.Monad.Reader (asks, local)
 import           Control.Monad.State (execState, gets, modify)
@@ -68,12 +68,12 @@ mapping codec key@(p :|| _) =
     output a = do
         mTable <- gets $ Prefix.lookup key . Toml.tomlTables
         let toml = fromMaybe mempty mTable
-        a <$ forM (Map.toList a) $ \(k, value) -> do
+        forM_ (Map.toList a) $ \(k, value) -> do
           let newToml = execState (runMaybeT $ Toml.codecWrite codec value) toml
           modify (Toml.insertTable (key <> (Toml.Piece k :|| [])) newToml)
+        pure a
   in
     Toml.Codec input output
-
 
 handleErrorInTable :: Toml.Key -> Toml.DecodeException -> Toml.Env a
 handleErrorInTable key err =
