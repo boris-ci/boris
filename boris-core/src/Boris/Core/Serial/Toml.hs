@@ -6,6 +6,7 @@ module Boris.Core.Serial.Toml (
     mapping
   ) where
 
+import           Control.Monad (forM)
 import           Control.Monad.Except (catchError, throwError)
 import           Control.Monad.Reader (asks, local)
 import           Control.Monad.State (execState, gets, modify)
@@ -22,35 +23,54 @@ import           Toml.PrefixTree (pattern (:||))
 
 
 
+-- |
+-- A single top-level mapping. This is ridiculous.
+--
+-- Works for:
+--
+-- > [foo.bar]
+-- > key = 1
+-- > [foo.baz]
+-- > key = 2
+--
+-- > Map.fromList [("bar", #codec ~ key = 1, "baz", #codec ~ key = 2)]
+--
+-- Doesn't work for:
+--
+-- [foo.bar.swizzle]
+-- [foo.bar.swazzle]
+--
 mapping :: forall a . Toml.TomlCodec a -> Toml.Key -> Toml.TomlCodec (Map Text a)
 mapping codec key@(p :|| _) =
   let
     input :: Toml.Env (Map Text a)
     input = do
-      Just xx  <- asks (HashMap.lookup p . Toml.tomlTables)
-
-      error (mconcat [show key, "  /  ", show $ Prefix.lookupT key xx, "  /  ",
-                case xx of
-                  (Toml.Branch pref mv prefMap) ->
-                    mconcat ["branch/",
-                             show (Prefix.keysDiff pref key)]
-                  (Toml.Leaf k v) ->
-                    "leaf"
-                    ])
-      mTable <- asks $ Prefix.lookup key . Toml.tomlTables
-
-      case mTable of
-        Nothing   -> throwError $ Toml.TableNotFound key
-        Just toml ->
-          error "todo"
---          codecReadTOML toml codec `catchError` handleErrorInTable key
+      prefixMapping <- asks (HashMap.lookup p . Toml.tomlTables)
+      case prefixMapping of
+        Nothing   ->
+          pure Map.empty
+        Just prefixes ->
+          case prefixes of
+            Toml.Leaf _ _ ->
+              pure Map.empty
+            Toml.Branch prefix value suffixes ->
+              let
+                elements = HashMap.toList suffixes
+              in
+                fmap Map.fromList $ forM elements $ \(k, value) ->
+                  case value of
+                    Toml.Leaf _ toml ->
+                      fmap (\v -> (Toml.unPiece k, v)) $
+                        codecReadTOML toml codec `catchError` handleErrorInTable key
+                    Toml.Branch _ _ _ ->
+                      throwError $ Toml.TableNotFound key
     output :: (Map Text a) -> Toml.St (Map Text a)
     output a = do
---        mTable <- gets $ Prefix.lookup key . Toml.tomlTables
---        let toml = fromMaybe mempty mTable
---        let newToml = execState (runMaybeT $ Toml.codecWrite codec a) toml
---        a <$ modify (Toml.insertTable key newToml)
-        error "todo"
+        mTable <- gets $ Prefix.lookup key . Toml.tomlTables
+        let toml = fromMaybe mempty mTable
+        a <$ forM (Map.toList a) $ \(k, value) -> do
+          let newToml = execState (runMaybeT $ Toml.codecWrite codec value) toml
+          modify (Toml.insertTable (key <> (Toml.Piece k :|| [])) newToml)
   in
     Toml.Codec input output
 
