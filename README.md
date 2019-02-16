@@ -1,6 +1,9 @@
 boris
 =====
 
+> WARNING: currently not in buildable state - going through a big clean-up.
+
+
 ```
 Boris is a retired Russian cosmonaut who is saddened by the state of
 bloated, not-working, and quite frankly - ridiculous - programs which
