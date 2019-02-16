@@ -1,71 +1,59 @@
-name:                  ambiata-boris-core
-version:               0.0.1
-license:               BSD3
-author:                Ambiata <info@ambiata.com>
-maintainer:            Ambiata <info@ambiata.com>
-copyright:             (c) 2015 Ambiata.
-synopsis:              project
-category:              System
-cabal-version:         >= 1.8
-build-type:            Simple
-description:           boris-core
+name: boris-core
+version: 0.0.1
+license: BSD3
+author: Ambiata <info@ambiata.com>, Mark Hibberd <mark@hibberd.id.au>
+maintainer: Mark Hibberd <mark@hibberd.id.au>
+copyright: (c) 2015 Ambiata. (c) 2019 Mark Hibberd
+synopsis: project
+category: System
+cabal-version: >= 1.8
+build-type: Simple
+description: boris-core
 
 library
   build-depends:
-                      base                            >= 3          && < 5
-                    , ambiata-p
-                    , ambiata-x-htoml
-                    , containers                      == 0.5.*
-                    , Glob                            == 0.7.*
-                    , lens                            >= 4.6        && < 4.16
-                    , filepath                        == 1.*
-                    , parsec                          == 3.1.*
-                    , text                            == 1.2.*
-                    , time                            >= 1.5        && < 1.10
-                    , unordered-containers            == 0.2.*
+      base >= 3 && < 5
+    , ambiata-x-htoml
+    , containers == 0.5.*
+    , Glob == 0.7.*
+    , lens >= 4.6        && < 4.16
+    , filepath == 1.*
+    , parsec == 3.1.*
+    , text == 1.2.*
+    , time >= 1.5 && < 1.10
+    , unordered-containers == 0.2.*
 
-  ghc-options:
-                    -Wall
-
-  hs-source-dirs:
-                    src
-
+  ghc-options: -Wall
+  hs-source-dirs: src
   exposed-modules:
-                    Boris.Core.Data.Agent
-                    Boris.Core.Data.Build
-                    Boris.Core.Data.Configuration
-                    Boris.Core.Data.Instance
-                    Boris.Core.Data.Log
-                    Boris.Core.Data.Project
-                    Boris.Core.Data.Repository
-                    Boris.Core.Data.Tenant
-                    Boris.Core.Data.Time
-                    Boris.Core.Data.Workspace
-
-                    Boris.Core.Serial.Ref
-                    Boris.Core.Serial.Command
+    Boris.Core.Data.Agent
+    Boris.Core.Data.Build
+    Boris.Core.Data.Configuration
+    Boris.Core.Data.Instance
+    Boris.Core.Data.Log
+    Boris.Core.Data.Project
+    Boris.Core.Data.Repository
+    Boris.Core.Data.Tenant
+    Boris.Core.Data.Time
+    Boris.Core.Data.Workspace
+    Boris.Core.Serial.Ref
+    Boris.Core.Serial.Command
+    Boris.Prelude
+    Boris.Prelude.EitherT
 
 test-suite test
-  type:
-                    exitcode-stdio-1.0
-
-  main-is:
-                    test.hs
-
-  ghc-options:
-                    -Wall -threaded -O2
-
-  hs-source-dirs:
-                    test
-
+  type: exitcode-stdio-1.0
+  main-is: test.hs
+  ghc-options: -Wall -threaded -O2
+  hs-source-dirs: test
+  other-modules:
+    Test.Boris.Core.Arbitrary
+    Test.Boris.Core.Data.Build
+    Test.Boris.Core.Serial.Command
+    Test.Boris.Core.Serial.Ref
   build-depends:
-                      base                            >= 3          && < 5
-                    , ambiata-boris-core
-                    , ambiata-disorder-core
-                    , ambiata-disorder-corpus
-                    , ambiata-p
-                    , hedgehog                        == 0.5.*
-                    , text                            == 1.2.*
-                    , time                            >= 1.5        && < 1.10
-                    , QuickCheck                      >= 2.7        && < 2.10
-                    , quickcheck-instances            == 0.3.*
+      base >= 3 && < 5
+    , boris-core
+    , hedgehog == 0.6.*
+    , text == 1.2.*
+    , time >= 1.5 && < 1.10
