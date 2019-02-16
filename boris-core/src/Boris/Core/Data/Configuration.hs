@@ -11,10 +11,9 @@ module Boris.Core.Data.Configuration (
   ) where
 
 import           Boris.Core.Data.Build
+import           Boris.Prelude
 
 import qualified Data.Text as Text
-
-import           P
 
 import qualified "Glob" System.FilePath.Glob as Glob
 

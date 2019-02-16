@@ -30,7 +30,8 @@ import qualified Data.List as List
 import qualified Data.Text as Text
 import           Data.Time (UTCTime)
 
-import           P
+import           Boris.Prelude
+
 
 newtype Build =
   Build {

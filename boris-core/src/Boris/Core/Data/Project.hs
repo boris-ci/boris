@@ -17,9 +17,7 @@ module Boris.Core.Data.Project (
   ) where
 
 import           Boris.Core.Data.Repository
-
-import           P
-
+import           Boris.Prelude
 
 data Source =
     GithubSource

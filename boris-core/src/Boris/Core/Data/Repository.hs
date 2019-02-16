@@ -4,7 +4,7 @@ module Boris.Core.Data.Repository (
   , LocalRepository (..)
   ) where
 
-import           P
+import           Boris.Prelude
 
 
 newtype Repository =
