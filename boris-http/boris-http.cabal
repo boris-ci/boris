@@ -13,14 +13,14 @@ description: boris-http
 library
   build-depends:
       base                            >= 3          && < 5
-    , Spock-core                      == 0.12.*
-    , aeson                           >= 0.8        && < 1.3
+    , Spock-core                      == 0.13.*
+    , aeson                           == 1.*
     , boris-core
     , boris-representation
     , async                           == 2.*
     , base16-bytestring               == 0.1.*
     , bytestring                      == 0.10.*
-    , conduit                         >= 1.2        && < 1.3
+    , conduit                         >= 1.2        && < 1.4
     , conduit-extra                   >= 1.1        && < 1.4
     , containers                      == 0.5.*
     , cryptonite                      == 0.*
@@ -35,7 +35,7 @@ library
     , mmorph                          >= 1.0        && < 1.2
     , nest                            == 0.0.*
     , postgresql-simple               == 0.5.*
-    , resourcet                       >= 1.1        && < 1.3
+    , resourcet                       >= 1.2        && < 1.3
     , semigroups                      >= 0.16       && < 0.19
     , text                            == 1.2.*
     , time                            >= 1.5        && < 1.10
@@ -44,10 +44,9 @@ library
     , tz                              == 0.1.*
     , unordered-containers            == 0.2.*
     , vector                          >= 0.11       && < 0.13
-    , vulcan                          == 0.*
     , wai                             >= 3.0        && < 4.0
     , wai-app-static                  == 3.1.*
-    , wai-extra                       == 3.0.*
+    , wai-extra                       >= 3.0.25     && < 4.0
     , wai-middleware-static           == 0.8.*
     , wai-middleware-static-embedded  == 0.1.*
 
@@ -96,7 +95,6 @@ test-suite test
     , aeson
     , boris-core
     , boris-core-test
-    , boris-client
     , boris-http
     , boris-representation
     , async
