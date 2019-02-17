@@ -1,182 +1,116 @@
-name:                  ambiata-boris-http
-version:               0.0.1
-license:               BSD3
-author:                Ambiata <info@ambiata.com>
-maintainer:            Ambiata <info@ambiata.com>
-copyright:             (c) 2015 Ambiata.
-synopsis:              project
-category:              System
-cabal-version:         >= 1.8
-build-type:            Custom
-description:           boris-http
+name: boris-http
+version: 0.0.1
+license: BSD3
+author: Ambiata <info@ambiata.com>, Mark Hibberd <mark@hibberd.id.au>
+maintainer: Mark Hibberd <mark@hibberd.id.au>
+copyright: (c) 2015 Ambiata. (c) 2019 Mark Hibberd
+synopsis: project
+category: System
+cabal-version: >= 1.8
+build-type: Custom
+description: boris-http
 
 library
-  build-depends:base                            >= 3          && < 5
+  build-depends:
+      base                            >= 3          && < 5
+    , Spock-core                      == 0.12.*
+    , aeson                           >= 0.8        && < 1.3
+    , boris-core
+    , boris-representation
+    , async                           == 2.*
+    , base16-bytestring               == 0.1.*
+    , bytestring                      == 0.10.*
+    , conduit                         >= 1.2        && < 1.3
+    , conduit-extra                   >= 1.1        && < 1.4
+    , containers                      == 0.5.*
+    , cryptonite                      == 0.*
+    , data-default                    == 0.6.*
+    , file-embed                      == 0.0.*
+    , github                          == 0.*
+    , http-client                     >= 0.4        && < 0.6
+    , http-client-tls                 >= 0.2        && < 0.4
+    , http-media                      == 0.6.*
+    , http-types                      >= 0.12.1     && < 0.13
+    , lens                            >= 4.6        && < 4.16
+    , mmorph                          >= 1.0        && < 1.2
+    , nest                            == 0.0.*
+    , postgresql-simple               == 0.5.*
+    , resourcet                       >= 1.1        && < 1.3
+    , semigroups                      >= 0.16       && < 0.19
+    , text                            == 1.2.*
+    , time                            >= 1.5        && < 1.10
+    , traction                        == 0.*
+    , transformers                    >= 0.4        && < 0.6
+    , tz                              == 0.1.*
+    , unordered-containers            == 0.2.*
+    , vector                          >= 0.11       && < 0.13
+    , vulcan                          == 0.*
+    , wai                             >= 3.0        && < 4.0
+    , wai-app-static                  == 3.1.*
+    , wai-extra                       == 3.0.*
+    , wai-middleware-static           == 0.8.*
+    , wai-middleware-static-embedded  == 0.1.*
 
-            , Spock-core                      == 0.12.*
-            , aeson                           >= 0.8        && < 1.3
-            , ambiata-bmx
-            , ambiata-boris-core
-            , ambiata-boris-representation
-            , ambiata-p
-            , ambiata-snooze
-            , ambiata-x-aeson
-            , ambiata-x-eithert
-            , async                           == 2.*
-            , base16-bytestring               == 0.1.*
-            , bytestring                      == 0.10.*
-            , conduit                         >= 1.2        && < 1.3
-            , conduit-extra                   >= 1.1        && < 1.4
-            , containers                      == 0.5.*
-            , cryptonite                      == 0.*
-            , data-default                    == 0.6.*
-            , file-embed                      == 0.0.*
-            , github                          == 0.*
-            , http-client                     >= 0.4        && < 0.6
-            , http-client-tls                 >= 0.2        && < 0.4
-            , http-media                      == 0.6.*
-            , http-types                      >= 0.12.1     && < 0.13
-            , lens                            >= 4.6        && < 4.16
-            , mmorph                          >= 1.0        && < 1.2
-            , nest                            == 0.0.*
-            , postgresql-simple               == 0.5.*
-            , resourcet                       >= 1.1        && < 1.3
-            , semigroups                      >= 0.16       && < 0.19
-            , text                            == 1.2.*
-            , time                            >= 1.5        && < 1.10
-            , traction                        == 0.*
-            , transformers                    >= 0.4        && < 0.6
-            , tz                              == 0.1.*
-            , unordered-containers            == 0.2.*
-            , vector                          >= 0.11       && < 0.13
-            , vulcan                          == 0.*
-            , wai                             >= 3.0        && < 4.0
-            , wai-app-static                  == 3.1.*
-            , wai-extra                       == 3.0.*
-            , wai-middleware-static           == 0.8.*
-            , wai-middleware-static-embedded  == 0.1.*
-
-  ghc-options:
-                    -Wall
-
-  hs-source-dirs:
-                    src
-
+  ghc-options: -Wall
+  hs-source-dirs: src
   exposed-modules:
-                    Boris.Http.Api.Build
-                    Boris.Http.Api.Discover
-                    Boris.Http.Api.Github
-                    Boris.Http.Api.Project
-                    Boris.Http.Api.Result
-                    Boris.Http.Api.Session
+    Boris.Http.Api.Build
+    Boris.Http.Api.Discover
+    Boris.Http.Api.Github
+    Boris.Http.Api.Project
+    Boris.Http.Api.Result
+    Boris.Http.Api.Session
 
-                    Boris.Http.Boot
-                    Boris.Http.Data
+    Boris.Http.Boot
+    Boris.Http.Data
 
-                    Boris.Http.Db.Schema
-                    Boris.Http.Db.Query
+    Boris.Http.Db.Schema
+    Boris.Http.Db.Query
 
-                    Boris.Http.Route
-                    Boris.Http.Spock
-                    Boris.Http.View
+    Boris.Http.Route
+    Boris.Http.Spock
+    Boris.Http.View
 
 executable boris-http
-  ghc-options:
-                    -Wall -threaded -O2
-                    -rtsopts -with-rtsopts "-T -N"
-
-  hs-source-dirs:
-                    gen
-
-  main-is:
-                    ../main/boris-http.hs
-
+  ghc-options: -Wall -threaded -O2 -rtsopts -with-rtsopts "-T -N"
+  hs-source-dirs: gen
+  main-is: ../main/boris-http.hs
   build-depends:
-                      base
-                    , ambiata-boris-core
-                    , ambiata-boris-http
-                    , ambiata-p
-                    , ambiata-twine
-                    , ambiata-x-eithert
-                    , nest
-                    , Spock-core
-                    , text
-                    , traction
-                    , transformers
-                    , warp == 3.2.*
+      base
+    , boris-core
+    , boris-http
+    , nest
+    , Spock-core
+    , text
+    , traction
+    , transformers
+    , warp == 3.2.*
 
 test-suite test
-  type:
-                    exitcode-stdio-1.0
-
-  main-is:
-                    test.hs
-
-  ghc-options:
-                    -Wall -threaded -O2
-
-  hs-source-dirs:
-                    test
-
+  type: exitcode-stdio-1.0
+  main-is: test.hs
+  ghc-options: -Wall -threaded -O2
+  hs-source-dirs: test
   build-depends:
-                      base                            >= 3          && < 5
-                    , aeson
-                    , ambiata-boris-core
-                    , ambiata-boris-core-test
-                    , ambiata-boris-client
-                    , ambiata-boris-http
-                    , ambiata-boris-representation
-                    , ambiata-disorder-core
-                    , ambiata-disorder-corpus
-                    , ambiata-p
-                    , ambiata-snooze
-                    , ambiata-x-eithert
-                    , async
-                    , containers
-                    , hedgehog                        == 0.5.*
-                    , http-client
-                    , http-client-tls
-                    , mmorph
-                    , network
-                    , Spock-core
-                    , QuickCheck                      >= 2.7        && < 2.10
-                    , quickcheck-instances            == 0.3.*
-                    , warp
-
-test-suite test-io
-  type:
-                    exitcode-stdio-1.0
-
-  main-is:
-                    test-io.hs
-
-  ghc-options:
-                    -Wall -threaded -O2
-
-  hs-source-dirs:
-                    test
+      base >= 3 && < 5
+    , aeson
+    , boris-core
+    , boris-core-test
+    , boris-client
+    , boris-http
+    , boris-representation
+    , async
+    , containers
+    , hedgehog == 0.6.*
+    , http-client
+    , http-client-tls
+    , mmorph
+    , network
+    , Spock-core
+    , warp
 
   other-modules:
-                    Test.Boris.Http.Gen
-                    Test.IO.Boris.Http.Db.Query
-                    Test.IO.Boris.Http.Db.Schema
-                    Test.IO.Boris.Http.Db.Test
-
-  build-depends:
-                      base                            >= 3          && < 5
-                    , ambiata-boris-core
-                    , ambiata-boris-core-test
-                    , ambiata-boris-http
-                    , ambiata-disorder-core
-                    , ambiata-disorder-corpus
-                    , ambiata-p
-                    , ambiata-x-eithert
-                    , hedgehog                        == 0.5.*
-                    , mmorph
-                    , nest
-                    , retry
-                    , text
-                    , traction
-                    , QuickCheck                      >= 2.7        && < 2.10
-                    , quickcheck-instances            == 0.3.*
-                    , concurrent-output == 1.10.5
+    Test.Boris.Http.Gen
+    Test.IO.Boris.Http.Db.Query
+    Test.IO.Boris.Http.Db.Schema
+    Test.IO.Boris.Http.Db.Test
