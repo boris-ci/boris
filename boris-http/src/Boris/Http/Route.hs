@@ -23,6 +23,7 @@ import qualified Boris.Http.Db.Query as Query
 import           Boris.Http.Spock
 import qualified Boris.Http.View as View
 import qualified Boris.Representation.ApiV1 as ApiV1
+import           Boris.Prelude
 
 import           Data.Aeson (object, (.=))
 import qualified Data.FileEmbed as FileEmbed
@@ -31,8 +32,6 @@ import qualified Network.HTTP.Types as HTTP
 import qualified Network.Wai.Middleware.RequestLogger as RequestLogger
 import qualified Network.Wai.Middleware.Static as Static
 import qualified Network.Wai.Middleware.StaticEmbedded as StaticEmbedded
-
-import           P
 
 import           System.IO (IO)
 
@@ -62,7 +61,7 @@ configure pool authentication mode = do
   init mode
 
   Spock.get "configure" $ do
-    View.render View.configure
+    View.render $ View.shower "configure" ("" :: Text)
 
   Spock.post "configure" $ do
     m <- Spock.param "multi"
@@ -90,9 +89,9 @@ route pool authentication mode = do
   Spock.get Spock.root $ do
     withAuthentication authentication pool $ \a -> case a of
       Authenticated s u ->
-        View.render $ View.dashboard (AuthenticatedByGithub s u)
+        View.render $ View.shower "dashboard" (AuthenticatedByGithub s u)
       AuthenticatedNone u ->
-        View.render $ View.dashboard (AuthenticatedByDesign u)
+        View.render $ View.shower "dashboard" (AuthenticatedByDesign u)
       NotAuthenticated -> do
         Spock.redirect "/login"
       WasAuthenticated _ -> do
@@ -101,7 +100,7 @@ route pool authentication mode = do
   Spock.get "login" $ do
     case authentication of
       GithubAuthentication _manager client _secret ->
-        View.render $ View.login client
+        View.render $ View.shower "login" client
       NoAuthentication -> do
         Spock.redirect "/"
 
@@ -129,7 +128,7 @@ route pool authentication mode = do
   Spock.get "settings" $
     authenticated authentication pool $ \a -> case a of
       AuthenticatedByGithub _ _ ->
-        View.render $ View.settings a
+        View.render $ View.shower "settings" a
       AuthenticatedByDesign _ ->
         Spock.redirect $ "/"
 
@@ -147,7 +146,7 @@ route pool authentication mode = do
   Spock.get "status" $
     authenticated authentication pool $ \a -> do
       builds <- liftDbError . Traction.runDb pool $ Result.status
-      View.render $ View.status a builds
+      View.render $ View.shower "status" (a, builds)
 
   Spock.get "project" $
     authenticated authentication pool $ \a -> do
@@ -156,7 +155,7 @@ route pool authentication mode = do
         Project.list pool settings a
       withAccept $ \case
         AcceptHTML ->
-          View.render $ View.projects a projects
+          View.render $ View.shower "projects" (a, projects)
         AcceptJSON ->
           Spock.json $ ApiV1.GetProjects (definitionProject <$> projects)
 
@@ -190,14 +189,14 @@ route pool authentication mode = do
 
   Spock.get "project/new" $
     authenticated authentication pool $ \a -> do
-      View.render $ View.newproject a
+      View.render $ View.shower "newproject" a
 
   Spock.get ("project" <//> Spock.var) $ \project ->
     authenticated authentication pool $ \a -> do
       builds <- liftDbError $ Build.byProject pool (Project project)
       withAccept $ \case
         AcceptHTML ->
-          View.render $ View.project a (Project project) builds
+          View.render $ View.shower "project" (a, (Project project), builds)
         AcceptJSON ->
           Spock.json $ ApiV1.GetProject (Project project) builds
 
@@ -226,7 +225,7 @@ route pool authentication mode = do
       withAccept $ \case
         AcceptHTML -> do
           queued <- liftDbError $ Build.queued pool project build
-          View.render $ View.builds a builds queued
+          View.render $ View.shower "builds" (a, builds, queued)
         AcceptJSON ->
           Spock.json $ ApiV1.GetBuilds builds
 
@@ -279,7 +278,7 @@ route pool authentication mode = do
       withAccept $ \case
         AcceptHTML -> do
           datas <- for builds $ \i -> liftDbError (Build.byId pool i)
-          View.render $ View.commit a project commit (catMaybes datas)
+          View.render $ View.shower "commit" (a, project, commit, (catMaybes datas))
         AcceptJSON ->
           Spock.json $ ApiV1.GetCommit project builds
 
@@ -322,7 +321,7 @@ route pool authentication mode = do
               Spock.setStatus HTTP.notFound404
               Spock.html "TODO: 404 page."
             Just b ->
-              View.render $ View.build a b
+              View.render $ View.shower "build" (a, b)
         AcceptJSON ->
           case build of
             Nothing -> do
@@ -471,7 +470,7 @@ route pool authentication mode = do
         Result.scoreboard
       withAccept $ \case
         AcceptHTML ->
-          View.render $ View.scoreboard a results
+          View.render $ View.shower "scoreboard" (a, results)
         AcceptJSON ->
           Spock.json $ ApiV1.GetScoreboard results
 

@@ -2,7 +2,28 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
-module Boris.Http.View () where
+module Boris.Http.View (
+    shower
+  , render
+  ) where
+
+import           Boris.Prelude
+import           Data.Text (Text)
+import qualified Data.Text as Text
+
+import           System.IO (IO)
+
+import qualified Web.Spock.Core as Spock
+
+
+shower :: Show a => Text -> a -> Text
+shower label a =
+  mconcat [label, " = ", Text.pack . show $ a]
+
+render :: Text -> Spock.ActionT IO a
+render x =
+  Spock.text x
+
 {--
     dashboard
   , newproject

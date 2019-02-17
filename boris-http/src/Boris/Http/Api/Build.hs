@@ -30,15 +30,13 @@ import           Boris.Core.Data.Tenant
 import qualified Boris.Http.Api.Project as Project
 import           Boris.Http.Data
 import qualified Boris.Http.Db.Query as Query
-
-import           P
+import           Boris.Prelude
 
 import           System.IO (IO)
 
 import           Traction.Control (DbPool, DbError)
 import qualified Traction.Control as Traction
 
-import           X.Control.Monad.Trans.Either (EitherT)
 
 data BuildError =
     BuildDbError Traction.DbError

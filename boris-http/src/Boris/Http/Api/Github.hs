@@ -11,6 +11,7 @@ import           Boris.Core.Data.Project
 import           Boris.Core.Data.Repository
 import           Boris.Http.Data
 import qualified Boris.Http.Db.Query as Query
+import           Boris.Prelude
 
 import           Control.Monad.IO.Class (MonadIO (..))
 
@@ -26,14 +27,10 @@ import qualified GitHub.Data as Github
 import qualified GitHub.Request as Github
 import qualified GitHub.Endpoints.Repos as Github
 
-import           P
-
 import           System.IO (IO)
 
 import           Traction.Control (DbPool, DbError)
 import qualified Traction.Control as Traction
-
-import           X.Control.Monad.Trans.Either (EitherT, newEitherT, mapEitherT)
 
 
 data ImportError =

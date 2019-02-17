@@ -14,17 +14,15 @@ import           Boris.Core.Data.Repository
 import           Boris.Core.Data.Tenant
 import           Boris.Http.Data
 import qualified Boris.Http.Db.Query as Query
+import           Boris.Prelude
 
 import qualified Data.List as List
-
-import           P
 
 import           System.IO (IO)
 
 import           Traction.Control (DbPool, DbError)
 import qualified Traction.Control as Traction
 
-import           X.Control.Monad.Trans.Either (EitherT)
 
 picker :: Project -> [Definition] -> Maybe Repository
 picker project =

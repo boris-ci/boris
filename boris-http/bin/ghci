@@ -3,7 +3,7 @@
 ROOT="$(git rev-parse --show-toplevel)"
 export PORT=9999
 export BORIS_MODE=development
-export BORIS_POSTGRES="dbname=boris_test host=localhost user=boris_test password=boris_dev port=5432"
+export BORIS_POSTGRES="dbname=boris_dev host=localhost user=boris_dev password=boris_dev port=5432"
 export BORIS_TENANCY="single"
 export BORIS_AUTHENTICATION=none # or github
 

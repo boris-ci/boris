@@ -18,7 +18,7 @@ module Boris.Http.Spock (
 import qualified Boris.Http.Api.Session as Session
 import           Boris.Http.Boot (AuthenticationMode (..))
 import           Boris.Http.Data
-import qualified Boris.Http.View as View
+import           Boris.Prelude
 
 import           Control.Monad.IO.Class (MonadIO (..))
 
@@ -28,8 +28,6 @@ import qualified Data.Text.IO as Text
 
 import qualified Network.HTTP.Types as HTTP
 
-import           P
-
 import           System.IO (IO)
 import qualified System.IO as IO
 
@@ -38,7 +36,6 @@ import qualified Traction.Control as Traction
 
 import qualified Web.Spock.Core as Spock
 
-import           X.Control.Monad.Trans.Either (EitherT, runEitherT)
 
 liftError :: (e -> Text) -> EitherT e IO a -> Spock.ActionT IO a
 liftError render value =
@@ -47,7 +44,8 @@ liftError render value =
       eid <- liftIO newErrorId
       liftIO $ Text.hPutStrLn IO.stderr (mconcat $ [errorId eid, " ", "server error: ", render err])
       Spock.setStatus HTTP.status500
-      View.render (View.serverError eid)
+      -- View.render (View.serverError eid)
+      error "todo"
     Right v ->
       pure v
 

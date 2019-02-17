@@ -8,8 +8,10 @@ module Boris.Http.Api.Result (
 
 import           Boris.Core.Data.Build
 import qualified Boris.Http.Db.Query as Query
+import           Boris.Prelude
 
-import           P
+import           Data.List (filter)
+
 
 import           Traction.Control (MonadDb)
 
