@@ -3,25 +3,22 @@
 module Boris.Core.Serial.Ref (
     BorisPatternConfigError (..)
   , parsePatternConfig
-  , parsePatternConfigExample
   , renderBorisPatternConfigError
   ) where
 
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Configuration
-import qualified Boris.Core.Serial.Toml as Toml
-
+import           Boris.Core.Serial.Toml
 import           Boris.Prelude
 
-import           Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import qualified Data.Text.IO as Text
+import           Control.Lens ((^?))
 
-import qualified Toml
-import           Toml ((.=))
+import qualified Data.HashMap.Strict as HashMap
+import qualified Data.Text as Text
 
-import           System.IO (IO)
-
+import           Text.Parsec.Error (ParseError)
+import           Text.Toml (parseTomlDoc)
+import           Text.Toml.Types (Table)
 
 
 {--
@@ -49,49 +46,60 @@ import           System.IO (IO)
 
 
 data BorisPatternConfigError =
-  BorisPatternConfigTomlError Toml.DecodeException
-{--    PatternConfigTomlParseError ParseError
+    PatternConfigTomlParseError ParseError
   | PatternConfigMissingVersionError
   | PatternConfigUnknownVersionError Int64
   | PatternConfigNoReference BuildNamePattern
   | PatternConfigInvalidCommand Build
   | PatternConfigBuildsTypeError
-  | PatternConfigBuildNamePatternParseError Text --}
+  | PatternConfigBuildNamePatternParseError Text
     deriving (Eq, Show)
 
-newtype BorisGitV1 =
-  BorisGitV1 {
-      refPatterns :: Map Text Text
-    } deriving (Eq, Ord, Show)
-
-borisGitV1 :: Toml.TomlCodec BorisGitV1
-borisGitV1 =
-  BorisGitV1 <$>
-    Toml.mapping patternV1 "build" .= refPatterns
-
-patternV1 :: Toml.TomlCodec Text
-patternV1 =
-  Toml.text "git"
-
-parsePatternConfig :: Text -> Either BorisPatternConfigError BorisGitV1
+parsePatternConfig :: Text -> Either BorisPatternConfigError [BuildPattern]
 parsePatternConfig t =
-  first BorisPatternConfigTomlError $
-    Toml.decode borisGitV1 t
+  first PatternConfigTomlParseError (parseTomlDoc "boris-git.toml" t) >>= parseTomlConfig
 
-parsePatternConfigExample :: IO (Either BorisPatternConfigError BorisGitV1)
-parsePatternConfigExample =
-  parsePatternConfig <$> Text.readFile "test/data/config/ref/v1/multiple.toml"
+parseTomlConfig :: Table -> Either BorisPatternConfigError [BuildPattern]
+parseTomlConfig t =
+  case t ^? key "boris" . _VTable . key "version" . _VInteger of
+    Nothing ->
+      Left PatternConfigMissingVersionError
+    Just 1 ->
+      parseTomlConfigV1 t
+    Just n ->
+      Left $ PatternConfigUnknownVersionError n
+
+parseTomlConfigV1 :: Table -> Either BorisPatternConfigError [BuildPattern]
+parseTomlConfigV1 t =
+  parseBuilds t >>= \builds ->
+    forM (HashMap.keys builds) $ \k -> do
+      build <- first PatternConfigBuildNamePatternParseError $ parseBuildNamePattern k
+      BuildPattern build
+        <$> parseGit builds build
+
+parseBuilds :: Table -> Either BorisPatternConfigError Table
+parseBuilds doc =
+  case doc ^? key "build" of
+    Nothing ->
+      pure HashMap.empty
+    Just tt ->
+      maybeToRight PatternConfigBuildsTypeError $
+        tt ^? _VTable
+
+parseGit :: Table -> BuildNamePattern -> Either BorisPatternConfigError Pattern
+parseGit builds build =
+  fmap Pattern . maybeToRight (PatternConfigNoReference build) $
+    builds ^? key (renderBuildNamePattern build) . _VTable . key "git" . _VString
 
 renderBorisPatternConfigError :: BorisPatternConfigError -> Text
 renderBorisPatternConfigError err =
-  error "todo"
-{--  case err of
+  case err of
     PatternConfigTomlParseError p ->
-      mconcat ["Boris configuration could not be parsed, toml parse error: ", T.pack . show $ p]
+      mconcat ["Boris configuration could not be parsed, toml parse error: ", Text.pack . show $ p]
     PatternConfigMissingVersionError ->
       "Boris configuration does not contain a version field."
     PatternConfigUnknownVersionError n ->
-      mconcat ["Boris configuration contains an unkown version: ", T.pack . show $ n]
+      mconcat ["Boris configuration contains an unkown version: ", Text.pack . show $ n]
     PatternConfigNoReference b ->
       mconcat ["Boris configuration does not contain a mandatory 'refs' for build: ", renderBuildNamePattern b]
     PatternConfigInvalidCommand b ->
@@ -100,4 +108,3 @@ renderBorisPatternConfigError err =
       mconcat ["Boris configuration should contain a top level table 'build'."]
     PatternConfigBuildNamePatternParseError e ->
       mconcat ["Boris configuration build name pattern could not be parsed, parse error: .", e]
---}

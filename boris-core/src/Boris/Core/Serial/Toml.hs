@@ -1,93 +1,73 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE RankNTypes #-}
 module Boris.Core.Serial.Toml (
-    mapping
+    _VTable
+  , _VTArray
+  , _VString
+  , _VInteger
+  , _VFloat
+  , _VBoolean
+  , _VDatetime
+  , _VArray
+  , key
   ) where
 
-import           Control.Monad (forM, forM_)
-import           Control.Monad.Except (catchError, throwError)
-import           Control.Monad.Reader (asks, local)
-import           Control.Monad.State (execState, gets, modify)
-import           Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
-import           Data.Maybe (fromMaybe)
-import           Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import qualified Data.HashMap.Strict as HashMap
-import           Data.Text (Text)
+import           Boris.Prelude
 
-import qualified Toml
-import qualified Toml.PrefixTree as Prefix
-import           Toml.PrefixTree (pattern (:||))
+import           Control.Lens (Traversal', Prism', prism, ix)
+import           Data.Time (UTCTime)
+import qualified Data.Vector as Vector
+
+import           Text.Toml.Types
 
 
+_VTable :: Prism' Node Table
+_VTable =
+  prism  VTable $ \n -> case n of
+    VTable v -> pure v
+    _ -> Left n
 
--- |
--- A single top-level mapping. This is ridiculous.
---
--- Works for:
---
--- > [foo.bar]
--- > key = 1
--- > [foo.baz]
--- > key = 2
---
--- > Map.fromList [("bar", #codec ~ key = 1, "baz", #codec ~ key = 2)]
---
--- Doesn't work for:
---
--- [foo.bar.swizzle]
--- [foo.bar.swazzle]
---
-mapping :: forall a . Toml.TomlCodec a -> Toml.Key -> Toml.TomlCodec (Map Text a)
-mapping codec key@(p :|| _) =
-  let
-    input :: Toml.Env (Map Text a)
-    input = do
-      prefixMapping <- asks (HashMap.lookup p . Toml.tomlTables)
-      case prefixMapping of
-        Nothing   ->
-          pure Map.empty
-        Just prefixes ->
-          case prefixes of
-            Toml.Leaf _ _ ->
-              pure Map.empty
-            Toml.Branch prefix value suffixes ->
-              let
-                elements = HashMap.toList suffixes
-              in
-                fmap Map.fromList $ forM elements $ \(k, value) ->
-                  case value of
-                    Toml.Leaf _ toml ->
-                      fmap (\v -> (Toml.unPiece k, v)) $
-                        codecReadTOML toml codec `catchError` handleErrorInTable key
-                    Toml.Branch _ _ _ ->
-                      throwError $ Toml.TableNotFound key
-    output :: (Map Text a) -> Toml.St (Map Text a)
-    output a = do
-        mTable <- gets $ Prefix.lookup key . Toml.tomlTables
-        let toml = fromMaybe mempty mTable
-        forM_ (Map.toList a) $ \(k, value) -> do
-          let newToml = execState (runMaybeT $ Toml.codecWrite codec value) toml
-          modify (Toml.insertTable (key <> (Toml.Piece k :|| [])) newToml)
-        pure a
-  in
-    Toml.Codec input output
+_VTArray :: Prism' Node [Table]
+_VTArray =
+  prism  (VTArray . Vector.fromList) $ \n -> case n of
+    VTArray v -> pure (Vector.toList v)
+    _ -> Left n
 
-handleErrorInTable :: Toml.Key -> Toml.DecodeException -> Toml.Env a
-handleErrorInTable key err =
-  case err of
-    Toml.KeyNotFound name ->
-      throwError $ Toml.KeyNotFound (key <> name)
-    Toml.TableNotFound name ->
-      throwError $ Toml.TableNotFound (key <> name)
-    Toml.TypeMismatch name t1 t2 ->
-      throwError $ Toml.TypeMismatch (key <> name) t1 t2
-    e ->
-      throwError e
+_VString :: Prism' Node Text
+_VString =
+  prism  VString $ \n -> case n of
+    VString v -> pure v
+    _ -> Left n
 
+_VInteger :: Prism' Node Int64
+_VInteger =
+  prism VInteger $ \n -> case n of
+    VInteger v -> pure v
+    _ -> Left n
 
-codecReadTOML :: Toml.TOML -> Toml.TomlCodec a -> Toml.Env a
-codecReadTOML toml codec =
-  local (const toml) (Toml.codecRead codec)
+_VFloat :: Prism' Node Double
+_VFloat =
+  prism VFloat $ \n -> case n of
+    VFloat v -> pure v
+    _ -> Left n
+
+_VBoolean :: Prism' Node Bool
+_VBoolean =
+  prism VBoolean $ \n -> case n of
+    VBoolean v -> pure v
+    _ -> Left n
+
+_VDatetime :: Prism' Node UTCTime
+_VDatetime =
+  prism VDatetime $ \n -> case n of
+    VDatetime v -> pure v
+    _ -> Left n
+
+_VArray :: Prism' Node [Node]
+_VArray =
+  prism (VArray . Vector.fromList) $ \n -> case n of
+    VArray v -> pure (Vector.toList v)
+    _ -> Left n
+
+key :: Text -> Traversal' Table Node
+key = ix

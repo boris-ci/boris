@@ -9,6 +9,10 @@ module Boris.Prelude (
   , valueOrEmpty
   , emptyOrValue
   , orEmpty
+  , maybeToLeft
+  , maybeToRight
+  , leftToMaybe
+  , rightToMaybe
   ) where
 
 import           Boris.Prelude.EitherT as X
@@ -64,3 +68,19 @@ emptyOrValue =
 orEmpty :: (Alternative f, Monoid a) => f a -> f a
 orEmpty f =
   f <|> pure mempty
+
+maybeToLeft :: r -> Maybe l -> Either l r
+maybeToLeft r =
+  maybe (Right r) Left
+
+maybeToRight :: l -> Maybe r -> Either l r
+maybeToRight l =
+  maybe (Left l) Right
+
+leftToMaybe :: Either l r -> Maybe l
+leftToMaybe =
+  either Just (const Nothing)
+
+rightToMaybe :: Either l r -> Maybe r
+rightToMaybe =
+  either (const Nothing) Just
