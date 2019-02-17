@@ -2,7 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
-module Boris.Http.View (
+module Boris.Http.View () where
+{--
     dashboard
   , newproject
   , configure
@@ -19,9 +20,9 @@ module Boris.Http.View (
   , render
   ) where
 
-import           Boris.Http.BMX (BMXError, renderBMXError)
-import           Boris.Http.BMX (BMXState, Template, partialFromTemplate, renderPage, renderTemplate, templateFile)
-import           Boris.Http.BMX (BMXValue (..), defaultState, usingContext, usingPartials)
+--import           Boris.Http.BMX (BMXError, renderBMXError)
+--import           Boris.Http.BMX (BMXState, Template, partialFromTemplate, renderPage, renderTemplate, templateFile)
+--import           Boris.Http.BMX (BMXValue (..), defaultState, usingContext, usingPartials)
 
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Project
@@ -324,3 +325,4 @@ authenticated a context =
            BMXString . githubLogin . githubUserLogin . userOf $ u
          AuthenticatedByDesign _ ->
            BMXString "boris")]])
+--}

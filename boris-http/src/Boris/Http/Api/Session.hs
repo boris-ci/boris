@@ -11,6 +11,7 @@ module Boris.Http.Api.Session (
 
 import           Boris.Http.Data
 import qualified Boris.Http.Db.Query as Query
+import           Boris.Prelude
 
 import           Control.Monad.IO.Class (MonadIO (..))
 
@@ -28,16 +29,12 @@ import qualified GitHub.Endpoints.Users as Github
 import qualified Network.HTTP.Client as Client
 import qualified Network.HTTP.Types as HTTP
 
-import           P
-
 import           System.IO (IO)
 import qualified System.IO as IO
 
 
 import           Traction.Control (DbPool, DbError)
 import qualified Traction.Control as Traction
-
-import           X.Control.Monad.Trans.Either (EitherT, newEitherT)
 
 
 data AuthenticationError =

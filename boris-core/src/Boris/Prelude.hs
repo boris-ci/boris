@@ -18,6 +18,7 @@ module Boris.Prelude (
 import           Boris.Prelude.EitherT as X
 import           Control.Applicative as X
 import           Control.Monad as X
+import           Control.Monad.Trans.Bifunctor as X (BifunctorTrans (..))
 import           Data.Bits as X (Bits (..))
 import           Data.Bool as X (Bool (..), (||), (&&), not, bool, otherwise)
 import           Data.Char as X (Char)
@@ -27,7 +28,7 @@ import           Data.Foldable as X
 import           Data.Function as X ((.), ($), (&), flip, id, const, on)
 import           Data.Functor as X (($>))
 import           Data.Int as X
-import           Data.Maybe as X (Maybe (..), isNothing, isJust, maybe, fromMaybe, catMaybes)
+import           Data.Maybe as X (Maybe (..), isNothing, isJust, maybe, fromMaybe, catMaybes, listToMaybe)
 import           Data.Monoid as X (Monoid (..), (<>))
 import           Data.Text as X (Text)
 import           Data.Traversable as X

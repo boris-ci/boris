@@ -50,10 +50,9 @@ import           Boris.Core.Data.Project
 import           Boris.Core.Data.Repository
 import           Boris.Core.Data.Tenant
 import           Boris.Http.Data
+import           Boris.Prelude
 
 import           Database.PostgreSQL.Simple ((:.) (..))
-
-import           P
 
 import           Traction.Control (MonadDb)
 import qualified Traction.Control as Traction
