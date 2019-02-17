@@ -28,10 +28,10 @@ import           Boris.Core.Data.Instance
 import           Boris.Core.Data.Log
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Repository
+import           Boris.Prelude
 
 import           Data.Aeson (FromJSON (..), ToJSON (..), Value, object, withObject, (.:), (.:?), (.=))
 
-import           P
 
 data GetCommit =
   GetCommit Project [BuildId]

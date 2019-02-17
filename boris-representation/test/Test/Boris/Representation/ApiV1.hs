@@ -5,16 +5,14 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Test.Boris.Representation.ApiV1 where
 
-import           Boris.Core.Data
 import           Boris.Representation.ApiV1
+import           Boris.Prelude
 
 import qualified Data.Aeson as Aeson
 
 import           Hedgehog
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
-
-import           P
 
 import           Test.Boris.Core.Gen
 

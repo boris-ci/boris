@@ -1,56 +1,42 @@
-name:                  ambiata-boris-representation
-version:               0.0.1
-license:               BSD3
-author:                Mark Hibberd <mark@hibberd.id.au>
-maintainer:            Mark Hibberd <mark@hibberd.id.au>
-copyright:             (c) 2018 Mark Hibberd.
-synopsis:              project
-category:              System
-cabal-version:         >= 1.8
-build-type:            Simple
-description:           boris-representation
+name: boris-representation
+version: 0.0.1
+license: BSD3
+author: Mark Hibberd <mark@hibberd.id.au>
+maintainer: Mark Hibberd <mark@hibberd.id.au>
+copyright: (c) 2018, 2019 Mark Hibberd.
+synopsis: project
+category: System
+cabal-version: >= 1.8
+build-type: Simple
+description: boris-representation
 
 library
   build-depends:
-                      base                            >= 3          && < 5
-                    , aeson                           >= 0.8        && < 1.3
-                    , ambiata-boris-core
-                    , ambiata-p
-                    , containers                      == 0.5.*
-                    , text                            == 1.2.*
-                    , time                            >= 1.5        && < 1.10
+      base >= 3 && < 5
+    , aeson == 1.*
+    , boris-core
+    , containers == 0.5.*
+    , text == 1.2.*
+    , time >= 1.5 && < 1.10
 
-  ghc-options:
-                    -Wall
-
-  hs-source-dirs:
-                    src
-
+  ghc-options: -Wall
+  hs-source-dirs: src
   exposed-modules:
-                    Boris.Representation.ApiV1
+    Boris.Representation.ApiV1
 
 test-suite test
-  type:
-                    exitcode-stdio-1.0
-
-  main-is:
-                    test.hs
-
-  ghc-options:
-                    -Wall -threaded -O2
-
-  hs-source-dirs:
-                    test
-
+  type: exitcode-stdio-1.0
+  main-is: test.hs
+  ghc-options: -Wall -threaded -O2
+  hs-source-dirs: test
   build-depends:
-                      base                            >= 3          && < 5
-                    , aeson                           >= 0.8        && < 1.3
-                    , ambiata-boris-core
-                    , ambiata-boris-core-test
-                    , ambiata-boris-representation
-                    , ambiata-disorder-core
-                    , ambiata-disorder-corpus
-                    , ambiata-p
-                    , hedgehog                        == 0.5.*
-                    , mmorph
-                    , text                            == 1.2.*
+      base >= 3 && < 5
+    , aeson
+    , boris-core
+    , boris-core-test
+    , boris-representation
+    , hedgehog == 0.6.*
+    , mmorph
+    , text
+  other-modules:
+    Test.Boris.Representation.ApiV1
