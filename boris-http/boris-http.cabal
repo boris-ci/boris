@@ -20,6 +20,8 @@ library
     , async                           == 2.*
     , base16-bytestring               == 0.1.*
     , bytestring                      == 0.10.*
+    , cereal
+    , cereal-text
     , conduit                         >= 1.2        && < 1.4
     , conduit-extra                   >= 1.1        && < 1.4
     , containers                      == 0.5.*

@@ -1,19 +1,19 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module BMX.Builtin (
+module Boris.Http.BMX.Builtin (
     builtinHelpers
   , builtinDecorators
   , debugHelpers
   , defaultState
   ) where
 
-import           BMX.Builtin.Debug (debugHelpers)
-import           BMX.Builtin.Decorators (builtinDecorators)
-import           BMX.Builtin.Helpers (builtinHelpers)
+import           Boris.Http.BMX.Builtin.Debug (debugHelpers)
+import           Boris.Http.BMX.Builtin.Decorators (builtinDecorators)
+import           Boris.Http.BMX.Builtin.Helpers (builtinHelpers)
 
-import           BMX.Data
+import           Boris.Http.BMX.Data
+import           Boris.Prelude
 
-import           P
 
 -- | The default state: an empty context, all the helpers from
 -- 'BMX.Builtin.Helpers.builtinHelpers', and all the decorators from

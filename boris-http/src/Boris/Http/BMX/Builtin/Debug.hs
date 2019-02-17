@@ -1,17 +1,16 @@
 {- | A set of debugging helpers that should not be used in production. -}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module BMX.Builtin.Debug where
+module Boris.Http.BMX.Builtin.Debug where
 
 import           Control.Monad.IO.Class (MonadIO (..))
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           System.IO (stderr)
 
-import           BMX.Data
-import           BMX.Function
-
-import           P hiding (traceM, log)
+import           Boris.Http.BMX.Data
+import           Boris.Http.BMX.Function
+import           Boris.Prelude
 
 debugHelpers :: (Applicative m, MonadIO m) => [(Text, Helper m)]
 debugHelpers = [

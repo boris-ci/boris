@@ -5,7 +5,7 @@
 -- | This module provides everything you need to implement custom BMX helpers,
 -- partials and decorators.
 
-module BMX.Function (
+module Boris.Http.BMX.Function (
   -- * Helpers
     Helper
   , helper
@@ -67,11 +67,10 @@ module BMX.Function (
   , contextFromList
   ) where
 
-import           BMX.Data
-import           BMX.Eval (eval)
-import           BMX.Eval.Function
-
-import           P
+import           Boris.Http.BMX.Data
+import           Boris.Http.BMX.Eval (eval)
+import           Boris.Http.BMX.Eval.Function
+import           Boris.Prelud
 
 -- $vaarg
 --
@@ -136,4 +135,3 @@ import           P
 -- use of a 'Partial', 'Decorator' or 'Helper'. If, for some reason,
 -- you wish to run a helper, partial or decorator from inside another
 -- helper, partial, or decorator, these are the functions for you.
-

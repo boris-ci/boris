@@ -1,12 +1,12 @@
 {-| The collection of builtin decorators, included in the default environment. -}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module BMX.Builtin.Decorators where
+module Boris.Http.BMX.Builtin.Decorators where
 
-import           BMX.Data
-import           BMX.Function
+import           Boris.Http.BMX.Data
+import           Boris.Http.BMX.Function
+import           Boris.Prelude
 
-import           P
 
 -- | The "inline" block decorator. Turns the block argument into a partial
 -- with the name of the first argument.

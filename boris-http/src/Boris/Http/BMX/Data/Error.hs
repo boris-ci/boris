@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module BMX.Data.Error (
+module Boris.Http.BMX.Data.Error (
     BMXError (..)
   , renderBMXError
   , LexError (..)
@@ -18,11 +18,12 @@ module BMX.Data.Error (
   , indent
   ) where
 
+import           Data.List (filter)
 import qualified Data.Text as T
 
-import           BMX.Data.Position (SrcInfo (..), renderSrcInfo)
+import           Boris.Http.BMX.Data.Position (SrcInfo (..), renderSrcInfo)
+import           Boris.Prelude
 
-import           P
 
 -- | An aggregate type for the various things that can go wrong in BMX.
 -- Constructors are provided for casing, though most users will probably want

@@ -3,18 +3,18 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module BMX.Data.Format (
+module Boris.Http.BMX.Data.Format (
     Format (..)
   , renderFormat
   ) where
+
+import           Boris.Prelude
 
 import           Data.Data (Data, Typeable)
 import           Data.Serialize
 import qualified Data.Text as T
 
 import           GHC.Generics
-
-import           P
 
 -- | Formatting control
 data Format

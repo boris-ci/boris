@@ -19,13 +19,14 @@ module Boris.Http.View (
   , render
   ) where
 
-import           BMX (BMXError, renderBMXError)
-import           BMX (BMXState, Template, partialFromTemplate, renderPage, renderTemplate, templateFile)
-import           BMX (BMXValue (..), defaultState, usingContext, usingPartials)
+import           Boris.Http.BMX (BMXError, renderBMXError)
+import           Boris.Http.BMX (BMXState, Template, partialFromTemplate, renderPage, renderTemplate, templateFile)
+import           Boris.Http.BMX (BMXValue (..), defaultState, usingContext, usingPartials)
 
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Project
 import           Boris.Http.Data
+import           Boris.Prelude
 
 import           Control.Monad.IO.Class (MonadIO (..))
 
@@ -36,8 +37,6 @@ import qualified Data.Text.IO as Text
 import           Data.Time (UTCTime, defaultTimeLocale, diffUTCTime, formatTime)
 
 import qualified Network.HTTP.Types as HTTP
-
-import           P
 
 import           System.IO (IO)
 import qualified System.IO as IO

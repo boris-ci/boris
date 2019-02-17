@@ -3,7 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module BMX.Data.Token (
+module Boris.Http.BMX.Data.Token (
     Tokens (..)
   , Token (..)
   , Format (..)
@@ -14,9 +14,8 @@ module BMX.Data.Token (
 import           Data.Data (Data, Typeable)
 import qualified Data.Text as T
 
-import           BMX.Data.Format (Format (..), renderFormat)
-
-import           P
+import           Boris.Http.BMX.Data.Format (Format (..), renderFormat)
+import           Boris.Prelude
 
 newtype Tokens = Tokens { unTokens :: [Token] }
   deriving (Show, Eq)

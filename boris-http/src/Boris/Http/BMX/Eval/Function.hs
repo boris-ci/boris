@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module BMX.Eval.Function (
+module Boris.Http.BMX.Eval.Function (
   -- * Arg parsers
     value
   , string
@@ -22,9 +22,9 @@ module BMX.Eval.Function (
 
 import           Data.Scientific (Scientific)
 
-import           BMX.Data
+import           Boris.Http.BMX.Data
+import           Boris.Prelude
 
-import           P
 
 -- -----------------------------------------------------------------------------
 -- Argument parsers for helpers / decorators

@@ -3,13 +3,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
-module BMX.TH (
+module Boris.Http.BMX.TH (
     bmx
   , templateFile
   , partialFile
   , partialDir
   ) where
 
+
+import           Boris.Prelude
 
 import qualified Data.ByteString.Char8 as B
 import           Data.List (zipWith)
@@ -26,11 +28,9 @@ import           Language.Haskell.TH.Syntax (qAddDependentFile, liftString)
 import           X.Language.Haskell.TH (dataExp, qeither)
 import qualified Prelude (error)
 
-import           BMX.Data hiding (StringL)
-import           BMX.Eval (partialFromTemplate)
-import           BMX.Parser (templateFromText)
-
-import           P hiding (find)
+import           Boris.Http.BMX.Data hiding (StringL)
+import           Boris.Http.BMX.Eval (partialFromTemplate)
+import           Boris.Http.BMX.Parser (templateFromText)
 
 
 -- | Quasiquoter for building inline BMX templates and checking them at compile time.

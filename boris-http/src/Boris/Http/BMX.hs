@@ -1,5 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
+-- NOTE: Code import from BMX as it isn't in a state to go on hackage..
+
 -- | A templating library in the style of <http://handlebarsjs.com Handlebars.js>,
 -- embedded in Haskell for static or server-side rendering.
 --
@@ -7,7 +9,7 @@
 -- knowledge, while the control flow (described through 'Helper'
 -- functions) can be extended or replaced by the user.
 
-module BMX (
+module Boris.Http.BMX (
   -- * Usage
   -- $usage
 
@@ -68,12 +70,12 @@ module BMX (
   , usingDecorators
   ) where
 
-import           BMX.Builtin (defaultState)
-import           BMX.Data
-import           BMX.Debug (debugTemplateIO)
-import           BMX.Eval (renderTemplate, renderTemplateM, partialFromTemplate)
-import           BMX.Parser (templateFromText)
-import           BMX.TH (bmx, templateFile, partialFile, partialDir)
+import           Boris.Http.BMX.Builtin (defaultState)
+import           Boris.Http.BMX.Data
+import           Boris.Http.BMX.Debug (debugTemplateIO)
+import           Boris.Http.BMX.Eval (renderTemplate, renderTemplateM, partialFromTemplate)
+import           Boris.Http.BMX.Parser (templateFromText)
+import           Boris.Http.BMX.TH (bmx, templateFile, partialFile, partialDir)
 
 -- $usage
 --

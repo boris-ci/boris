@@ -1,19 +1,18 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module BMX.Eval (
+module Boris.Http.BMX.Eval (
     eval
   , partialFromTemplate
   , renderTemplate
   , renderTemplateM
   ) where
 
-import           BMX.Data
-import           BMX.Eval.Function
+import           Boris.Http.BMX.Data
+import           Boris.Http.BMX.Eval.Function
+import           Boris.Prelude
 
 import           Data.Functor.Identity (Identity)
 import qualified Data.Text as T
-
-import           P
 
 
 data Coerce = Coerce | DoNotCoerce

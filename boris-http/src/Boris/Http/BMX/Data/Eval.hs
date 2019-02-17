@@ -3,7 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module BMX.Data.Eval (
+module Boris.Http.BMX.Data.Eval (
   -- * Evaluation state and abstract functions over it
     EvalState (..)
   , pushContext
@@ -48,16 +48,14 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import           Safe (atMay, headMay, readMay)
-import           X.Control.Monad.Trans.Either
 
-import           BMX.Data.AST
-import           BMX.Data.Error
-import           BMX.Data.Function
-import           BMX.Data.Page
-import           BMX.Data.Position
-import           BMX.Data.Value
-
-import           P
+import           Boris.Http.BMX.Data.AST
+import           Boris.Http.BMX.Data.Error
+import           Boris.Http.BMX.Data.Function
+import           Boris.Http.BMX.Data.Page
+import           Boris.Http.BMX.Data.Position
+import           Boris.Http.BMX.Data.Value
+import           Boris.Prelude
 
 
 -- -----------------------------------------------------------------------------

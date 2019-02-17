@@ -2,7 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module BMX.Data.Page (
+module Boris.Http.BMX.Data.Page (
     Page (..)
   , page
   , content
@@ -20,9 +20,9 @@ import qualified Data.Text.Lazy as TL
 import qualified Text.Blaze.Html as B
 import qualified Text.Blaze.Html.Renderer.Text as B
 
-import           BMX.Data.Format
+import           Boris.Http.BMX.Data.Format
+import           Boris.Prelude
 
-import           P
 
 -- | The type of rendered templates.
 data Page

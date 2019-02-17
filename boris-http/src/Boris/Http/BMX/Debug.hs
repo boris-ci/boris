@@ -1,16 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module BMX.Debug (
+module Boris.Http.BMX.Debug (
     debugTemplateIO
   ) where
 
 import           Control.Monad.IO.Class (MonadIO)
 
-import           BMX.Builtin
-import           BMX.Data
-import           BMX.Eval
+import           Boris.Http.BMX.Builtin
+import           Boris.Http.BMX.Data
+import           Boris.Http.BMX.Eval
+import           Boris.Prelude
 
-import           P
 
 {-# WARNING debugTemplateIO "Do not use 'debugTemplateIO' in production code" #-}
 -- | Evaluate a 'Template' against some 'BMXState' with debugging helpers enabled.

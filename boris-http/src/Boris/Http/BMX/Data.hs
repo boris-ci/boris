@@ -2,7 +2,7 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module BMX.Data (
+module Boris.Http.BMX.Data (
     BMXState (..)
   , BMXValue (..)
   , usingContext
@@ -16,15 +16,16 @@ module BMX.Data (
   , module X
   ) where
 
-import           BMX.Data.AST as X
-import           BMX.Data.Error as X
-import           BMX.Data.Eval as X
-import           BMX.Data.Format as X
-import           BMX.Data.Function as X
-import           BMX.Data.Page as X
-import           BMX.Data.Position as X
-import           BMX.Data.Token as X
-import           BMX.Data.Value as X
+import           Boris.Http.BMX.Data.AST as X
+import           Boris.Http.BMX.Data.Error as X
+import           Boris.Http.BMX.Data.Eval as X
+import           Boris.Http.BMX.Data.Format as X
+import           Boris.Http.BMX.Data.Function as X
+import           Boris.Http.BMX.Data.Page as X
+import           Boris.Http.BMX.Data.Position as X
+import           Boris.Http.BMX.Data.Token as X
+import           Boris.Http.BMX.Data.Value as X
+import           Boris.Prelude
 
 import qualified Data.HashMap.Strict as H
 import           Data.Map.Strict (Map)
@@ -33,7 +34,6 @@ import           Data.Scientific (Scientific)
 import           X.Data.Aeson ((.=), object)
 import qualified X.Data.Aeson as A
 
-import           P
 
 -- | BMXState holds the initial rendering environment, i.e. all bound helpers,
 -- partials, decorators, and the current variable context.

@@ -5,7 +5,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module BMX.Data.AST (
+module Boris.Http.BMX.Data.AST (
     Template (..)
   , Stmt (..)
   , Expr (..)
@@ -29,10 +29,9 @@ import qualified Data.Text as T
 
 import           GHC.Generics
 
-import           BMX.Data.Position
-import           BMX.Data.Format
-
-import           P
+import           Boris.Http.BMX.Data.Position
+import           Boris.Http.BMX.Data.Format
+import           Boris.Prelude
 
 -- | A Template in the form of an abstract syntax tree, waiting to be rendered.
 --

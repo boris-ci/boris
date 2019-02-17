@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-module BMX.Data.Value (
+module Boris.Http.BMX.Data.Value (
     Context (..)
   , Value (..)
   , Param (..)
@@ -12,12 +12,13 @@ module BMX.Data.Value (
   , renderValueType
   ) where
 
+import           Boris.Prelude
+
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import           Data.Scientific (Scientific, floatingOrInteger)
 import qualified Data.Text as T
 
-import           P
 
 data Context = Context (Map Text Value)
   deriving (Eq, Show)

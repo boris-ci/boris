@@ -3,7 +3,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module BMX.Data.Position (
+module Boris.Http.BMX.Data.Position (
     SrcInfo (..)
   , Position (..)
   , Positioned (..)
@@ -17,13 +17,14 @@ module BMX.Data.Position (
   , renderSrcInfoRange
   ) where
 
+import           Boris.Prelude
+
 import           Data.Data (Data, Typeable)
 import           Data.Serialize
 import qualified Data.Text as T
 
 import           GHC.Generics
 
-import           P
 
 -- | A single point in the source file.
 data Position = Position {

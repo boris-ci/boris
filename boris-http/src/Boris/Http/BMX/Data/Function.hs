@@ -4,7 +4,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module BMX.Data.Function (
+module Boris.Http.BMX.Data.Function (
   -- * Argument-parsing transformer
     FunctionT
   , runFunctionT
@@ -24,14 +24,12 @@ module BMX.Data.Function (
 import           Control.Monad.Identity
 import           Control.Monad.Reader
 import           Control.Monad.State
-import           X.Control.Monad.Trans.Either
 
-import           BMX.Data.AST
-import           BMX.Data.Error
-import           BMX.Data.Page
-import           BMX.Data.Value
-
-import           P
+import           Boris.Http.BMX.Data.AST
+import           Boris.Http.BMX.Data.Error
+import           Boris.Http.BMX.Data.Page
+import           Boris.Http.BMX.Data.Value
+import           Boris.Prelude
 
 -- -----------------------------------------------------------------------------
 -- FunctionT

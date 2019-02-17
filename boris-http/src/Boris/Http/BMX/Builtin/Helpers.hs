@@ -3,14 +3,13 @@
  -}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-module BMX.Builtin.Helpers where
+module Boris.Http.BMX.Builtin.Helpers where
 
 import           Data.List (zipWith)
 import qualified Data.Text as T
 
-import           BMX.Function
-
-import           P hiding (log, unless)
+import           Boris.Http.BMX.Function
+import           Boris.Prelude
 
 -- | The default collection of builtins.
 builtinHelpers :: (Applicative m, Monad m) => [(Text, Helper m)]

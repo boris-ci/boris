@@ -29,6 +29,8 @@ module Boris.Http.Data (
   , permissionFromInt
   ) where
 
+import           Boris.Prelude
+
 import           Control.Monad.IO.Class (MonadIO (..))
 
 import qualified Crypto.Random.Entropy as Entropy
@@ -37,8 +39,6 @@ import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Base16 as Base16
 import           Data.Text (Text)
 import qualified Data.Text.Encoding as Text
-
-import           P
 
 import           System.IO (IO)
 

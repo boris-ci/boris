@@ -10,6 +10,7 @@ module Boris.Http.Boot (
 
 import           Boris.Core.Data.Tenant
 import           Boris.Http.Data
+import           Boris.Prelude
 
 import           Control.Monad.IO.Class (MonadIO (..))
 
@@ -20,8 +21,6 @@ import           Network.HTTP.Client.TLS (tlsManagerSettings)
 
 import           Nest (Parser)
 import qualified Nest
-
-import           P
 
 import           Traction.Control (DbPool)
 import qualified Traction.Control as Traction

@@ -7,7 +7,7 @@ module Boris.Http.Db.Schema (
   , schema
   ) where
 
-import           P
+import           Boris.Prelude
 
 import           System.IO (IO)
 
@@ -17,7 +17,6 @@ import           Traction.Migration (Migration (..))
 import qualified Traction.Migration as Traction
 import           Traction.Sql (sql)
 
-import           X.Control.Monad.Trans.Either (EitherT)
 
 initialise :: DbPool -> EitherT DbError IO ()
 initialise pool =
