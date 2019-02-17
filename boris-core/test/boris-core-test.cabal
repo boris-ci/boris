@@ -18,5 +18,4 @@ library
 
 
   exposed-modules:
-                    Test.Boris.Core.Arbitrary
                     Test.Boris.Core.Gen

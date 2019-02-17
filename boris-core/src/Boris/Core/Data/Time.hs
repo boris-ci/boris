@@ -3,10 +3,10 @@ module Boris.Core.Data.Time (
     renderTime
   ) where
 
+import           Boris.Prelude
+
 import qualified Data.Text as Text
 import           Data.Time (UTCTime, formatTime, defaultTimeLocale)
-
-import           P
 
 
 renderTime :: UTCTime -> Text

@@ -5,7 +5,7 @@ module Boris.Core.Data.Agent (
   , QueueSize (..)
   ) where
 
-import           P
+import           Boris.Prelude
 
 
 data Agent =

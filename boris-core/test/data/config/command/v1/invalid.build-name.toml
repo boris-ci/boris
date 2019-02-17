@@ -1,5 +1,5 @@
 [boris]
   version = 1
 
-[build.no/slash]
+[build."no/slash"]
   command = [["echo"]]

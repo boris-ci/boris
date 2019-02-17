@@ -8,11 +8,10 @@ module Boris.Core.Data.Log (
   ) where
 
 import           Boris.Core.Data.Time
+import           Boris.Prelude
 
 import qualified Data.Text as Text
 import           Data.Time (UTCTime)
-
-import           P
 
 data LogData =
     DBLog [DBLogData]

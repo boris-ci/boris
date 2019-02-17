@@ -8,6 +8,7 @@ import           Boris.Core.Data.Build
 import           Boris.Core.Data.Configuration
 import           Boris.Core.Data.Log
 import           Boris.Core.Data.Project
+import           Boris.Prelude
 
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -16,8 +17,6 @@ import           Data.Time (Day (..), DiffTime, UTCTime (..))
 import           Hedgehog
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
-
-import           P
 
 
 genRef :: Gen Ref
@@ -44,6 +43,13 @@ genBuild =
     , "branches"
     ]
 
+genBuildNamePattern :: Gen BuildNamePattern
+genBuildNamePattern = do
+  b <- genBuild
+  p <- either (const Gen.discard) (pure) $
+    parseBuildNamePattern $ renderBuild b
+  pure $ p
+
 genProject :: Gen Project
 genProject =
   Project <$> Gen.element software
@@ -61,11 +67,32 @@ software = [
   , "diff"
   ]
 
+planets :: [Text]
+planets = [
+    "mecury"
+  , "venus"
+  , "earth"
+  , "mars"
+  , "april"
+  , "may"
+  , "june"
+  , "july"
+  , "august"
+  , "september"
+  , "october"
+  , "november"
+  , "december"
+  ]
+
+
 genQueueSize :: Gen QueueSize
 genQueueSize =
   fmap QueueSize $
     Gen.int (Range.constant 0 99999)
 
+genPattern :: Gen Pattern
+genPattern  =
+  Pattern <$> Gen.element planets
 
 genBuildTree :: Gen BuildTree
 genBuildTree =
@@ -107,6 +134,12 @@ genResult =
 genBuildResult :: Gen BuildResult
 genBuildResult =
   Gen.enumBounded
+
+genBuildPattern :: Gen BuildPattern
+genBuildPattern =
+  BuildPattern
+    <$> genBuildNamePattern
+    <*> genPattern
 
 genLogData :: Gen LogData
 genLogData =

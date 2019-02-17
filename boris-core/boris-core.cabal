@@ -47,7 +47,7 @@ test-suite test
   ghc-options: -Wall -threaded -O2
   hs-source-dirs: test
   other-modules:
-    Test.Boris.Core.Arbitrary
+    Test.Boris.Core.Gen
     Test.Boris.Core.Data.Build
     Test.Boris.Core.Serial.Command
     Test.Boris.Core.Serial.Ref
