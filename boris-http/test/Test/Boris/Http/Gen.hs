@@ -4,6 +4,8 @@
 module Test.Boris.Http.Gen where
 
 import           Boris.Http.Data
+import           Boris.Prelude
+
 
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
@@ -11,8 +13,6 @@ import qualified Data.Text.Encoding as Text
 import           Hedgehog
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
-
-import           P
 
 
 genGithubClient :: Gen GithubClient

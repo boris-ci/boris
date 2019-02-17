@@ -6,13 +6,12 @@ module Test.IO.Boris.Http.Db.Query  where
 import           Boris.Core.Data.Build
 import           Boris.Http.Data
 import qualified Boris.Http.Db.Query as Query
+import           Boris.Prelude
 
 import           Control.Monad.IO.Class (MonadIO (..))
 
 import           Hedgehog
 import qualified Hedgehog.Gen as Gen
-
-import           P
 
 import           System.IO (IO)
 

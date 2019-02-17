@@ -6,10 +6,9 @@ module Test.IO.Boris.Http.Db.Schema where
 import           Control.Monad.Morph (hoist, lift)
 
 import qualified Boris.Http.Db.Schema as Schema
+import           Boris.Prelude
 
 import           Hedgehog
-
-import           P
 
 import           System.IO (IO)
 

@@ -8,13 +8,12 @@ module Test.IO.Boris.Http.Db.Test (
   ) where
 
 import           Boris.Http.Db.Schema
+import           Boris.Prelude
 
 import           Control.Monad.IO.Class (MonadIO (..))
 import           Control.Monad.Morph (hoist, lift)
 
 import qualified Nest
-
-import           P
 
 import           Traction.Control
 
