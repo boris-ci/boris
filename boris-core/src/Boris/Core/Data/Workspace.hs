@@ -12,10 +12,9 @@ module Boris.Core.Data.Workspace (
 
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Repository
+import           Boris.Prelude
 
 import qualified Data.Text as Text
-
-import           P
 
 import           System.FilePath (FilePath, (</>))
 

@@ -4,7 +4,7 @@ module Boris.Core.Data.Tenant (
     Tenant (..)
   ) where
 
-import           P
+import           Boris.Prelude
 
 
 data Tenant =

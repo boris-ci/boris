@@ -21,7 +21,9 @@ library
     , parsec == 3.1.*
     , text == 1.2.*
     , time >= 1.5 && < 1.10
+    , transformers >= 0.4 && < 0.6
     , unordered-containers == 0.2.*
+    , vector == 0.12.*
 
   ghc-options: -Wall
   hs-source-dirs: src
@@ -38,6 +40,7 @@ library
     Boris.Core.Data.Workspace
     Boris.Core.Serial.Ref
     Boris.Core.Serial.Command
+    Boris.Core.Serial.Toml
     Boris.Prelude
     Boris.Prelude.EitherT
 

@@ -6,8 +6,8 @@ module Boris.Core.Data.Instance (
 
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Configuration
+import           Boris.Prelude
 
-import           P
 
 data BuildInstance =
   BuildInstance {

@@ -14,7 +14,7 @@ import           Boris.Prelude
 import           Control.Lens ((^?))
 
 import qualified Data.HashMap.Strict as M
-import qualified Data.Text as T
+import qualified Data.Text as Text
 
 import           Text.Parsec.Error (ParseError)
 import           Text.Toml (parseTomlDoc)
@@ -121,11 +121,11 @@ renderBorisConfigError :: BorisConfigError -> Text
 renderBorisConfigError err =
   case err of
     ConfigTomlParseError p ->
-      mconcat ["Boris configuration could not be parsed, toml parse error: ", T.pack . show $ p]
+      mconcat ["Boris configuration could not be parsed, toml parse error: ", Text.pack . show $ p]
     ConfigMissingVersionError ->
       "Boris configuration does not contain a version field."
     ConfigUnknownVersionError n ->
-      mconcat ["Boris configuration contains an unkown version: ", T.pack . show $ n]
+      mconcat ["Boris configuration contains an unkown version: ", Text.pack . show $ n]
     ConfigInvalidCommand b ->
       mconcat ["Boris configuration contains an invalid 'command' for build: ", renderBuild b]
     ConfigBuildsTypeError ->
