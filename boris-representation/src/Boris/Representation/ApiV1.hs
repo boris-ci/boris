@@ -16,6 +16,8 @@ module Boris.Representation.ApiV1 (
   , PostAcknowledgeResponse (..)
   , PostAvowRequest (..)
   , PostAvowResponse (..)
+  , PostDisavowRequest (..)
+  , PostDisavowResponse (..)
   , PostCompleteRequest (..)
   , PostCompleteResponse (..)
   , GetLogs (..)
@@ -41,7 +43,7 @@ instance ToJSON GetCommit where
   toJSON (GetCommit p bs) =
     object [
         "project" .= renderProject p
-      , "builds" .= (fmap renderBuildId . sortBuildIds) bs
+      , "builds" .= (fmap getBuildId . sortBuildIds) bs
       ]
 
 instance FromJSON GetCommit where
@@ -82,11 +84,6 @@ instance ToJSON PostBuildRequest where
         "ref" .= fmap renderRef r
       ]
 
-
-
-
-
-
 data GetBuilds =
     GetBuilds {
         getBuilds :: BuildTree
@@ -112,7 +109,7 @@ instance ToJSON GetBuilds where
       , "build" .= renderBuild b
       , "details" .= with ds (\(BuildTreeRef ref ids) -> object [
             "ref" .= renderRef ref
-          , "build_ids" .= fmap renderBuildId (sortBuildIds ids)
+          , "build_ids" .= fmap getBuildId (sortBuildIds ids)
           ])
       ]
 
@@ -187,6 +184,20 @@ instance ToJSON PostDisavowResponse where
     object [
       ]
 
+data PostDisavowRequest =
+    PostDisavowRequest
+    deriving (Eq, Ord, Show)
+
+instance FromJSON PostDisavowRequest where
+  parseJSON =
+    withObject "PostDisavowRequest" $ \_ ->
+      pure PostDisavowRequest
+
+instance ToJSON PostDisavowRequest where
+  toJSON PostDisavowRequest =
+    object [
+      ]
+
 data PostAcknowledgeRequest =
     PostAcknowledgeRequest
     deriving (Eq, Ord, Show)
@@ -238,7 +249,7 @@ instance FromJSON GetBuild where
 instance ToJSON GetBuild where
   toJSON (GetBuild b) =
     object [
-        "build_id" .= (renderBuildId . buildDataId) b
+        "build_id" .= (getBuildId . buildDataId) b
       , "project" .= (renderProject . buildDataProject) b
       , "build" .= (renderBuild . buildDataBuild) b
       , "ref" .= (fmap renderRef . buildDataRef) b
@@ -350,7 +361,7 @@ instance FromJSON GetScoreboard where
 fromResult :: Result -> Value
 fromResult r =
   object [
-      "build_id" .= (renderBuildId . resultBuildId) r
+      "build_id" .= (getBuildId . resultBuildId) r
     , "project" .= (renderProject . resultProject) r
     , "build" .= (renderBuild . resultBuild) r
     , "ref" .= (fmap renderRef . resultRef) r

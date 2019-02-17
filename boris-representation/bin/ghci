@@ -1,0 +1,3 @@
+#!/bin/sh -eu
+
+./mafia quick -p test/test.hs

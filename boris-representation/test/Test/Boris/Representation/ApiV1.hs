@@ -5,6 +5,8 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Test.Boris.Representation.ApiV1 where
 
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Instance
 import           Boris.Representation.ApiV1
 import           Boris.Prelude
 
@@ -97,21 +99,17 @@ prop_post_acknowledge_response =
 prop_post_disavow_request :: Property
 prop_post_disavow_request =
   property $ do
-    project <- forAll genProject
-    build <- forAll genBuild
-    verify $ PostDisavowRequest project build
+    verify $ PostDisavowRequest
 
 prop_post_avow_request :: Property
 prop_post_avow_request =
   property $ do
-    project <- forAll genProject
-    build <- forAll genBuild
     ref <- forAll genRef
     commit <- forAll genCommit
-    verify $ PostAvowRequest project build ref commit
+    verify $ PostAvowRequest ref commit
 
 verify :: (MonadTest m, Show a, Eq a, Aeson.ToJSON a, Aeson.FromJSON a) => a -> m ()
-verify a =
+verify a = do
   tripping a Aeson.encode Aeson.decode
 
 tests :: IO Bool
