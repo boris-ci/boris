@@ -1,265 +1,331 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Test.IO.Boris.Git where
 
-import           Boris.Core.Data
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Repository
 import qualified Boris.Git as Git
+import qualified Boris.Git.X as X
+import           Boris.Prelude
+
+import           Control.Monad.IO.Class (MonadIO (..))
 
 import qualified Data.Conduit.Binary as CB
 import qualified Data.Conduit.List as CL
-import qualified Data.List as L
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import qualified Data.List as List
+import qualified Data.Text as Text
+import qualified Data.Text.IO as Text
 
-import           Disorder.Core.IO
+import           Hedgehog
+import qualified Hedgehog.Gen as Gen
+import qualified Hedgehog.Range as Range
 
-import           P
-
-import qualified System.Directory as D
+import qualified System.Directory as Directory
 import           System.Exit (ExitCode (..))
 import           System.FilePath ((<.>), (</>))
 import           System.IO (IO, stderr, stdout)
-import           System.IO.Temp (withSystemTempDirectory)
+import qualified System.IO.Temp as Temporary
 import           System.Process (CreateProcess (..), proc)
 
-import           Test.QuickCheck
-import           Test.QuickCheck.Instances ()
+prop_bare_clone_basic :: Property
+prop_bare_clone_basic =
+  withTests 10 . property $ do
+    datas <- forAll $ Gen.list (Range.linear 0 10) $ Gen.element [
+        "red"
+      , "green"
+      , "blue"
+      ]
+    liftIO $ Directory.createDirectoryIfMissing True "tmp"
+    (actual, expected) <- liftIO $ Temporary.withTempDirectory "tmp" "git" $ \t -> do
+      let
+        o = CB.sinkHandle stdout
+        e = CB.sinkHandle stderr
+        source = t </> "source.git"
+        target = t </> "bare.git"
+        checker = t </> "check.git"
 
-import qualified Tine.Conduit as X
+        readme = source </> "readme"
+        files = fmap (\(n, d) -> ("data" <.> show n, d)) $ List.zip ([0..] :: [Int]) datas
 
-import           X.Control.Monad.Trans.Either (EitherT, runEitherT)
+      Directory.createDirectoryIfMissing True source
 
-prop_bare_clone_basic datas =
-  testIO . withSystemTempDirectory "git" $ \t -> do
-    let
-      o = CB.sinkHandle stdout
-      e = CB.sinkHandle stderr
-      source = t </> "source.git"
-      target = t </> "bare.git"
-      check = t </> "check.git"
+      Text.writeFile readme "A testing repository (readme to guarantee there is at least one file)."
 
-      readme = source </> "readme"
-      files = fmap (\(n, d) -> ("data" <.> show n, d)) $ L.zip ([0..] :: [Int]) datas
+      forM_ files $ \(n, d) ->
+        Text.writeFile (source </> n) d
 
-    D.createDirectoryIfMissing True source
+      flail $
+        X.exec o e $ (proc "git" ["init"]) { cwd = Just source }
 
-    T.writeFile readme "A testing repository (readme to guarantee there is at least one file)."
+      flail $
+        X.exec o e $ (proc "git" ["add", "-A"]) { cwd = Just source }
 
-    forM_ files $ \(n, d) ->
-      T.writeFile (source </> n) d
+      flail $
+        X.exec o e $ (proc "git" ["commit", "-m", "first"]) { cwd = Just source }
 
-    flail $
-      X.exec o e $ (proc "git" ["init"]) { cwd = Just source }
+      target' <- flailx $
+        Git.bare o e (Repository . Text.pack $ source) target
 
-    flail $
-      X.exec o e $ (proc "git" ["add", "-A"]) { cwd = Just source }
+      _check' <- flailx $
+        Git.clone o e target' checker
 
-    flail $
-      X.exec o e $ (proc "git" ["commit", "-m", "first"]) { cwd = Just source }
+      xs <- forM files $ \(n, _) -> do
+        Text.readFile (checker </> n)
 
-    target' <- flailx $
-      Git.bare o e (Repository . T.pack $ source) target
+      pure $ (xs, fmap snd files)
 
-    _check' <- flailx $
-      Git.clone o e target' check
+    actual === expected
 
-    fmap conjoin . forM files $ \(n, d) -> do
-      x <- T.readFile (check </> n)
-      pure . counterexample ("File " <> n <> " was not the same.") $
-        x === d
+prop_bare_cloneref_basic :: Property
+prop_bare_cloneref_basic =
+  withTests 10 . property $ do
+    datas <- forAll $ Gen.list (Range.linear 0 10) $ Gen.element [
+        "red"
+      , "green"
+      , "blue"
+      ]
+    liftIO $ Directory.createDirectoryIfMissing True "tmp"
 
-prop_bare_cloneref_basic datas =
-  testIO . withSystemTempDirectory "git" $ \t -> do
-    let
-      o = CB.sinkHandle stdout
-      e = CB.sinkHandle stderr
-      source = t </> "source.git"
-      target = t </> "bare.git"
-      check = t </> "check.git"
+    (actual, expected) <- liftIO $ Temporary.withTempDirectory "tmp" "git" $ \t -> do
+      let
+        o = CB.sinkHandle stdout
+        e = CB.sinkHandle stderr
+        source = t </> "source.git"
+        target = t </> "bare.git"
+        checker = t </> "check.git"
 
-      readme = source </> "readme"
-      files = fmap (\(n, d) -> ("data" <.> show n, d)) $ L.zip ([0..] :: [Int]) datas
+        readme = source </> "readme"
+        files = fmap (\(n, d) -> ("data" <.> show n, d)) $ List.zip ([0..] :: [Int]) datas
 
-    D.createDirectoryIfMissing True source
+      Directory.createDirectoryIfMissing True source
 
-    T.writeFile readme "A testing repository (readme to guarantee there is at least one file)."
+      Text.writeFile readme "A testing repository (readme to guarantee there is at least one file)."
 
-    forM_ files $ \(n, d) ->
-      T.writeFile (source </> n) d
+      forM_ files $ \(n, d) ->
+        Text.writeFile (source </> n) d
 
-    flail $
-      X.exec o e $ (proc "git" ["init"]) { cwd = Just source }
+      flail $
+        X.exec o e $ (proc "git" ["init"]) { cwd = Just source }
 
-    flail $
-      X.exec o e $ (proc "git" ["add", "-A"]) { cwd = Just source }
+      flail $
+        X.exec o e $ (proc "git" ["add", "-A"]) { cwd = Just source }
 
-    flail $
-      X.exec o e $ (proc "git" ["commit", "-m", "first"]) { cwd = Just source }
+      flail $
+        X.exec o e $ (proc "git" ["commit", "-m", "first"]) { cwd = Just source }
 
-    target' <- flailx $
-      Git.bare o e (Repository . T.pack $ source) target
+      target' <- flailx $
+        Git.bare o e (Repository . Text.pack $ source) target
 
-    _check' <- flailx $
-      Git.cloneref o e target' (Repository . T.pack $ source) check
+      _check' <- flailx $
+        Git.cloneref o e target' (Repository . Text.pack $ source) checker
 
-    fmap conjoin . forM files $ \(n, d) -> do
-      x <- T.readFile (check </> n)
-      pure . counterexample ("File " <> n <> " was not the same.") $
-        x === d
+      xs <- forM files $ \(n, _) -> do
+        Text.readFile (checker </> n)
 
-prop_refs v0 v1 = v0 /= v1 ==>
-  testIO . withSystemTempDirectory "git" $ \t -> do
-    let
-      o = CB.sinkHandle stdout
-      e = CB.sinkHandle stderr
-      repository = t </> "repository.git"
-      file = repository </> "file"
-      local = LocalRepository . T.pack $ repository
+      pure $ (xs, fmap snd files)
 
-    D.createDirectoryIfMissing True repository
+    actual === expected
 
-    T.writeFile file v0
 
-    flail $
-      X.exec o e $ (proc "git" ["init"]) { cwd = Just repository }
 
-    flail $
-      X.exec o e $ (proc "git" ["add", "-A", "."]) { cwd = Just repository }
+prop_refs :: Property
+prop_refs =
+  withTests 10 . property $ do
+    v0 <- forAll $ Gen.element [
+        "red"
+      , "green"
+      , "blue"
+      ]
+    v1 <- forAll $ Gen.element [
+        "der"
+      , "neerg"
+      , "eulb"
+      ]
+    liftIO $ Directory.createDirectoryIfMissing True "tmp"
 
-    flail $
-      X.exec o e $ (proc "git" ["commit", "-m", "first"]) { cwd = Just repository }
+    actual <- liftIO $ Temporary.withTempDirectory "tmp" "git" $ \t -> do
+      let
+        o = CB.sinkHandle stdout
+        e = CB.sinkHandle stderr
+        repository = t </> "repository.git"
+        file = repository </> "file"
+        local = LocalRepository . Text.pack $ repository
 
-    T.writeFile file v1
+      Directory.createDirectoryIfMissing True repository
 
-    flail $
-      X.exec o e $ (proc "git" ["add", "-A", "."]) { cwd = Just repository }
+      Text.writeFile file v0
 
-    flail $
-      X.exec o e $ (proc "git" ["commit", "-m", "second"]) { cwd = Just repository }
+      flail $
+        X.exec o e $ (proc "git" ["init"]) { cwd = Just repository }
 
-    flail $
-      X.exec o e $ (proc "git" ["checkout", "-b", "topic/branch"]) { cwd = Just repository }
+      flail $
+        X.exec o e $ (proc "git" ["add", "-A", "."]) { cwd = Just repository }
 
-    flail $
-      X.exec o e $ (proc "git" ["checkout", "-b", "dev/branch"]) { cwd = Just repository }
+      flail $
+        X.exec o e $ (proc "git" ["commit", "-m", "first"]) { cwd = Just repository }
 
-    topics <- flailx $
-      Git.refs o e local  (Pattern "refs/heads/topic/*")
+      Text.writeFile file v1
 
-    branches <- flailx $
-      Git.refs o e local (Pattern "refs/heads/*/branch")
+      flail $
+        X.exec o e $ (proc "git" ["add", "-A", "."]) { cwd = Just repository }
 
-    star <- flailx $
-      Git.refs o e local (Pattern "refs/heads/*")
+      flail $
+        X.exec o e $ (proc "git" ["commit", "-m", "second"]) { cwd = Just repository }
 
-    starstar <- flailx $
-      Git.refs o e local (Pattern "refs/heads/**")
+      flail $
+        X.exec o e $ (proc "git" ["checkout", "-b", "topic/branch"]) { cwd = Just repository }
 
-    pure $
-      [topics, L.sort branches, star, starstar] === [
+      flail $
+        X.exec o e $ (proc "git" ["checkout", "-b", "dev/branch"]) { cwd = Just repository }
+
+      topics <- flailx $
+        Git.refs o e local  (Pattern "refs/heads/topic/*")
+
+      branches <- flailx $
+        Git.refs o e local (Pattern "refs/heads/*/branch")
+
+      star <- flailx $
+        Git.refs o e local (Pattern "refs/heads/*")
+
+      starstar <- flailx $
+        Git.refs o e local (Pattern "refs/heads/**")
+
+      pure [topics, List.sort branches, star, starstar]
+
+    actual === [
           [Ref "refs/heads/topic/branch"]
-        , L.sort [Ref "refs/heads/topic/branch", Ref "refs/heads/dev/branch"]
+        , List.sort [Ref "refs/heads/topic/branch", Ref "refs/heads/dev/branch"]
         , [Ref "refs/heads/master"]
-        , L.sort [Ref "refs/heads/master", Ref "refs/heads/topic/branch", Ref "refs/heads/dev/branch"]
+        , List.sort [Ref "refs/heads/master", Ref "refs/heads/topic/branch", Ref "refs/heads/dev/branch"]
         ]
 
-prop_checkout v0 v1 = v0 /= v1 ==>
-  testIO . withSystemTempDirectory "git" $ \t -> do
-    let
-      o = CB.sinkHandle stdout
-      e = CB.sinkHandle stderr
-      repository = t </> "repository.git"
-      file = repository </> "file"
-      local = LocalRepository . T.pack $ repository
+prop_checkout :: Property
+prop_checkout =
+  withTests 10 . property $ do
+    v0 <- forAll $ Gen.element [
+        "red"
+      , "green"
+      , "blue"
+      ]
+    v1 <- forAll $ Gen.element [
+        "der"
+      , "neerg"
+      , "eulb"
+      ]
+    liftIO $ Directory.createDirectoryIfMissing True "tmp"
+    actual <- liftIO $ Temporary.withTempDirectory "tmp" "git" $ \t -> do
+      let
+        o = CB.sinkHandle stdout
+        e = CB.sinkHandle stderr
+        repository = t </> "repository.git"
+        file = repository </> "file"
+        local = LocalRepository . Text.pack $ repository
 
-    D.createDirectoryIfMissing True repository
+      Directory.createDirectoryIfMissing True repository
 
-    T.writeFile file v0
+      Text.writeFile file v0
 
-    flail $
-      X.exec o e $ (proc "git" ["init"]) { cwd = Just repository }
+      flail $
+        X.exec o e $ (proc "git" ["init"]) { cwd = Just repository }
 
-    flail $
-      X.exec o e $ (proc "git" ["add", "-A", "file"]) { cwd = Just repository }
+      flail $
+        X.exec o e $ (proc "git" ["add", "-A", "file"]) { cwd = Just repository }
 
-    flail $
-      X.exec o e $ (proc "git" ["commit", "-m", "first"]) { cwd = Just repository }
+      flail $
+        X.exec o e $ (proc "git" ["commit", "-m", "first"]) { cwd = Just repository }
 
-    flail $
-      X.exec o e $ (proc "git" ["checkout", "-b", "topic/branch"]) { cwd = Just repository }
+      flail $
+        X.exec o e $ (proc "git" ["checkout", "-b", "topic/branch"]) { cwd = Just repository }
 
-    T.writeFile file v1
+      Text.writeFile file v1
 
-    flail $
-      X.exec o e $ (proc "git" ["add", "-A", "."]) { cwd = Just repository }
+      flail $
+        X.exec o e $ (proc "git" ["add", "-A", "."]) { cwd = Just repository }
 
-    flail $
-      X.exec o e $ (proc "git" ["commit", "-m", "second"]) { cwd = Just repository }
+      flail $
+        X.exec o e $ (proc "git" ["commit", "-m", "second"]) { cwd = Just repository }
 
-    t1 <- T.readFile file
+      t1 <- Text.readFile file
 
-    flail $
-      X.exec o e $ (proc "git" ["status"]) { cwd = Just repository }
+      flail $
+        X.exec o e $ (proc "git" ["status"]) { cwd = Just repository }
 
-    flailx $
-      Git.checkout o e local (Ref "master")
+      flailx $
+        Git.checkout o e local (Ref "master")
 
-    t2 <- T.readFile file
+      t2 <- Text.readFile file
 
-    flailx $
-      Git.checkout o e local (Ref "topic/branch")
+      flailx $
+        Git.checkout o e local (Ref "topic/branch")
 
-    t3 <- T.readFile file
+      t3 <- Text.readFile file
 
-    pure $ [t1, t2, t3] === [v1, v0, v1]
+      pure $ [t1, t2, t3]
 
-prop_cat v0 v1 = v0 /= v1 ==>
-  testIO . withSystemTempDirectory "git" $ \t -> do
-    let
-      o = CB.sinkHandle stdout
-      e = CB.sinkHandle stderr
-      oo = CL.sinkNull
-      ee = CL.sinkNull
+    actual === [v1, v0, v1]
 
-      repository = t </> "repository.git"
-      file = repository </> "file"
-      local = LocalRepository . T.pack $ repository
+prop_cat :: Property
+prop_cat =
+  withTests 10 . property $ do
+    v0 <- forAll $ Gen.element [
+        "red"
+      , "green"
+      , "blue"
+      ]
+    v1 <- forAll $ Gen.element [
+        "der"
+      , "neerg"
+      , "eulb"
+      ]
+    liftIO $ Directory.createDirectoryIfMissing True "tmp"
 
-    D.createDirectoryIfMissing True repository
+    actual <- liftIO $ Temporary.withTempDirectory "tmp" "git" $ \t -> do
+      let
+        o = CB.sinkHandle stdout
+        e = CB.sinkHandle stderr
+        oo = CL.sinkNull
+        ee = CL.sinkNull
 
-    T.writeFile file v0
+        repository = t </> "repository.git"
+        file = repository </> "file"
+        local = LocalRepository . Text.pack $ repository
 
-    flail $
-      X.exec o e $ (proc "git" ["init"]) { cwd = Just repository }
+      Directory.createDirectoryIfMissing True repository
 
-    flail $
-      X.exec o e $ (proc "git" ["add", "-A", "file"]) { cwd = Just repository }
+      Text.writeFile file v0
 
-    flail $
-      X.exec o e $ (proc "git" ["commit", "-m", "first"]) { cwd = Just repository }
+      flail $
+        X.exec o e $ (proc "git" ["init"]) { cwd = Just repository }
 
-    flail $
-      X.exec o e $ (proc "git" ["checkout", "-b", "topic/branch"]) { cwd = Just repository }
+      flail $
+        X.exec o e $ (proc "git" ["add", "-A", "file"]) { cwd = Just repository }
 
-    T.writeFile file v1
+      flail $
+        X.exec o e $ (proc "git" ["commit", "-m", "first"]) { cwd = Just repository }
 
-    flail $
-      X.exec o e $ (proc "git" ["add", "-A", "."]) { cwd = Just repository }
+      flail $
+        X.exec o e $ (proc "git" ["checkout", "-b", "topic/branch"]) { cwd = Just repository }
 
-    flail $
-      X.exec o e $ (proc "git" ["commit", "-m", "second"]) { cwd = Just repository }
+      Text.writeFile file v1
 
-    t1 <- T.readFile file
+      flail $
+        X.exec o e $ (proc "git" ["add", "-A", "."]) { cwd = Just repository }
 
-    t2 <- flailx $
-      Git.cat oo ee local (Ref "master") "file"
+      flail $
+        X.exec o e $ (proc "git" ["commit", "-m", "second"]) { cwd = Just repository }
 
-    t3 <- flailx $
-      Git.cat oo ee local (Ref "topic/branch") "file"
+      t1 <- Text.readFile file
 
-    pure $ [t1, t2, t3] === [v1, v0, v1]
+      t2 <- flailx $
+        Git.cat oo ee local (Ref "master") "file"
+
+      t3 <- flailx $
+        Git.cat oo ee local (Ref "topic/branch") "file"
+
+      pure [t1, t2, t3]
+
+    actual === [v1, v0, v1]
 
 
 flail :: IO ExitCode -> IO ()
@@ -278,5 +344,6 @@ flailx cc =
     Right a ->
       pure a
 
-return []
-tests = $forAllProperties $ quickCheckWithResult (stdArgs { maxSuccess = 10 })
+tests :: IO Bool
+tests =
+  checkParallel $$(discover)

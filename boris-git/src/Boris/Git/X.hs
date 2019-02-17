@@ -1,5 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -fno-warn-warnings-deprecations #-}
 module Boris.Git.X (
     Out
   , WithEnv (..)
@@ -8,7 +9,7 @@ module Boris.Git.X (
   , capture
   , exec
   , raw
-  , execOrTerminateOnPin
+--  , execOrTerminateOnPin
   , xproc
   , xprocAt
   , inDirectory
@@ -17,10 +18,11 @@ module Boris.Git.X (
   , withEnv
   ) where
 
-import           Boris.Git.Pin (Pin, waitForPin)
+--import           Boris.Git.Pin (Pin, waitForPin)
 import           Boris.Prelude
 
-import           Control.Concurrent.Async (Concurrently (..), async, cancel, waitEither)
+--import           Control.Concurrent.Async (Concurrently (..), async, cancel, waitEither)
+import           Control.Concurrent.Async (Concurrently (..))
 import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.IO.Class (MonadIO (..))
 
@@ -86,23 +88,23 @@ raw cout cerr cp = do
       <*> Concurrently (CP.waitForStreamingProcess handle)
 
 
-execOrTerminateOnPin :: Pin -> Sink ByteString IO () -> Sink ByteString IO () -> CreateProcess -> IO StreamingProcessOrPin
-execOrTerminateOnPin pin cout cerr cp = do
-  (CP.ClosedStream, sout, serr, handle) <- CP.streamingProcess cp
+--execOrTerminateOnPin :: Pin -> Sink ByteString IO () -> Sink ByteString IO () -> CreateProcess -> IO StreamingProcessOrPin
+--execOrTerminateOnPin pin cout cerr cp = do
+--  (CP.ClosedStream, sout, serr, handle) <- CP.streamingProcess cp
 
-  execing <- async . runConcurrently $
-    (,,)
-      <$> Concurrently (sout $$ cout)
-      <*> Concurrently (serr $$ cerr)
-      <*> Concurrently (CP.waitForStreamingProcess handle)
+--  execing <- async . runConcurrently $
+--    (,,)
+--      <$> Concurrently (runConduit $ sout .| cout)
+--      <*> Concurrently (runConduit $ serr .| cerr)
+--      <*> Concurrently (CP.waitForStreamingProcess handle)
 
-  checking <- async $ waitForPin pin
+--  checking <- async $ waitForPin pin
 
-  waitEither checking execing >>= \x -> case x of
-    Left _ ->
-      StreamingPinPulled <$> terminate (CP.streamingProcessHandleRaw handle) <* cancel execing
-    Right (_, _, code) ->
-      StreamingProcessStopped code <$ cancel checking
+--  waitEither checking execing >>= \x -> case x of
+--    Left _ ->
+--      StreamingPinPulled <$> terminate (CP.streamingProcessHandleRaw handle) <* cancel execing
+--    Right (_, _, code) ->
+--      StreamingProcessStopped code <$ cancel checking
 
 
 xproc :: Out -> Text -> [Text] -> IO CreateProcess
@@ -130,6 +132,6 @@ hoistExitM :: (Applicative f, Monad f) => f ExitCode -> EitherT ExitCode f ()
 hoistExitM e =
   lift e >>= hoistExit
 
-terminate :: CP.ProcessHandle -> IO ExitCode
-terminate h =
-  error "Todo"
+--terminate :: CP.ProcessHandle -> IO ExitCode
+--terminate _h =
+--  error "Todo"
