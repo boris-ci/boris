@@ -31,3 +31,6 @@
 [submodule "lib/vulcan"]
 	path = lib/vulcan
 	url = git@github.com:markhibberd/vulcan
+[submodule "lib/projector"]
+	path = lib/projector
+	url = git@github.com:thumphries/projector
