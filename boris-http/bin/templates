@@ -11,6 +11,6 @@ projector \
   -t templates \
   -e templates/examples \
   -o gen \
-  -h demo \
+  -h examples \
   -m Boris.Http.Template \
   -w
