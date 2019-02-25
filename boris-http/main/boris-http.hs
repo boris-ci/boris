@@ -10,6 +10,8 @@ import qualified Data.Text as Text
 
 import qualified Nest
 
+import qualified Rapid
+
 import           System.Exit (ExitCode(..), exitWith)
 import qualified System.IO as IO
 import           System.IO (IO, stderr, hPutStrLn)
@@ -21,7 +23,11 @@ import qualified Web.Spock.Core as Spock
 import Network.Wai.Handler.Warp (runSettings, defaultSettings, setPort, setOnException, defaultOnException)
 
 main :: IO ()
-main = do
+main =
+  run
+
+run :: IO ()
+run = do
   Boot.Boot mode authentication pool defaults <-
     Nest.force $ Boot.boot
 
@@ -70,3 +76,13 @@ orDieWithCode :: Int -> (e -> Text) -> EitherT e IO a -> IO a
 orDieWithCode code render e =
   runEitherT e >>=
     either (\err -> (hPutStrLn stderr . Text.unpack . render) err >> exitWith (ExitFailure code)) pure
+
+
+-- ================
+-- DEVELOPMENT MODE
+-- ================
+
+_update :: IO ()
+_update = do
+  Rapid.rapid 0 $ \r ->
+    Rapid.restart r ("boris" :: [Char]) run

@@ -1,0 +1,16 @@
+#!/bin/sh -eu
+
+ROOT="$(git rev-parse --show-toplevel)"
+
+if ! type projector >/dev/null 2>&1; then
+    echo >&2 "Please install projector on your path."
+    exit 1
+fi
+
+projector \
+  -t templates \
+  -e templates/examples \
+  -o gen \
+  -h demo \
+  -m Boris.Http.Template \
+  -w

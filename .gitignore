@@ -10,7 +10,8 @@ cabal-dev
 cabal.sandbox.config
 /tmp
 /gen
-*/gen
+*/gen/BuildInfo_boris_http.hs
+*/gen/version.txt
 */tmp
 /bin/mth
 /Dockerfile

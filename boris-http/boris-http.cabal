@@ -56,7 +56,7 @@ library
     , wai-middleware-static-embedded  == 0.1.*
 
   ghc-options: -Wall
-  hs-source-dirs: src
+  hs-source-dirs: src, gen
   exposed-modules:
     Boris.Http.Api.Build
     Boris.Http.Api.Discover
@@ -75,6 +75,8 @@ library
     Boris.Http.Spock
     Boris.Http.View
 
+    Boris.Http.Template.Layout.Page
+
 executable boris-http
   ghc-options: -Wall -threaded -O2 -rtsopts -with-rtsopts "-T -N"
   hs-source-dirs: gen
@@ -84,6 +86,7 @@ executable boris-http
     , boris-core
     , boris-http
     , nest
+    , rapid == 0.1.*
     , Spock-core
     , text
     , traction
