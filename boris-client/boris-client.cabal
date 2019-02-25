@@ -1,4 +1,4 @@
-name:                  ambiata-boris-client
+name:                  boris-client
 version:               0.0.1
 license:               BSD3
 author:                Ambiata <info@ambiata.com>
@@ -71,7 +71,7 @@ executable boris
   build-depends:
                       base
                     , ambiata-boris-core
-                    , ambiata-boris-client
+                    , boris-client
                     , ambiata-boris-representation
                     , ambiata-p
                     , ambiata-snooze
@@ -107,7 +107,7 @@ test-suite test-io
                       base                            >= 3          && < 5
                     , ambiata-boris-core
                     , ambiata-boris-core-test
-                    , ambiata-boris-client
+                    , boris-client
                     , ambiata-disorder-core
                     , ambiata-disorder-corpus
                     , ambiata-p

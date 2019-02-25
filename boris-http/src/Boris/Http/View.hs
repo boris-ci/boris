@@ -5,11 +5,17 @@
 module Boris.Http.View (
     shower
   , render
+  , page
+  , renderPage
   ) where
 
+import qualified Boris.Http.Template.Layout.Page as Template
 import           Boris.Prelude
+
 import           Data.Text (Text)
 import qualified Data.Text as Text
+
+import qualified Projector.Hydrant as Hydrant
 
 import           System.IO (IO)
 
@@ -347,3 +353,15 @@ authenticated a context =
          AuthenticatedByDesign _ ->
            BMXString "boris")]])
 --}
+
+
+renderPage :: Hydrant.Html -> Spock.ActionT IO a
+renderPage body =
+  Spock.html . Hydrant.toText $ page body
+
+page :: Hydrant.Html -> Hydrant.Html
+page body =
+  mconcat [
+      Hydrant.doctype "html"
+    , Template.layoutPage body
+    ]

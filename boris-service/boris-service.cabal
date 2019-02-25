@@ -1,4 +1,4 @@
-name:                  ambiata-boris-service
+name:                  boris-service
 version:               0.0.1
 license:               BSD3
 author:                Ambiata <info@ambiata.com>
@@ -80,7 +80,7 @@ executable boris-service
                       base
                     , async
                     , ambiata-boris-core
-                    , ambiata-boris-service
+                    , boris-service
                     , ambiata-boris-queue
                     , ambiata-mismi-core
                     , ambiata-mismi-dynamodb
@@ -111,7 +111,7 @@ executable boris-build
                     , async
                     , ambiata-boris-core
                     , ambiata-boris-client
-                    , ambiata-boris-service
+                    , boris-service
                     , ambiata-boris-queue
                     , ambiata-p
                     , ambiata-snooze
@@ -146,7 +146,7 @@ test-suite test
                       base                            >= 3          && < 5
                     , ambiata-boris-core
                     , ambiata-boris-core-test
-                    , ambiata-boris-service
+                    , boris-service
                     , ambiata-boris-queue
                     , ambiata-disorder-core
                     , ambiata-disorder-corpus
@@ -172,7 +172,7 @@ test-suite test-io
                       base                            >= 3          && < 5
                     , ambiata-boris-core
                     , ambiata-boris-core-test
-                    , ambiata-boris-service
+                    , boris-service
                     , ambiata-boris-queue
                     , ambiata-disorder-core
                     , ambiata-disorder-corpus

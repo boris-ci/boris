@@ -1,0 +1,19 @@
+-- machinator @ v3
+
+data BuildStatus =
+    BuildOk
+  | BuildKo
+  | BuildUndecided
+
+data HasLog =
+    HasLog
+  | NoLog
+
+record Build = {
+    id : String
+  , log : HasLog
+  , project : String
+  , build : String
+  , ref : Maybe String
+  , commit : Maybe String
+  }

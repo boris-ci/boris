@@ -1,0 +1,40 @@
+\ status : BuildStatus -> build : Build -> Html =
+
+{
+case status of
+  BuildOk ->
+    <div style="float:right; height:50px; width: 50px; background-color: #16CC55; border-radius: 10px;"></div>
+  BuildKo ->
+    <div style="float:right; height:50px; width: 50px; background-color: #ef6464; border-radius: 10px;"></div>
+  BuildUndecided ->
+    <div style="float:right; height:50px; width: 50px; background-color: #c9c1c1; border-radius: 10px;"></div>
+}
+
+<h2><a href="/build/{{build.id}}">#{{build.id}}</a></h2>
+
+{
+case build.log of
+  HasLog ->
+    <div><a href="/build/{{build.id}}/log">[log]</a></div>
+  NoLog ->
+    { blank }
+}
+
+<div>project: <a href="/project/{{build.project}}">{{build.project}}</a></div>
+<div>build: <a href="/project/{{build.project}}/build/{{build.build}}">{{build.build}}</a></div>
+
+{
+case build.ref of
+  Nothing ->
+    { blank }
+  Just ref ->
+    <div>ref: {{ref}}</div>
+}
+
+{
+case build.commit of
+  Nothing ->
+    { blank }
+  Just commit ->
+    <div>commit: <a href="/project/{{build.project}}/commit/{{commit}}">{{commit}}</a></div>
+}
