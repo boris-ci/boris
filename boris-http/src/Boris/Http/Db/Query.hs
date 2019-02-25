@@ -56,7 +56,7 @@ import           Database.PostgreSQL.Simple ((:.) (..))
 
 import           Traction.Control (MonadDb)
 import qualified Traction.Control as Traction
-import           Traction.Sql (sql)
+import           Traction.QQ (sql)
 import qualified Traction.Sql as Traction
 
 

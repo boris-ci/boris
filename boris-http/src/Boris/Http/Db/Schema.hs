@@ -15,7 +15,7 @@ import           Traction.Control (DbPool, DbError, Db)
 import qualified Traction.Control as Traction
 import           Traction.Migration (Migration (..))
 import qualified Traction.Migration as Traction
-import           Traction.Sql (sql)
+import           Traction.QQ (sql)
 
 
 initialise :: DbPool -> EitherT DbError IO ()
