@@ -15,7 +15,8 @@ import           Control.Monad.Morph (hoist, lift)
 
 import qualified Nest
 
-import           Traction.Control
+import           Traction.Control (Db, DbPool)
+import qualified Traction.Control as Traction
 
 import           Hedgehog
 
@@ -29,12 +30,12 @@ mkPool =
       Nest.string "BORIS_POSTGRES"
         `Nest.withDefault`
           "dbname=boris_test host=localhost user=boris_test password=boris_test port=5432"
-    newPool dbstring
+    Traction.newRollbackPool dbstring
 
 db :: Db a -> PropertyT IO a
 db x = do
   pool <- mkPool
-  evalExceptT . hoist lift . testDb pool $ migrate >> x
+  evalExceptT . hoist lift . Traction.runDb pool $ migrate >> x
 
 checkDb :: MonadIO m => Group -> m Bool
 checkDb group =

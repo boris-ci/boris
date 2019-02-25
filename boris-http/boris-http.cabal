@@ -108,8 +108,11 @@ test-suite test
     , http-client
     , http-client-tls
     , mmorph
+    , nest
     , network
     , Spock-core
+    , text
+    , traction
     , warp
 
   other-modules:
