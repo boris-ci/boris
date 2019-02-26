@@ -1,4 +1,4 @@
-\ body : Html -> Html =
+\ username : Maybe String -> body : Html -> Html =
 <html lang="en">
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -22,6 +22,17 @@
         <div id="header">
           <div class="header-wrapper">
             <a href="/">boris</a>
+
+            {
+            case username of
+              Nothing ->
+                { blank }
+              Just v ->
+                <div style="float: right;">
+                  <a href="/settings">{{ v }}</a>
+                  <a href="/logout">[logout]</a>
+                </div>
+            }
           </div>
         </div>
 

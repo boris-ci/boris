@@ -10,6 +10,13 @@ data Build
              buildProject :: !Projector.Html.Runtime.Text,
              buildBuild :: !Projector.Html.Runtime.Text,
              buildRef :: !(Projector.Html.Runtime.Maybe Projector.Html.Runtime.Text),
-             buildCommit :: !(Projector.Html.Runtime.Maybe Projector.Html.Runtime.Text)}
+             buildCommit :: !(Projector.Html.Runtime.Maybe Projector.Html.Runtime.Text),
+             buildQueued :: !(Projector.Html.Runtime.Maybe Projector.Html.Runtime.Text),
+             buildStarted :: !(Projector.Html.Runtime.Maybe Projector.Html.Runtime.Text),
+             buildEnded :: !(Projector.Html.Runtime.Maybe Projector.Html.Runtime.Text),
+             buildHeartbeat :: !(Projector.Html.Runtime.Maybe Projector.Html.Runtime.Text),
+             buildDuration :: !(Projector.Html.Runtime.Maybe Projector.Html.Runtime.Text),
+             buildResult :: !(Projector.Html.Runtime.Maybe Projector.Html.Runtime.Text),
+             buildCancelable :: !Projector.Html.Runtime.Bool}
 data BuildStatus = BuildOk | BuildKo | BuildUndecided
 data HasLog = HasLog | NoLog

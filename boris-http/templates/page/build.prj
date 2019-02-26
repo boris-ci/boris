@@ -38,3 +38,76 @@ case build.commit of
   Just commit ->
     <div>commit: <a href="/project/{{build.project}}/commit/{{commit}}">{{commit}}</a></div>
 }
+
+{
+case build.queued of
+  Nothing ->
+    { blank }
+  Just queued ->
+    <div>queued at: {{queued}}</div>
+}
+
+{
+case build.started of
+  Nothing ->
+    { blank }
+  Just started ->
+    <div>started at: {{started}}</div>
+}
+
+{
+case build.ended of
+  Nothing ->
+    { blank }
+  Just ended ->
+    <div>ended at: {{ended}}</div>
+}
+
+{
+case build.heartbeat of
+  Nothing ->
+    { blank }
+  Just heartbeat ->
+    <div>heartbeat at: {{heartbeat}}</div>
+}
+
+{
+case build.duration of
+  Nothing ->
+    { blank }
+  Just duration ->
+    <div>duration: {{duration}}</div>
+}
+
+{
+case build.result of
+  Nothing ->
+    { blank }
+  Just result ->
+    <div>result: {{result}}</div>
+}
+
+<div>
+    <form action="/project/{{build.project}}/build/{{build.build}}" method="post">
+      <button class="btn" type="submit">build again</button>
+      {
+      case build.ref of
+        Nothing ->
+          { blank }
+        Just ref ->
+          <input type="hidden" name="ref" value="{{ref}}"/>
+      }
+    </form>
+</div>
+
+{
+  case build.cancelable of
+    False ->
+      { blank }
+    True ->
+       <div>
+         <form action="/build/{{build.id}}/cancel" method="post">
+           <button class="btn" type="submit">cancel</button>
+         </form>
+       </div>
+}

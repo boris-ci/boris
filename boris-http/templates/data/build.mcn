@@ -16,4 +16,11 @@ record Build = {
   , build : String
   , ref : Maybe String
   , commit : Maybe String
+  , queued : Maybe String
+  , started : Maybe String
+  , ended : Maybe String
+  , heartbeat : Maybe String
+  , duration : Maybe String
+  , result : Maybe String
+  , cancelable : Bool
   }
