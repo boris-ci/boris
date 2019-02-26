@@ -1,12 +1,10 @@
-{{#> frame }}
-  <p>
+<p>
     Welcome to boris, since this is your first time we
     have to do some configuration... If you don't want
     to see this screen on first load, set the <code>BORIS_TENANCY</code>
     environment variable to <code>single</code> or <code>multi</code>.
-  </p>
-  <form action="/configure" method="post">
+</p>
+<form action="/configure" method="post">
     <button name="single" class="btn" type="submit">single tenancy</button>
     <button name="multi" class="btn" type="submit">multi tenancy</button>
-  </form>
-{{/frame}}
+</form>
