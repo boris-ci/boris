@@ -1,0 +1,10 @@
+<p>
+  Lets configure a new project...
+</p>
+<form action="/project" method="post">
+  <div><label>Name: </label></div>
+  <div><input name="project" type="text"></input></div>
+  <div><label>Repository URL: </label></div>
+  <div><input name="repository" type="text"></input></div>
+  <button name="create" class="btn" type="submit">create</button>
+</form>
