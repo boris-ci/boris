@@ -7,6 +7,8 @@ import qualified Projector.Html.Runtime
 import Boris.Http.Template.Data.Build.Data
 import Boris.Http.Template.Data.Commit.Data
 import Boris.Http.Template.Data.Project.Data
+import Boris.Http.Template.Page.Builds.Data
+import Boris.Http.Template.Page.Status.Data
 pageProjects :: [Projector.Html.Runtime.Text] ->
                 Projector.Html.Runtime.Html
 pageProjects = \projects -> Projector.Html.Runtime.foldHtml [Projector.Html.Runtime.parentNode (Projector.Html.Runtime.Tag "div") (Projector.Html.Runtime.fold []) (Projector.Html.Runtime.foldHtml [Projector.Html.Runtime.textNodeUnescaped "Create a ",

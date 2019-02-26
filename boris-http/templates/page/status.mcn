@@ -1,0 +1,11 @@
+-- machinator @ v3
+
+record Status = {
+    builds : List StatusBuild
+  }
+
+record StatusBuild = {
+    project : String
+  , build : String
+  , id : String
+  }

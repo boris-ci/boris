@@ -1,0 +1,4 @@
+<h3>Settings</h3>
+<form action="/settings/import" method="post">
+    <button name="import" class="btn" type="submit">Import from GitHub</button>
+</form>

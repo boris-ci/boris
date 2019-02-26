@@ -1,0 +1,34 @@
+\ builds : Builds -> Html =
+
+
+<h2><a href="/project/{{builds.project}}">{{builds.project}}</a> : <a href="/project/{{builds.project}}/build/{{builds.build}}">{{builds.build}}</a></h2>
+
+{
+case isEmpty builds.queued of
+  True ->
+    { blank }
+  False ->
+    <div>
+      <h4>[queued]</h2>
+      {
+      each builds.queued \queued ->
+        <span>
+          <a href="/build/{{queued}}">#{{queued}}</a>
+        </span>
+      }
+    </div>
+}
+{
+each builds.refs \ref ->
+  <div>
+    <h4>{{ref.name}}</h4>
+    <div>
+    {
+      each ref.builds \b ->
+      <span>
+        <a href="/build/{{b}}">#{{b}}</a>
+      </span>
+    }
+    </div>
+  </div>
+}

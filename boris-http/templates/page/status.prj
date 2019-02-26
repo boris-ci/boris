@@ -1,0 +1,21 @@
+\ status : Status -> Html =
+
+{
+case isEmpty status.builds of
+  True ->
+    <p>All builds are green.</p>
+  False ->
+    <p>
+      Builds that are currently borked:
+      {
+      each status.builds \b ->
+        <div>
+          <a href="/project/{{b.project}}">{{b.project}}</a>
+          :
+          <a href="/project/{{b.project}}/build/{{b.build}}">{{b.build}}</a>
+          :
+          <a href="/build/{{b.id}}">{{b.id}}</a>
+        </div>
+      }
+    </p>
+}

@@ -7,6 +7,8 @@ import qualified Projector.Html.Runtime
 import Boris.Http.Template.Data.Build.Data
 import Boris.Http.Template.Data.Commit.Data
 import Boris.Http.Template.Data.Project.Data
+import Boris.Http.Template.Page.Builds.Data
+import Boris.Http.Template.Page.Status.Data
 layoutPage :: Projector.Html.Runtime.Maybe Projector.Html.Runtime.Text ->
               Projector.Html.Runtime.Html -> Projector.Html.Runtime.Html
 layoutPage = \username -> \body -> Projector.Html.Runtime.parentNode (Projector.Html.Runtime.Tag "html") (Projector.Html.Runtime.fold [[Projector.Html.Runtime.Attribute (Projector.Html.Runtime.AttributeKey "lang") (Projector.Html.Runtime.AttributeValue "en")]]) (Projector.Html.Runtime.foldHtml [Projector.Html.Runtime.textNodeUnescaped " ",

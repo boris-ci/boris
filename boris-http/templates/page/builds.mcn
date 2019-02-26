@@ -1,0 +1,13 @@
+-- machinator @ v3
+
+record Builds = {
+    project : String
+  , build : String
+  , queued : List String
+  , refs : List BuildRef
+  }
+
+record BuildRef = {
+    name : String
+  , builds : List String
+  }
