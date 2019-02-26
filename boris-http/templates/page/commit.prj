@@ -1,0 +1,16 @@
+\ commit : Commit -> Html =
+
+<h2><a href="/project/{{commit.project}}">{{commit.project}}</a> : <a href="/project/{{commit.project}}/commit/{{commit.commit}}">{{commit.commit}}</a></h2>
+
+{
+each commit.builds \build ->
+    <div>
+        <h4><a href="/project/{{commit.project}}/build/{{build.name}}">{{build.name}}</a></h4>
+        <div>
+        {
+            each build.ids \id ->
+            <span><a href="/build/{{id}}">#{{id}}</a></span>
+        }
+        </div>
+    </div>
+}

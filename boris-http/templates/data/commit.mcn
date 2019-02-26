@@ -1,0 +1,12 @@
+-- machinator @ v3
+
+record CommitBuild = {
+    name : String
+  , ids : List String
+  }
+
+record Commit = {
+    project : String
+  , commit : String
+  , builds : List CommitBuild
+  }
