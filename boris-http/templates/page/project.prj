@@ -1,0 +1,8 @@
+\ project : Project -> Html =
+
+<h2><a href="/project/{{project.name}}">{{project.name}}</a></h2>
+
+{
+each project.builds \build ->
+    <div><a href="/project/{{project.name}}/build/{{build}}">{{project.name}} : {{build}}</a></div>
+}

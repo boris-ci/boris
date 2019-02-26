@@ -1,0 +1,15 @@
+\ projects : List String -> Html =
+
+<div>Create a <a href="/project/new">new project</a></div>
+{
+case isEmpty projects of
+    True ->
+        { blank }
+    False ->
+        <h3>projects</h3>
+}
+
+{
+each projects \project ->
+  <div><a href="/project/{{project}}">{{project}}</a></div>
+}

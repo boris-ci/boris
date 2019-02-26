@@ -6,6 +6,7 @@ module Boris.Http.Template.Page.Build where
 import qualified Projector.Html.Runtime
 import Boris.Http.Template.Data.Build.Data
 import Boris.Http.Template.Data.Commit.Data
+import Boris.Http.Template.Data.Project.Data
 pageBuild :: BuildStatus -> Build -> Projector.Html.Runtime.Html
 pageBuild = \status -> \build -> Projector.Html.Runtime.foldHtml [case status of
                                                                       BuildOk -> Projector.Html.Runtime.foldHtml [Projector.Html.Runtime.parentNode (Projector.Html.Runtime.Tag "div") (Projector.Html.Runtime.fold [[Projector.Html.Runtime.Attribute (Projector.Html.Runtime.AttributeKey "style") (Projector.Html.Runtime.AttributeValue "float:right; height:50px; width: 50px; background-color: #16CC55; border-radius: 10px;")]]) (Projector.Html.Runtime.foldHtml []),

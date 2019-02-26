@@ -6,6 +6,7 @@ module Boris.Http.Template.Page.Newproject where
 import qualified Projector.Html.Runtime
 import Boris.Http.Template.Data.Build.Data
 import Boris.Http.Template.Data.Commit.Data
+import Boris.Http.Template.Data.Project.Data
 pageNewproject :: Projector.Html.Runtime.Html
 pageNewproject = Projector.Html.Runtime.foldHtml [Projector.Html.Runtime.parentNode (Projector.Html.Runtime.Tag "p") (Projector.Html.Runtime.fold []) (Projector.Html.Runtime.textNodeUnescaped " Lets configure a new project... "),
                                                   Projector.Html.Runtime.textNodeUnescaped " ",

@@ -1,0 +1,6 @@
+-- machinator @ v3
+
+record Project = {
+    name : String
+  , builds : List String
+  }

@@ -6,6 +6,7 @@ module Boris.Http.Template.Page.Login where
 import qualified Projector.Html.Runtime
 import Boris.Http.Template.Data.Build.Data
 import Boris.Http.Template.Data.Commit.Data
+import Boris.Http.Template.Data.Project.Data
 pageLogin :: Projector.Html.Runtime.Text ->
              Projector.Html.Runtime.Html
 pageLogin = \client -> Projector.Html.Runtime.parentNode (Projector.Html.Runtime.Tag "a") (Projector.Html.Runtime.fold [[Projector.Html.Runtime.Attribute (Projector.Html.Runtime.AttributeKey "href") (Projector.Html.Runtime.AttributeValue (Projector.Html.Runtime.concat ["https://github.com/login/oauth/authorize?scope=user:email%20repo&client_id=",
