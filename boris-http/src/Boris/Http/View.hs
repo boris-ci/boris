@@ -3,17 +3,59 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Boris.Http.View (
-    shower
-  , render
-  , page
+    page
+  , scoreboard
+  , login
+  , dashboard
+  , newproject
+  , settings
+  , configure
+  , serverError
+  , status
+  , projects
+  , project
+  , builds
+  , commit
+  , build
   , renderPage
+  , renderAuthenticated
+  , renderUnauthenticated
+  , renderScoreboard
+  , renderTime
+  , renderDuration
   ) where
 
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Project
+import           Boris.Http.Data
 import qualified Boris.Http.Template.Layout.Page as Template
+import qualified Boris.Http.Template.Data.Build.Data as Template
+import qualified Boris.Http.Template.Data.Commit.Data as Template
+import qualified Boris.Http.Template.Data.Project.Data as Template
+import qualified Boris.Http.Template.Page.Build as Template
+import qualified Boris.Http.Template.Page.Builds as Template
+import qualified Boris.Http.Template.Page.Builds.Data as Template
+import qualified Boris.Http.Template.Page.Commit as Template
+import qualified Boris.Http.Template.Page.Configure as Template
+import qualified Boris.Http.Template.Page.Dashboard as Template
+import qualified Boris.Http.Template.Page.Error as Template
+import qualified Boris.Http.Template.Page.Login as Template
+import qualified Boris.Http.Template.Page.Newproject as Template
+import qualified Boris.Http.Template.Page.Project as Template
+import qualified Boris.Http.Template.Page.Projects as Template
+import qualified Boris.Http.Template.Page.Scoreboard as Template
+import qualified Boris.Http.Template.Page.Settings as Template
+import qualified Boris.Http.Template.Page.Status as Template
+import qualified Boris.Http.Template.Page.Status.Data as Template
 import           Boris.Prelude
 
+import qualified Data.List as List
+import           Data.Map (Map)
+import qualified Data.Map as Map
 import           Data.Text (Text)
 import qualified Data.Text as Text
+import           Data.Time (UTCTime, defaultTimeLocale, diffUTCTime, formatTime)
+
 
 import qualified Projector.Hydrant as Hydrant
 
@@ -22,249 +64,110 @@ import           System.IO (IO)
 import qualified Web.Spock.Core as Spock
 
 
-shower :: Show a => Text -> a -> Text
-shower label a =
-  mconcat [label, " = ", Text.pack . show $ a]
+dashboard :: Hydrant.Html
+dashboard =
+  Template.pageDashboard
 
-render :: Text -> Spock.ActionT IO a
-render x =
-  Spock.text x
+newproject :: Hydrant.Html
+newproject =
+  Template.pageNewproject
 
-{--
-    dashboard
-  , newproject
-  , configure
-  , status
-  , projects
-  , project
-  , builds
-  , commit
-  , build
-  , serverError
-  , scoreboard
-  , settings
-  , login
-  , render
-  ) where
+settings :: Hydrant.Html
+settings =
+  Template.pageSettings
 
---import           Boris.Http.BMX (BMXError, renderBMXError)
---import           Boris.Http.BMX (BMXState, Template, partialFromTemplate, renderPage, renderTemplate, templateFile)
---import           Boris.Http.BMX (BMXValue (..), defaultState, usingContext, usingPartials)
-
-import           Boris.Core.Data.Build
-import           Boris.Core.Data.Project
-import           Boris.Http.Data
-import           Boris.Prelude
-
-import           Control.Monad.IO.Class (MonadIO (..))
-
-import           Data.Map (Map)
-import qualified Data.Map as M
-import qualified Data.Text as Text
-import qualified Data.Text.IO as Text
-import           Data.Time (UTCTime, defaultTimeLocale, diffUTCTime, formatTime)
-
-import qualified Network.HTTP.Types as HTTP
-
-import           System.IO (IO)
-import qualified System.IO as IO
-
-
-import qualified Web.Spock.Core as Spock
-
-render :: Either BMXError Text -> Spock.ActionT IO a
-render x =
-  case x of
-    Left err -> do
-      eid <- liftIO newErrorId
-      liftIO $ Text.hPutStrLn IO.stderr (mconcat [errorId eid, " ", "Template error: ", renderBMXError err])
-      Spock.setStatus HTTP.status500
-      case serverError eid of
-        Left err' -> do
-          liftIO $ Text.hPutStrLn IO.stderr (mconcat [errorId eid, " ", "Template can't even error: ", renderBMXError err'])
-          Spock.html $ "Couldn't even render the 500 page, take this as a serious issue: " <> errorId eid
-        Right content ->
-          Spock.html content
-    Right content ->
-      Spock.html content
-
-
-dashboard :: AuthenticatedBy -> Either BMXError Text
-dashboard a =
-  let
-    context = [
-      ]
-  in
-    renderPage <$> renderTemplate (authenticated a context) dashboard'
-
-newproject :: AuthenticatedBy -> Either BMXError Text
-newproject a =
-  let
-    context = [
-      ]
-  in
-    renderPage <$> renderTemplate (authenticated a context) newproject'
-
-settings :: AuthenticatedBy -> Either BMXError Text
-settings a =
-  let
-    context = [
-      ]
-  in
-    renderPage <$> renderTemplate (authenticated a context) settings'
-
-configure :: Either BMXError Text
+configure :: Hydrant.Html
 configure =
-  let
-    context = [
-      ]
-  in
-    renderPage <$> renderTemplate (unauthenticated `usingContext` context) configure'
+  Template.pageConfigure
 
--- FIX error id
-serverError :: ErrorId -> Either BMXError Text
-serverError e =
-  let
-    context = [
-        ("error", BMXString . errorId $ e)
-      ]
-  in
-    renderPage <$> renderTemplate (unauthenticated `usingContext` context) serverError'
+serverError :: ErrorId -> Hydrant.Html
+serverError =
+  Template.pageError . errorId
 
-status :: AuthenticatedBy -> [Result] -> Either BMXError Text
-status a bs =
-  let
-    buildSort b = (resultProject b, resultBuild b)
-    context = [
-        (,) "builds" $ BMXList . flip fmap (sortOn buildSort bs) $ \b ->
-          BMXContext [
-              (,) "project" (BMXString . renderProject $ resultProject b)
-            , (,) "build" (BMXString . renderBuild $ resultBuild b)
-            , (,) "id" (BMXString . renderBuildId $ resultBuildId b)
-            ]
-      ]
-  in
-    renderPage <$> renderTemplate (authenticated a context) status'
+status :: [Result] -> Hydrant.Html
+status bs =
+  Template.pageStatus . Template.Status .
+    with (List.sortOn (\b -> (resultProject b, resultBuild b)) bs) $ \b ->
+      Template.StatusBuild
+        (renderProject . resultProject $ b)
+        (renderBuild . resultBuild $ b)
+        (renderBuildId . resultBuildId $ b)
 
 
-scoreboard :: AuthenticatedBy -> [Result] -> Either BMXError Text
-scoreboard a bs =
-  let
-    allOk = all ((== BuildOk) . resultBuildResult) bs
-    buildClass = case allOk of
-      False -> "notOk"
-      True -> "ok"
-    context = [
-        (,) "buildClass" $ BMXString buildClass
-      ]
-  in
-    renderPage <$> renderTemplate (authenticated a context) scoreboard'
+projects :: [Definition] -> Hydrant.Html
+projects definitions =
+  Template.pageProjects (fmap (renderProject . definitionProject) $ definitions)
 
+project :: Project -> [Build] -> Hydrant.Html
+project p bs =
+  Template.pageProject $
+    Template.Project (renderProject p) (List.sort . fmap renderBuild $ bs)
 
-projects :: AuthenticatedBy -> [Definition] -> Either BMXError Text
-projects a definitions =
-  let
-    context = [
-        ("projects", BMXList $ with (sortOn (\d -> (definitionSource d, definitionOwner d, definitionProject d)) definitions) $ \d ->
-          BMXContext $ [
-            ("qualified", BMXString . mconcat $ [
-                  renderSource . definitionSource $ d
-                , ":", getOwnerName . ownerName . definitionOwner $ d
-                , ":", renderProject . definitionProject $ d
-                ])
-          , ("short", BMXString . mconcat $ [
-                  getOwnerName . ownerName . definitionOwner $ d
-                , "/", renderProject . definitionProject $ d
-                ])
-          , ("name", BMXString . renderProject . definitionProject $ d)
-          ])
-      ]
-  in
-    renderPage <$> renderTemplate (authenticated a context) projects'
-
-project :: AuthenticatedBy -> Project -> [Build] -> Either BMXError Text
-project a p bs =
-  let
-    context = [
-        ("project", BMXString (renderProject p))
-      , ("builds", BMXList ((BMXString . renderBuild) <$> sortOn renderBuild bs))
-      ]
-  in
-    renderPage <$> renderTemplate (authenticated a context) project'
-
-builds :: AuthenticatedBy -> BuildTree -> [BuildId] -> Either BMXError Text
-builds a (BuildTree p b refs) queued =
+builds :: BuildTree -> [BuildId] -> Hydrant.Html
+builds (BuildTree p b refs) queued =
   let
     sorted =
-      reverse $ sortOn (\(BuildTreeRef _ is) -> head . sortBuildIds $ is) refs
-
-    toRef (BuildTreeRef r is) = [
-        ("name", BMXString $ renderRef r)
-      , ("builds", BMXList $ (BMXString . renderBuildId) <$> sortBuildIds is)
-      ]
-
-    context = [
-        ("project", BMXString (renderProject p))
-      , ("build", BMXString (renderBuild b))
-      , ("refs", BMXList $ fmap (BMXContext . toRef) sorted)
-      , ("queued", BMXList ((BMXString . renderBuildId) <$> sortBuildIds queued))
-      ]
+      List.reverse $ List.sortOn (\(BuildTreeRef _ is) -> head . sortBuildIds $ is) refs
   in
-    renderPage <$> renderTemplate (authenticated a context) builds'
+    Template.pageBuilds $
+      Template.Builds
+        (renderProject p)
+        (renderBuild b)
+        (renderBuildId <$> sortBuildIds queued)
+        (with sorted $ \(BuildTreeRef r is) ->
+          Template.BuildRef (renderRef r) (renderBuildId <$> sortBuildIds is))
 
-commit :: AuthenticatedBy -> Project -> Commit -> [BuildData] -> Either BMXError Text
-commit a p c bs =
+commit :: Project -> Commit -> [BuildData] -> Hydrant.Html
+commit p c bs =
   let
     byBuild =
-      M.toList . mapFromListGrouped . fmap (\b -> (buildDataBuild b, buildDataId b)) $ bs
-    context = [
-        ("project", BMXString (renderProject p))
-      , ("commit", BMXString (renderCommit c))
-      , ("builds", BMXList . flip fmap byBuild $ (\(b, ids) -> BMXContext [
-          ("name", BMXString $ renderBuild b)
-        , ("ids", BMXList . fmap (BMXString . renderBuildId) . sortBuildIds $ ids)
-        ]))
-      ]
+      Map.toList . mapFromListGrouped . fmap (\b -> (buildDataBuild b, buildDataId b)) $ bs
   in
-    renderPage <$> renderTemplate (authenticated a context) commit'
+    Template.pageCommit $
+      Template.Commit
+        (renderProject p)
+        (renderCommit c)
+        (with byBuild $ \(b, ids) ->
+          Template.CommitBuild
+          (renderBuild b)
+          (renderBuildId <$> sortBuildIds ids))
 
-build :: AuthenticatedBy -> BuildData -> Either BMXError Text
-build a b =
+build :: BuildData -> Hydrant.Html
+build b =
   let
-    context = [
-        ("project", BMXString (renderProject . buildDataProject $ b))
-      , ("build", BMXString (renderBuild . buildDataBuild $ b))
-      , ("id", BMXString (renderBuildId . buildDataId $ b))
-      , ("ref", maybe BMXNull (BMXString . renderRef) . buildDataRef $ b)
-      , ("commit", maybe BMXNull (BMXString . renderCommit) . buildDataCommit $ b)
-      , ("queued", maybe BMXNull (BMXString . renderTime) . buildDataQueueTime $ b)
-      , ("started", maybe BMXNull (BMXString . renderTime) . buildDataStartTime $ b)
-      , ("ended", maybe BMXNull (BMXString . renderTime) . buildDataEndTime $ b)
-      , ("hearbeat", maybe BMXNull (BMXString . renderTime) . buildDataHeartbeatTime $ b)
-      , ("duration", maybe BMXNull (BMXString . uncurry renderDuration) $ liftA2 (,) (buildDataStartTime b) (buildDataEndTime b))
-      , ("result", maybe BMXNull (BMXString . renderBuildResult) $ buildDataResult b)
-      , ("ok", maybe BMXNull (BMXBool . (==) BuildOk) $ buildDataResult b)
-      , ("ko", maybe BMXNull (BMXBool . (==) BuildKo) $ buildDataResult b)
-      , ("undecided", maybe (BMXBool True) (const $ BMXNull) $ buildDataResult b)
-      , ("cancel", BMXBool ((isNothing . buildDataResult $ b) && (notCancelled (buildDataCancelled b))))
-      ]
+    s =
+      case buildDataResult b of
+        Nothing ->
+          Template.BuildUndecided
+        Just BuildOk ->
+          Template.BuildOk
+        Just BuildKo ->
+          Template.BuildKo
   in
-    renderPage <$> renderTemplate (authenticated a context) build'
+    Template.pageBuild s $
+      Template.Build
+        (renderBuildId . buildDataId $ b)
+        (Template.HasLog)
+        (renderProject . buildDataProject $ b)
+        (renderBuild . buildDataBuild $ b)
+        (fmap renderRef . buildDataRef $ b)
+        (fmap renderCommit . buildDataCommit $ b)
+        (fmap renderTime . buildDataQueueTime $ b)
+        (fmap renderTime . buildDataStartTime $ b)
+        (fmap renderTime . buildDataEndTime $ b)
+        (fmap renderTime . buildDataHeartbeatTime $ b)
+        (fmap (uncurry renderDuration) $ liftA2 (,) (buildDataStartTime b) (buildDataEndTime b))
+        (fmap renderBuildResult . buildDataResult $ b)
+        ((isNothing . buildDataResult $ b) && buildDataCancelled b /= (Just BuildCancelled))
 
-  where
-    notCancelled :: Maybe BuildCancelled -> Bool
-    notCancelled r = case r of
-                       Just BuildNotCancelled -> True
-                       _ -> False
 
-login :: GithubClient -> Either BMXError Text
+mapFromListGrouped :: Ord a => [(a, b)] -> Map a [b]
+mapFromListGrouped =
+  foldr (\(k, v) -> Map.insertWith (<>) k [v]) Map.empty
+
+login :: GithubClient -> Hydrant.Html
 login client =
-  let
-    context = [
-       ("client", BMXString (githubClient client))
-     ]
-  in
-    renderPage <$> renderTemplate (unauthenticated `usingContext` context) login'
+  Template.pageLogin (githubClient client)
 
 renderTime :: UTCTime -> Text
 renderTime =
@@ -274,94 +177,40 @@ renderDuration :: UTCTime -> UTCTime -> Text
 renderDuration s e =
   mconcat [Text.pack . show $ ((round (diffUTCTime e s)) :: Integer), "s"]
 
-mapFromListGrouped :: Ord a => [(a, b)] -> Map a [b]
-mapFromListGrouped =
-  foldr (\(k, v) -> M.insertWith (<>) k [v]) M.empty
+renderAuthenticated :: AuthenticatedBy -> Hydrant.Html -> Spock.ActionT IO a
+renderAuthenticated authentication =
+  renderPage (Just authentication)
 
-dashboard' :: Template
-dashboard' =
-  $(templateFile "template/dashboard.hbs")
+renderUnauthenticated :: Hydrant.Html -> Spock.ActionT IO a
+renderUnauthenticated =
+  renderPage Nothing
 
-configure' :: Template
-configure' =
-  $(templateFile "template/configure.hbs")
+renderPage :: Maybe AuthenticatedBy -> Hydrant.Html -> Spock.ActionT IO a
+renderPage authentication body =
+  Spock.html . Hydrant.toText $ page authentication body
 
-status' :: Template
-status' =
-  $(templateFile "template/status.hbs")
-
-projects' :: Template
-projects' =
-  $(templateFile "template/projects.hbs")
-
-project' :: Template
-project' =
-  $(templateFile "template/project.hbs")
-
-builds' :: Template
-builds' =
-  $(templateFile "template/builds.hbs")
-
-commit' :: Template
-commit' =
-  $(templateFile "template/commit.hbs")
-
-build' :: Template
-build' =
-  $(templateFile "template/build.hbs")
-
-serverError' :: Template
-serverError' =
-  $(templateFile "template/server-error.hbs")
-
-scoreboard' :: Template
-scoreboard' =
-  $(templateFile "template/scoreboard.hbs")
-
-login' :: Template
-login' =
-  $(templateFile "template/login.hbs")
-
-frame' :: Template
-frame' =
-  $(templateFile "template/frame.hbs")
-
-frameAuthenticated' :: Template
-frameAuthenticated' =
-  $(templateFile "template/frame-authenticated.hbs")
-
-newproject' :: Template
-newproject' =
-  $(templateFile "template/newproject.hbs")
-
-settings' :: Template
-settings' =
-  $(templateFile "template/settings.hbs")
-
-unauthenticated :: (Applicative m, Monad m) => BMXState m
-unauthenticated =
-  defaultState `usingPartials` [("frame", partialFromTemplate frame')]
-
-authenticated :: (Applicative m, Monad m) => AuthenticatedBy -> [(Text, BMXValue)] -> BMXState m
-authenticated a context =
-  defaultState
-    `usingPartials` [("frame", partialFromTemplate frameAuthenticated')]
-    `usingContext` (join [context, [("username",
-       case a of
-         AuthenticatedByGithub _ u ->
-           BMXString . githubLogin . githubUserLogin . userOf $ u
-         AuthenticatedByDesign _ ->
-           BMXString "boris")]])
---}
-
-
-renderPage :: Hydrant.Html -> Spock.ActionT IO a
-renderPage body =
-  Spock.html . Hydrant.toText $ page body
-
-page :: Hydrant.Html -> Hydrant.Html
-page body =
+page :: Maybe AuthenticatedBy -> Hydrant.Html -> Hydrant.Html
+page authenticattion body =
   mconcat [
       Hydrant.doctype "html"
-    , Template.layoutPage body
+    , Template.layoutPage (renderAuthenticatedBy <$> authenticattion) body
     ]
+
+renderScoreboard :: Bool -> Spock.ActionT IO a
+renderScoreboard =
+  Spock.html . Hydrant.toText . scoreboard
+
+scoreboard :: Bool -> Hydrant.Html
+scoreboard ok =
+  mconcat [
+      Hydrant.doctype "html"
+    , Template.pageScoreboard (Hydrant.AttributeValue $ bool "notOk" "ok" ok)
+    ]
+
+renderAuthenticatedBy :: AuthenticatedBy -> Text
+renderAuthenticatedBy a =
+  case a of
+    AuthenticatedByGithub _ u ->
+      githubLogin . githubUserLogin . userOf $ u
+    AuthenticatedByDesign _ ->
+      "boris"

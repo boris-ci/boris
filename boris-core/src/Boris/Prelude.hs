@@ -13,6 +13,7 @@ module Boris.Prelude (
   , maybeToRight
   , leftToMaybe
   , rightToMaybe
+  , head
   ) where
 
 import           Boris.Prelude.EitherT as X
@@ -33,7 +34,7 @@ import           Data.Monoid as X (Monoid (..), (<>))
 import           Data.Text as X (Text)
 import           Data.Traversable as X
 import           Data.Word as X (Word8, Word16, Word32, Word64)
-import           Prelude as X (Eq (..), Show (..), Ordering (..), Ord (..), Num (..), Enum, Bounded (..), Integral (..), Double, error, seq, fromIntegral, (/), (^), fst, snd, Integer, Real (..), floor, subtract, fromRational)
+import           Prelude as X (Eq (..), Show (..), Ordering (..), Ord (..), Num (..), Enum, Bounded (..), Integral (..), Double, error, seq, fromIntegral, (/), (^), fst, snd, Integer, Real (..), floor, round, subtract, fromRational, uncurry)
 import           Text.Read as X (Read (..), readMaybe)
 
 
@@ -85,3 +86,6 @@ leftToMaybe =
 rightToMaybe :: Either l r -> Maybe r
 rightToMaybe =
   either (const Nothing) Just
+
+head :: (Foldable f) => f a -> Maybe a
+head = foldr (\x _ -> return x) Nothing
