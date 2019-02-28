@@ -57,6 +57,7 @@ run = do
         IO.print ex
         defaultOnException req ex) $
           defaultSettings
+  IO.hPutStrLn IO.stderr . mconcat $ ["Running on port: ", show port]
   runSettings s app
 
 -- | orDieWithCode with an exit code of 1 in case of an error

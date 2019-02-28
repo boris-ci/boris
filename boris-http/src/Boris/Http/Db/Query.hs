@@ -124,8 +124,10 @@ getProjects :: MonadDb m => Project -> m [Build]
 getProjects project =
   (fmap . fmap) Build $ Traction.values $ Traction.query [sql|
       SELECT DISTINCT build
-        FROM build
-       WHERE project = ?
+        FROM build b
+        JOIN project p
+          ON b.project = p.id
+         AND p.name = ?
     |] (Traction.Only $ renderProject project)
 
 getProjectCommits :: MonadDb m => Project -> m [Commit]
@@ -450,11 +452,11 @@ getAccountProjects account = do
         Traction.liftDb $ Traction.failWith (Traction.DbNoResults q)
 
 createProject :: MonadDb m => (Identified OwnedBy) -> Project -> Repository -> m ()
-createProject owner project repository =
+createProject _owner project repository =
   void $ Traction.execute [sql|
-      INSERT INTO project (source, owner, name, repository, enabled)
-           VALUES (?, ?, ?, ?, true)
-    |] (sourceToInt BorisSource, getUserId . userIdOf $ owner, renderProject project, renderRepository repository)
+      INSERT INTO project (name, repository, enabled)
+           VALUES (?, ?, true)
+    |] (renderProject project, renderRepository repository)
 
 createOrGetOwnedBy :: MonadDb m => OwnedBy -> m (Identified OwnedBy)
 createOrGetOwnedBy o =

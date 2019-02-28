@@ -33,6 +33,76 @@ schema = [
       CREATE SEQUENCE tick START 1;
     |]
 
+  , Migration "create-organisation" [sql|
+      CREATE TABLE organisation (
+          id serial PRIMARY KEY
+        , name text NOT NULL UNIQUE
+        )
+    |]
+
+  , Migration "create-entity" [sql|
+      CREATE TABLE entity (
+          id SERIAL PRIMARY KEY
+        , entity_type INT NOT NULL
+        )
+    |]
+
+  , Migration "create-identity" [sql|
+      CREATE TABLE identity (
+          id SERIAL PRIMARY KEY REFERENCES entity(id)
+        , identity_type INT NOT NULL
+        )
+    |]
+
+  , Migration "create-identity-api-key" [sql|
+      CREATE TABLE identity_api_key (
+          id TEXT NOT NULL PRIMARY KEY
+        , identity BIGINT NOT NULL REFERENCES identity(id)
+        , public_jwk BYTEA NOT NULL
+        , created TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+    |]
+
+  , Migration "create-user-account" [sql|
+      CREATE TABLE user_account (
+          id BIGINT PRIMARY KEY NOT NULL REFERENCES identity(id)
+        , email TEXT NOT NULL UNIQUE
+        , name TEXT NOT NULL
+        , crypted TEXT
+        , default_organisation BIGINT REFERENCES organisation(id)
+        , created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+        )
+    |]
+
+  , Migration "create-github-account" [sql|
+      CREATE TABLE github_account (
+          id BIGINT PRIMARY KEY NOT NULL REFERENCES user_account(id)
+        , github_id BIGINT NOT NULL
+        , github_login TEXT NOT NULL
+        , github_name TEXT
+        , github_email TEXT
+        , created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+        , updated TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+        )
+    |]
+
+  , Migration "create-service-account" [sql|
+      CREATE TABLE service_account (
+          id BIGINT PRIMARY KEY NOT NULL REFERENCES identity(id)
+        , organisation BIGINT NOT NULL REFERENCES organisation(id)
+        , name TEXT NOT NULL
+        , UNIQUE (organisation, name)
+        )
+    |]
+
+  , Migration "create-organisation-user" [sql|
+      CREATE TABLE organisation_user (
+          organisation BIGINT NOT NULL REFERENCES organisation(id)
+        , user_account BIGINT NOT NULL REFERENCES user_account(id)
+        , UNIQUE (organisation, user_account)
+        )
+    |]
+
   , Migration "create-discover" [sql|
       CREATE TABLE discover (
           discover_id BIGINT PRIMARY KEY
@@ -50,17 +120,6 @@ schema = [
         , build TEXT NOT NULL
         , commit TEXT NOT NULL
         , PRIMARY KEY (discover_id, build, commit)
-        )
-    |]
-  , Migration "create-account" [sql|
-      CREATE TABLE account (
-          id SERIAL PRIMARY KEY
-        , github_id BIGINT NOT NULL
-        , github_login TEXT NOT NULL
-        , github_name TEXT
-        , github_email TEXT
-        , created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-        , updated TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
         )
     |]
 
@@ -108,18 +167,15 @@ schema = [
   , Migration "create-projects" [sql|
       CREATE TABLE project (
           id SERIAL PRIMARY KEY
-        , source INT NOT NULL
-        , owner BIGINT NOT NULL REFERENCES owner(id)
-        , name TEXT NOT NULL
+        , name TEXT NOT NULL UNIQUE
         , repository TEXT NOT NULL
         , enabled BOOLEAN NOT NULL
-        , UNIQUE (owner, name)
         )
     |]
 
   , Migration "create-account-projects" [sql|
       CREATE TABLE account_projects (
-          account BIGINT NOT NULL REFERENCES account(id)
+          account BIGINT NOT NULL REFERENCES user_account(id)
         , project BIGINT NOT NULL REFERENCES project(id)
         , permission INT NOT NULL
         , PRIMARY KEY (account, project)
