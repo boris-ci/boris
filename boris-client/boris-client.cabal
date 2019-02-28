@@ -13,7 +13,7 @@ description: boris-client
 library
   build-depends:
       base                            >= 3          && < 5
-    , aeson                           >= 0.8        && < 1.3
+    , aeson                           == 1.*
     , boris-core
     , boris-representation
     , async                           == 2.*
