@@ -1,116 +1,81 @@
-name:                  boris-client
-version:               0.0.1
-license:               BSD3
-author:                Ambiata <info@ambiata.com>
-maintainer:            Ambiata <info@ambiata.com>
-copyright:             (c) 2015 Ambiata.
-synopsis:              project
-category:              System
-cabal-version:         >= 1.8
-build-type:            Custom
-description:           boris-client
+name: boris-client
+version: 0.0.1
+license: BSD3
+author: Ambiata <info@ambiata.com>, Mark Hibberd <mark@hibberd.id.au>
+maintainer: Mark Hibberd <mark@hibberd.id.au>
+copyright: (c) 2015 Ambiata. (c) 2019 Mark Hibberd
+synopsis: project
+category: System
+cabal-version: >= 1.8
+build-type: Custom
+description: boris-client
 
 library
   build-depends:
-                      base                            >= 3          && < 5
-                    , aeson                           >= 0.8        && < 1.3
-                    , ambiata-boris-core
-                    , ambiata-boris-representation
-                    , ambiata-p
-                    , ambiata-snooze
-                    , ambiata-twine
-                    , ambiata-x-aeson
-                    , ambiata-x-eithert
-                    , amazonka-dynamodb               >= 1.3.6      && < 1.6
-                    , async                           == 2.*
-                    , bytestring                      == 0.10.*
-                    , conduit                         >= 1.2        && < 1.4
-                    , conduit-extra                   >= 1.1        && < 1.4
-                    , containers                      == 0.5.*
-                    , directory                       == 1.*
-                    , filepath                        == 1.*
-                    , lens                            >= 4.6        && < 4.16
-                    , http-client                     >= 0.4        && < 0.6
-                    , http-types                      >= 0.8        && < 0.13
-                    , mmorph                          >= 1.0        && < 1.2
-                    , process                         == 1.*
-                    , resourcet                       >= 1.1        && < 1.3
-                    , semigroups                      >= 0.16       && < 0.19
-                    , text                            == 1.2.*
-                    , time                            >= 1.5        && < 1.10
-                    , transformers                    >= 0.4        && < 0.6
-                    , old-locale                      == 1.0.*
-                    , unordered-containers            == 0.2.*
+      base                            >= 3          && < 5
+    , aeson                           >= 0.8        && < 1.3
+    , boris-core
+    , boris-representation
+    , async                           == 2.*
+    , bytestring                      == 0.10.*
+    , conduit                         >= 1.2        && < 1.4
+    , conduit-extra                   >= 1.1        && < 1.4
+    , containers                      == 0.5.*
+    , directory                       == 1.*
+    , filepath                        == 1.*
+    , lens                            >= 4.6        && < 4.16
+    , http-client                     >= 0.4        && < 0.6
+    , http-types                      >= 0.8        && < 0.13
+    , mmorph                          >= 1.0        && < 1.2
+    , process                         == 1.*
+    , resourcet                       >= 1.1        && < 1.3
+    , semigroups                      >= 0.16       && < 0.19
+    , text                            == 1.2.*
+    , time                            >= 1.5        && < 1.10
+    , transformers                    >= 0.4        && < 0.6
+    , unordered-containers            == 0.2.*
 
-  ghc-options:
-                    -Wall
-
-  hs-source-dirs:
-                    src
-
+  ghc-options: -Wall
+  hs-source-dirs: src
   exposed-modules:
-                    Boris.Client.Build
-                    Boris.Client.Data
-                    Boris.Client.Discover
-                    Boris.Client.Http
-                    Boris.Client.Log
-                    Boris.Client.Project
-                    Boris.Client.Scoreboard
-                    Boris.Client.Validate
+    Boris.Client.Build
+    Boris.Client.Data
+    Boris.Client.Discover
+    Boris.Client.Http
+    Boris.Client.Log
+    Boris.Client.Project
+    Boris.Client.Scoreboard
+    Boris.Client.Validate
 
 executable boris
-  ghc-options:
-                    -Wall -threaded -O2
-
-  hs-source-dirs:
-                    gen
-
-  main-is:
-                    ../main/boris.hs
-
+  ghc-options: -Wall -threaded -O2
+  hs-source-dirs: gen
+  main-is: ../main/boris.hs
   build-depends:
-                      base
-                    , ambiata-boris-core
-                    , boris-client
-                    , ambiata-boris-representation
-                    , ambiata-p
-                    , ambiata-snooze
-                    , ambiata-x-optparse
-                    , ambiata-x-eithert
-                    , async
-                    , conduit
-                    , conduit-extra
-                    , connection                      == 0.2.*
-                    , data-default                    == 0.6.*
-                    , http-client
-                    , http-client-tls                 >= 0.2        && < 0.4
-                    , old-locale
-                    , optparse-applicative            >= 0.11       && < 0.15
-                    , text
-                    , time
-                    , transformers
+      base
+    , boris-core
+    , boris-client
+    , boris-representation
+    , async
+    , conduit
+    , conduit-extra
+    , connection                      == 0.2.*
+    , http-client
+    , http-client-tls                 >= 0.2        && < 0.4
+    , optparse-applicative            >= 0.11       && < 0.15
+    , text
+    , time
+    , transformers
 
-test-suite test-io
-  type:
-                    exitcode-stdio-1.0
-
-  main-is:
-                    test-io.hs
-
-  ghc-options:
-                    -Wall -threaded -O2
-
-  hs-source-dirs:
-                    test
-
+test-suite test
+  type: exitcode-stdio-1.0
+  main-is: test.hs
+  ghc-options: -Wall -threaded -O2
+  hs-source-dirs: test
   build-depends:
-                      base                            >= 3          && < 5
-                    , ambiata-boris-core
-                    , ambiata-boris-core-test
-                    , boris-client
-                    , ambiata-disorder-core
-                    , ambiata-disorder-corpus
-                    , ambiata-p
-                    , text
-                    , QuickCheck                      >= 2.7        && < 2.10
-                    , quickcheck-instances            == 0.3.*
+      base                            >= 3          && < 5
+    , boris-core
+    , boris-core-test
+    , boris-client
+    , hedgehog == 0.6.*
+    , text
