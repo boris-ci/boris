@@ -15,16 +15,17 @@ import           Boris.Prelude
 import           Control.Concurrent (threadDelay)
 import           Control.Monad.IO.Class (liftIO)
 
+import           Data.Default.Class (def)
 import           Data.String (String)
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import qualified Data.Text as Text
+import qualified Data.Text.IO as Text
 import           Data.Time (UTCTime, diffUTCTime, formatTime, defaultTimeLocale)
 
 import           Network.Connection (ProxySettings (..))
 import           Network.HTTP.Client (ManagerSettings, newManager)
 import           Network.HTTP.Client.TLS (mkManagerSettings)
 
-import           Options.Applicative
+import qualified Options.Applicative as Options
 
 
 import           System.Exit (exitSuccess, exitFailure)
@@ -41,30 +42,18 @@ data Cli =
   | Ignore Project Build
   | Rebuild BuildId
   | Queue
+  | Version
     deriving (Eq, Show)
 
 main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
   hSetBuffering stderr LineBuffering
-  dispatch parser >>= \sc ->
-    case sc of
-      VersionCommand ->
-        putStrLn buildInfoVersion >> exitSuccess
-      DependencyCommand ->
-        mapM putStrLn dependencyInfo >> exitSuccess
-      RunCommand DryRun c ->
-        print c >> exitSuccess
-      RunCommand RealRun c ->
-        case c of
-          RemoteCommand r -> do
-            run r
-          LocalCommand r ->
-            local r
+  dispatch (Version <$ versionP <|> parser) >>= run
 
-parser :: Parser (SafeCommand Cli)
+parser :: Options.Parser Cli
 parser =
-  safeCommand . subparser . mconcat $ [
+  Options.subparser . mconcat $ [
       command' "build" "Trigger a build"  $
         Trigger
           <$> projectP
@@ -93,21 +82,25 @@ parser =
     , command' "rebuild" "Rebuild a build" $
         Rebuild
           <$>  buildIdP
-    , command' "queue" "Get the current queue number" . pure $
-        RemoteCommand Queue
+    , command' "queue" "Get the current queue number" $
+        pure Queue
     ]
 
-run :: RemoteCommand -> IO ()
+run :: Cli -> IO ()
 run c = case c of
+  Version ->
+    putStrLn buildInfoVersion >> exitSuccess
   Trigger p b ref -> do
-    bc <- mkBalanceConfig
+    error "todo"
+    {--
+
     d <- orDie renderBorisHttpClientError $ B.trigger bc p b ref
-    T.hPutStrLn stderr $ mconcat ["boris submitted [", renderBuildId . buildDataId $ d, "]"]
+    Text.hPutStrLn stderr $ mconcat ["boris submitted [", renderBuildId . buildDataId $ d, "]"]
     let
       i = buildDataId d
 
       waitForLog = do
-        liftIO . T.putStrLn $ "Waiting for build to start..."
+        liftIO . Text.putStrLn $ "Waiting for build to start..."
         liftIO $ threadDelay 1000000
         r <- B.fetch bc i
         case fmap buildDataId r of
@@ -117,92 +110,110 @@ run c = case c of
             L.fetch bc i'
 
       taillog (DBLog ls) =
-        T.putStrLn $ renderDBLogs ls
+        Text.putStrLn $ renderDBLogs ls
 
     l <- orDie renderBorisHttpClientError waitForLog
     taillog l
 
     exitSuccess
 
+--}
+
   Discover p -> do
-    bc <- mkBalanceConfig
+    error "todo"
+    {--
     void . orDie renderBorisHttpClientError $ P.discover bc p
-    T.putStrLn . mconcat $ ["Discovery kicked off for project ", renderProject p]
+    Text.putStrLn . mconcat $ ["Discovery kicked off for project ", renderProject p]
     exitSuccess
+    --}
 
   Cancel i -> do
-    bc <- mkBalanceConfig
+    error "todo"
+    {--
     void . orDie renderBorisHttpClientError $ B.cancel bc i
-    T.putStrLn . mconcat $ ["Cancelled build #", renderBuildId i]
+    Text.putStrLn . mconcat $ ["Cancelled build #", renderBuildId i]
     exitSuccess
-
+--}
   List pp bb -> do
+    error "todo"
+    {--
     bc <- mkBalanceConfig
     case (pp, bb) of
       (Nothing, Nothing) ->
         orDie renderBorisHttpClientError $
-          P.list bc >>= mapM_ (liftIO . T.putStrLn . renderProject)
+          P.list bc >>= mapM_ (liftIO . Text.putStrLn . renderProject)
       (Just p, Nothing) ->
         orDie renderBorisHttpClientError $
-          P.fetch bc p >>= mapM_ (liftIO . T.putStrLn . renderBuild)
+          P.fetch bc p >>= mapM_ (liftIO . Text.putStrLn . renderBuild)
       (Just p, Just b) ->
         orDie renderBorisHttpClientError $ do
           tree <- B.list bc p b
           for_ tree $ \t ->
             for_ (buildTreeRefs t) $ \(BuildTreeRef r is) -> liftIO $ do
-              T.putStrLn . renderRef $ r
+              Text.putStrLn . renderRef $ r
               forM_ is $ \i -> do
-                T.putStr "\t"
-                T.putStrLn . renderBuildId $ i
+                Text.putStr "\t"
+                Text.putStrLn . renderBuildId $ i
       (Nothing, Just _) ->
         bomb "Can not specify build without project."
+--}
   Status i -> do
-    bc <- mkBalanceConfig
+    error "Todo"
+    {--
     rr <- orDie renderBorisHttpClientError $ B.fetch bc i
     case rr of
       Nothing -> do
-        T.putStrLn . mconcat $ ["No build [", renderBuildId i, "] found."]
+        Text.putStrLn . mconcat $ ["No build [", renderBuildId i, "] found."]
         exitFailure
       Just r -> do
-        T.putStrLn  $ renderBuildData r i
+        Text.putStrLn  $ renderBuildData r i
         exitSuccess
+        --}
   Log i -> do
-    bc <- mkBalanceConfig
+    error "todo"
+  {--
     ll <- orDie renderBorisHttpClientError $ L.fetch bc i
     case ll of
       DBLog ls -> do
-        T.putStrLn $ renderDBLogs ls
+        Text.putStrLn $ renderDBLogs ls
         exitSuccess
+        --}
   Ignore p b -> do
-    bc <- mkBalanceConfig
+    error "todo"
+    {--
     void . orDie renderBorisHttpClientError $ B.ignore bc p b True
-    T.putStrLn "Build ignored"
+    Text.putStrLn "Build ignored"
     exitSuccess
+--}
   Rebuild i -> do
+    error "todo"
+    {--
     bc <- mkBalanceConfig
     rr <- orDie renderBorisHttpClientError $ B.rebuild bc i
     case rr of
       Nothing -> do
-        T.putStrLn . mconcat $ ["No build [", renderBuildId i, "] found."]
+        Text.putStrLn . mconcat $ ["No build [", renderBuildId i, "] found."]
         exitFailure
       Just r -> do
-        T.putStrLn $ renderBuildData r i
+        Text.putStrLn $ renderBuildData r i
         exitSuccess
+--}
   Queue -> do
-    bc <- mkBalanceConfig
+    error "todo"
+{--
     rr <- orDie renderBorisHttpClientError $ B.queue bc
     case rr of
       Nothing -> do
-        T.putStrLn "Unable to retrieve queue information"
+        Text.putStrLn "Unable to retrieve queue information"
         exitFailure
       Just q -> do
-        T.putStrLn . T.pack . show . getQueueSize $ q
+        Text.putStrLn . Text.pack . show . getQueueSize $ q
         exitSuccess
-
+--}
 
 renderBuildData :: BuildData -> BuildId -> Text
 renderBuildData r _i =
-   T.unlines $ [
+   Text.unlines $ [
        mconcat ["id: ", renderBuildId . buildDataId $ r]
      , mconcat ["project: ", renderProject . buildDataProject $ r]
      , mconcat ["build: ", renderBuild . buildDataBuild $ r]
@@ -216,74 +227,73 @@ renderBuildData r _i =
      ]
 
 
-projectP :: Parser Project
+projectP :: Options.Parser Project
 projectP =
-  fmap Project . argument textRead . mconcat $ [
-      metavar "PROJECT"
-    , help "Project name, this relates to the project name configured in boris, e.g. boris."
+  fmap Project . Options.argument textRead . mconcat $ [
+      Options.metavar "PROJECT"
+    , Options.help "Project name, this relates to the project name configured in boris, e.g. boris."
     ]
 
-buildP :: Parser Build
+buildP :: Options.Parser Build
 buildP =
-  fmap Build . argument textRead . mconcat $ [
-      metavar "BUILD"
-    , help "Build name, this relates to the project name configured in repository, e.g. dist, branches."
+  fmap Build . Options.argument textRead . mconcat $ [
+      Options.metavar "BUILD"
+    , Options.help "Build name, this relates to the project name configured in repository, e.g. dist, branches."
     ]
 
-refP :: Parser Ref
+refP :: Options.Parser Ref
 refP =
-  fmap Ref . argument textRead . mconcat $ [
-      metavar "REF"
-    , help "A specific git ref to build, e.g. master, topic/hax."
+  fmap Ref . Options.argument textRead . mconcat $ [
+      Options.metavar "REF"
+    , Options.help "A specific git ref to build, e.g. master, topic/hax."
     ]
 
-buildIdP :: Parser BuildId
+buildIdP :: Options.Parser BuildId
 buildIdP =
-  fmap BuildId . argument auto . mconcat $ [
-      metavar "BUILD_ID"
-    , help "Unique build identifier."
+  fmap BuildId . Options.argument Options.auto . mconcat $ [
+      Options.metavar "BUILD_ID"
+    , Options.help "Unique build identifier."
     ]
 
-borisrefP :: Parser FilePath
+borisrefP :: Options.Parser FilePath
 borisrefP =
- strOption . mconcat $ [
-      long "boris-ref"
-    , metavar "FILEPATH"
-    , help "A boris ref file, e.g. boris-git.toml."
+ Options.strOption . mconcat $ [
+      Options.long "boris-ref"
+    , Options.metavar "FILEPATH"
+    , Options.help "A boris ref file, e.g. boris-git.toml."
     ]
 
-boriscommandP :: Parser FilePath
+boriscommandP :: Options.Parser FilePath
 boriscommandP =
-  strOption . mconcat $ [
-      long "boris-command"
-    , metavar "FILEPATH"
-    , help "A boris command file, e.g. boris.toml."
+  Options.strOption . mconcat $ [
+      Options.long "boris-command"
+    , Options.metavar "FILEPATH"
+    , Options.help "A boris command file, e.g. boris.toml."
+    ]
+
+versionP :: Options.Parser ()
+versionP =
+  Options.flag' () . mconcat $ [
+      Options.short 'V'
+    , Options.long "version"
+    , Options.help "Version information"
     ]
 
 text :: String -> IO Text
 text e =
   lookupEnv e >>=
-    maybe (bomb . T.pack $ e <> " is a required environment variable to start boris.") (pure . T.pack)
+    maybe (bomb . Text.pack $ e <> " is a required environment variable to start boris.") (pure . Text.pack)
 
 intOr :: String -> Int -> IO Int
 intOr e dfault =
   lookupEnv e >>=
     maybe
-      (bomb . T.pack $ e <> " is a required environment variable to start boris.")
-      (fmap Just . fromMaybeM (bomb . T.pack $ e <> " is not a valid int and is a required environment variable to start boris.") . readMaybe) >>= fromMaybeM (pure dfault)
+      (bomb . Text.pack $ e <> " is a required environment variable to start boris.")
+      (fmap Just . fromMaybeM (bomb . Text.pack $ e <> " is not a valid int and is a required environment variable to start boris.") . readMaybe) >>= fromMaybeM (pure dfault)
 
 bomb :: Text -> IO a
 bomb msg =
-  T.hPutStrLn stderr msg >> exitFailure
-
-mkBalanceConfig :: IO BalanceConfig
-mkBalanceConfig = do
-  ms <- getManagerSettings
-  mgr <- newManager ms
-  h <- Host <$> text "HOST"
-  p <- Port <$> intOr "PORT" 11111
-  t <- balanceTableStatic $ BalanceTable [BalanceEntry h p]
-  pure $ BalanceConfig t mempty mgr
+  Text.hPutStrLn stderr msg >> exitFailure
 
 socksProxyKey :: String
 socksProxyKey =
@@ -297,8 +307,31 @@ getManagerSettings = do
 
 renderTime :: UTCTime -> Text
 renderTime =
-  T.pack . formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S"
+  Text.pack . formatTime defaultTimeLocale "%Y-%m-%dT%H:%M:%S"
 
 renderDuration :: UTCTime -> UTCTime -> Text
 renderDuration s e =
-  mconcat [T.pack . show $ ((round (diffUTCTime e s)) :: Integer), "s"]
+  mconcat [Text.pack . show $ ((round (diffUTCTime e s)) :: Integer), "s"]
+
+command' :: String -> String -> Options.Parser a -> Options.Mod Options.CommandFields a
+command' label description parser =
+  Options.command label (Options.info (parser <**> Options.helper) (Options.progDesc description))
+
+dispatch :: Options.Parser a -> IO a
+dispatch p = do
+  Options.customExecParser
+    (Options.prefs . mconcat $ [
+        Options.showHelpOnEmpty
+      , Options.showHelpOnError
+      ])
+    (Options.info
+      (p <**> Options.helper)
+      (mconcat [
+          Options.fullDesc
+        , Options.progDesc "Compile projector templates to haskell or html."
+        , Options.header "projector template compiler."
+        ]))
+
+textRead :: Options.ReadM Text
+textRead =
+  Text.pack <$> Options.str
