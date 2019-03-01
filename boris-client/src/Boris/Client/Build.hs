@@ -18,6 +18,7 @@ module Boris.Client.Build (
 import qualified Boris.Client.Response as Response
 import           Boris.Client.Request (Request (..))
 import qualified Boris.Client.Request as Request
+import qualified Boris.Client.Serial.Encode as Encode
 import qualified Boris.Client.Serial.Decode as Decode
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Project
@@ -29,9 +30,13 @@ import qualified Network.HTTP.Types as HTTP
 
 trigger :: Project -> Build -> Maybe Ref -> Request BuildData
 trigger p b r =
-  error "todo"
+  Request HTTP.POST (mconcat ["project", renderProject p , "build", renderBuild b])
+    (Response.json 201 $ Decode.wrapper getBuild)
+    (Request.json . Encode.auto $ PostBuildRequest r)
+
+
 {--  fmap getBuild $
-    H.post ["project", renderProject p , "build", renderBuild b] (PostBuildRequest r)
+    H.post  ()
 --}
 
 fetch :: BuildId -> Request (Maybe BuildData)

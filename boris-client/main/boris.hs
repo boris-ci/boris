@@ -8,9 +8,13 @@ import           Boris.Core.Data.Agent
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Log
 import           Boris.Core.Data.Project
+import           Boris.Client.Error
+import qualified Boris.Client.Config as Config
 import qualified Boris.Client.Build as Build
 import qualified Boris.Client.Project as Project
 import qualified Boris.Client.Log as Log
+import qualified Boris.Client.Network as Network
+
 import           Boris.Prelude
 import           Control.Concurrent (threadDelay)
 import           Control.Monad.IO.Class (liftIO)
@@ -28,9 +32,11 @@ import           Network.HTTP.Client.TLS (mkManagerSettings)
 import qualified Options.Applicative as Options
 
 
-import           System.Exit (exitSuccess, exitFailure)
-import           System.Environment (lookupEnv)
-import           System.IO
+import qualified System.Exit as Exit
+import qualified System.Environment as Environment
+import           System.IO (IO, FilePath)
+import qualified System.IO as IO
+
 
 data Cli =
     Trigger Project Build (Maybe Ref)
@@ -47,13 +53,13 @@ data Cli =
 
 main :: IO ()
 main = do
-  hSetBuffering stdout LineBuffering
-  hSetBuffering stderr LineBuffering
+  IO.hSetBuffering IO.stdout IO.LineBuffering
+  IO.hSetBuffering IO.stderr IO.LineBuffering
   dispatch (Version <$ versionP <|> parser) >>= run
 
 parser :: Options.Parser Cli
 parser =
-  Options.subparser . mconcat $ [
+  Options.hsubparser . mconcat $ [
       command' "build" "Trigger a build"  $
         Trigger
           <$> projectP
@@ -89,9 +95,11 @@ parser =
 run :: Cli -> IO ()
 run c = case c of
   Version ->
-    putStrLn buildInfoVersion >> exitSuccess
+    IO.putStrLn buildInfoVersion >> Exit.exitSuccess
   Trigger p b ref -> do
-    error "todo"
+    boris <- runOrFlailT Config.renderBorisConfigureError $ Config.configureT
+    r <- runOrFlailT renderBorisError . Network.runRequestT boris $ Build.trigger p b ref
+    IO.print r
     {--
 
     d <- orDie renderBorisHttpClientError $ B.trigger bc p b ref
@@ -281,19 +289,19 @@ versionP =
 
 text :: String -> IO Text
 text e =
-  lookupEnv e >>=
+  Environment.lookupEnv e >>=
     maybe (bomb . Text.pack $ e <> " is a required environment variable to start boris.") (pure . Text.pack)
 
 intOr :: String -> Int -> IO Int
 intOr e dfault =
-  lookupEnv e >>=
+  Environment.lookupEnv e >>=
     maybe
       (bomb . Text.pack $ e <> " is a required environment variable to start boris.")
       (fmap Just . fromMaybeM (bomb . Text.pack $ e <> " is not a valid int and is a required environment variable to start boris.") . readMaybe) >>= fromMaybeM (pure dfault)
 
 bomb :: Text -> IO a
 bomb msg =
-  Text.hPutStrLn stderr msg >> exitFailure
+  Text.hPutStrLn IO.stderr msg >> Exit.exitFailure
 
 socksProxyKey :: String
 socksProxyKey =
@@ -301,7 +309,7 @@ socksProxyKey =
 
 getManagerSettings :: IO ManagerSettings
 getManagerSettings = do
-  msocks <- lookupEnv socksProxyKey
+  msocks <- Environment.lookupEnv socksProxyKey
   pure . mkManagerSettings def $
     SockSettingsEnvironment (Just socksProxyKey) <$ msocks
 
@@ -315,7 +323,7 @@ renderDuration s e =
 
 command' :: String -> String -> Options.Parser a -> Options.Mod Options.CommandFields a
 command' label description parser =
-  Options.command label (Options.info (parser <**> Options.helper) (Options.progDesc description))
+  Options.command label (Options.info parser (Options.progDesc description))
 
 dispatch :: Options.Parser a -> IO a
 dispatch p = do
@@ -328,10 +336,44 @@ dispatch p = do
       (p <**> Options.helper)
       (mconcat [
           Options.fullDesc
-        , Options.progDesc "Compile projector templates to haskell or html."
-        , Options.header "projector template compiler."
+        , Options.progDesc "Manage and interact with boris builds."
+        , Options.header "boris build bot"
         ]))
 
 textRead :: Options.ReadM Text
 textRead =
   Text.pack <$> Options.str
+
+runOrFlailT :: (e -> Text) -> EitherT e IO a -> IO a
+runOrFlailT handler =
+  runOrFlail handler . runEitherT
+
+runOrFlail :: (e -> Text) -> IO (Either e a) -> IO a
+runOrFlail handler action =
+  action >>= either (flail . handler) pure
+
+flail :: Text -> IO a
+flail msg = do
+  Text.hPutStrLn IO.stderr msg
+  Exit.exitFailure
+
+renderBorisError :: BorisError -> Text
+renderBorisError e =
+  case e of
+    -- FUTURE: debug mode that prints message.
+    -- FUTURE: Handle specific error codes for better error messages.
+    BorisApplicationError code _message ->
+      mconcat ["There was an error performing your request [", getErrorCode code, "]."]
+    -- FUTURE: debug mode that prints message.
+    BorisAuthorizationError code _message ->
+      mconcat ["You are not authorized to perform this request [", getErrorCode code, "]."]
+--    BorisAuthenticationError _err ->
+--      mconcat ["Boris could not authenticate you, please check your credentials and connectivity to Boris. DEBUG: ", Text.pack . show $ _err]
+    -- FUTURE: debug mode that prints body + message
+    BorisResponseParseError code _body _message ->
+      mconcat ["Boris response parse error [", Text.pack . show $ code, "]. Please check connectivity to Boris and retry request."]
+    -- FUTURE: debug mode that prints body.
+    BorisStatusCodeError code _body ->
+      mconcat ["Boris status code error [", Text.pack . show $ code, "]. Please check connectivity to Boris and retry request."]
+    BorisUrlParseError message ->
+      mconcat ["Boris client url-parse error [", message, "]. Check you are running the latest client version, and raise a supportissue if this issue persists ."]
