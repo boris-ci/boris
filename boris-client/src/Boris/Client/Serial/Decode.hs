@@ -4,9 +4,12 @@ module Boris.Client.Serial.Decode (
     errored
   , forbidden
   , parse
+  , auto
+  , wrapper
   ) where
 
 import           Boris.Client.Error
+import           Boris.Prelude
 
 import           Data.Aeson (Value, (.:), (.:?))
 import           Data.Aeson.Types (Parser)
@@ -39,3 +42,12 @@ parse to t =
       pure a
     Aeson.Error msg ->
       Left . Text.pack $ msg
+
+auto :: Aeson.FromJSON a => Aeson.Value -> Parser a
+auto =
+  Aeson.parseJSON
+
+
+wrapper :: Aeson.FromJSON a => (a -> b) -> Aeson.Value -> Parser b
+wrapper f v = do
+  f <$> Aeson.parseJSON v

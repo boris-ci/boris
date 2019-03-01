@@ -5,6 +5,8 @@ module Boris.Client.Error (
   , ErrorMessage (..)
   ) where
 
+import           Boris.Prelude
+
 import           Data.Text (Text)
 import qualified Data.ByteString.Lazy as Lazy
 --import qualified Network.OAuth2.JWT.Client as OAuth2

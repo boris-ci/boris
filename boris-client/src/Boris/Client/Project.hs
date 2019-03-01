@@ -6,30 +6,32 @@ module Boris.Client.Project (
   , discover
   ) where
 
-import           Boris.Client.Http (BorisHttpClientError (..))
-import qualified Boris.Client.Http as H
+import qualified Boris.Client.Response as Response
+import           Boris.Client.Request (Request (..))
+import qualified Boris.Client.Request as Request
+import qualified Boris.Client.Serial.Decode as Decode
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Project
+import           Boris.Prelude
 import           Boris.Representation.ApiV1
 
-import           P
+import qualified Network.HTTP.Types as HTTP
 
-import           Snooze.Balance.Control (BalanceConfig)
 
-import           System.IO (IO)
+list :: Request [Project]
+list =
+  Request HTTP.GET "project"
+    (Response.json 200 $ Decode.wrapper getProjects)
+    Request.none
 
-import           X.Control.Monad.Trans.Either (EitherT)
+fetch :: Project -> Request [Build]
+fetch p =
+  Request HTTP.GET (mconcat ["project/", renderProject p])
+    (Response.json 200 $ Decode.wrapper getProjectBuilds)
+    Request.none
 
-list :: BalanceConfig -> EitherT BorisHttpClientError IO [Project]
-list c =
-  fmap (maybe [] getProjects) $
-    H.get c ["project"]
-
-fetch :: BalanceConfig -> Project -> EitherT BorisHttpClientError IO [Build]
-fetch c p =
-  fmap (maybe [] getProjectBuilds) $
-    H.get c ["project", renderProject p]
-
-discover :: BalanceConfig -> Project -> EitherT BorisHttpClientError IO ()
-discover c p =
-  H.post_ c ["project", renderProject p]
+discover :: Project -> Request ()
+discover p =
+  Request HTTP.POST (mconcat ["project", renderProject p])
+    (Response.none 202)
+    Request.none

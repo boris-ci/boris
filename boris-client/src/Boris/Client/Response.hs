@@ -5,6 +5,7 @@ module Boris.Client.Response (
   , Responder (..)
 
   , json
+  , none
   ) where
 
 import           Boris.Prelude
@@ -29,7 +30,7 @@ data ResponseError =
 
 newtype Responder a =
   Responder {
-      runResponder :: HTTP.Response Lazy.ByteString -> Either SmithError a
+      runResponder :: HTTP.Response Lazy.ByteString -> Either BorisError a
     }
 
 json :: Int -> (Value -> Parser a) -> Responder a
@@ -37,14 +38,30 @@ json code parser =
   Responder $ \res ->
     case (HTTP.statusCode . HTTP.responseStatus) res of
       400 ->
-        (first (SmithResponseParseError 400 (HTTP.responseBody res)) $
+        (first (BorisResponseParseError 400 (HTTP.responseBody res)) $
           Decode.parse Decode.errored (HTTP.responseBody res)) >>= Left
       403 ->
-        (first (SmithResponseParseError 403 (HTTP.responseBody res)) $
+        (first (BorisResponseParseError 403 (HTTP.responseBody res)) $
           Decode.parse Decode.forbidden (HTTP.responseBody res)) >>= Left
       x | x == code ->
-        first (SmithResponseParseError x (HTTP.responseBody res)) $
+        first (BorisResponseParseError x (HTTP.responseBody res)) $
           Decode.parse parser (HTTP.responseBody res)
       x ->
         Left $
-          SmithStatusCodeError x (HTTP.responseBody res)
+          BorisStatusCodeError x (HTTP.responseBody res)
+
+none :: Int -> Responder ()
+none code =
+  Responder $ \res ->
+    case (HTTP.statusCode . HTTP.responseStatus) res of
+      400 ->
+        (first (BorisResponseParseError 400 (HTTP.responseBody res)) $
+          Decode.parse Decode.errored (HTTP.responseBody res)) >>= Left
+      403 ->
+        (first (BorisResponseParseError 403 (HTTP.responseBody res)) $
+          Decode.parse Decode.forbidden (HTTP.responseBody res)) >>= Left
+      x | x == code ->
+        pure ()
+      x ->
+        Left $
+          BorisStatusCodeError x (HTTP.responseBody res)

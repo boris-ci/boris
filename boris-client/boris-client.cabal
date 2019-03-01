@@ -41,7 +41,6 @@ library
     Boris.Client.Build
     Boris.Client.Data
     Boris.Client.Discover
-    Boris.Client.Http
     Boris.Client.Log
     Boris.Client.Project
     Boris.Client.Scoreboard

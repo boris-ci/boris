@@ -4,21 +4,20 @@ module Boris.Client.Log (
     fetch
   ) where
 
-import           Boris.Client.Http (BorisHttpClientError (..))
-import qualified Boris.Client.Http as H
+import qualified Boris.Client.Response as Response
+import           Boris.Client.Request (Request (..))
+import qualified Boris.Client.Request as Request
+import qualified Boris.Client.Serial.Decode as Decode
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Log
+import           Boris.Prelude
 import           Boris.Representation.ApiV1
 
-import           P
+import qualified Network.HTTP.Types as HTTP
 
-import           System.IO (IO)
 
-import           Snooze.Balance.Control (BalanceConfig)
-
-import           X.Control.Monad.Trans.Either (EitherT)
-
-fetch :: BalanceConfig -> BuildId -> EitherT BorisHttpClientError IO LogData
-fetch c i =
-  fmap (maybe (DBLog []) getLogs) $
-    H.get c ["log", renderBuildId i]
+fetch :: BuildId -> Request LogData
+fetch i =
+  Request HTTP.GET (mconcat ["log", renderBuildId i])
+    (Response.json 200 $ Decode.wrapper getLogs)
+    Request.none

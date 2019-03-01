@@ -1,23 +1,20 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-import           BuildInfo_ambiata_boris_client
-import           DependencyInfo_ambiata_boris_client
+import           BuildInfo_boris_client
+import           DependencyInfo_boris_client
 
 import           Boris.Core.Data.Agent
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Log
 import           Boris.Core.Data.Project
-import           Boris.Client.Http (renderBorisHttpClientError)
-import qualified Boris.Client.Build as B
-import qualified Boris.Client.Project as P
-import qualified Boris.Client.Log as L
-import qualified Boris.Client.Validate as V
-
+import qualified Boris.Client.Build as Build
+import qualified Boris.Client.Project as Project
+import qualified Boris.Client.Log as Log
+import           Boris.Prelude
 import           Control.Concurrent (threadDelay)
 import           Control.Monad.IO.Class (liftIO)
 
-import           Data.Default (def)
 import           Data.String (String)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -29,24 +26,12 @@ import           Network.HTTP.Client.TLS (mkManagerSettings)
 
 import           Options.Applicative
 
-import           P
-
-import           Snooze.Balance.Data (BalanceTable (..), BalanceEntry (..), Host (..), Port (..), balanceTableStatic)
-import           Snooze.Balance.Control (BalanceConfig (..))
 
 import           System.Exit (exitSuccess, exitFailure)
 import           System.Environment (lookupEnv)
 import           System.IO
 
-import           X.Options.Applicative
-import           X.Control.Monad.Trans.Either.Exit (orDie)
-
 data Cli =
-      RemoteCommand RemoteCommand
-    | LocalCommand LocalCommand
-    deriving (Eq, Show)
-
-data RemoteCommand =
     Trigger Project Build (Maybe Ref)
   | Discover Project
   | Cancel BuildId
@@ -56,10 +41,6 @@ data RemoteCommand =
   | Ignore Project Build
   | Rebuild BuildId
   | Queue
-    deriving (Eq, Show)
-
-data LocalCommand =
-  Validate (Maybe FilePath) (Maybe FilePath)
     deriving (Eq, Show)
 
 main :: IO ()
@@ -84,36 +65,32 @@ main = do
 parser :: Parser (SafeCommand Cli)
 parser =
   safeCommand . subparser . mconcat $ [
-      command' "build" "Trigger a build" . fmap RemoteCommand $
+      command' "build" "Trigger a build"  $
         Trigger
           <$> projectP
           <*> buildP
           <*> optional refP
-    , command' "discover" "Probe for builds to trigger for a project" . fmap RemoteCommand $
+    , command' "discover" "Probe for builds to trigger for a project" $
         Discover
           <$> projectP
-    , command' "cancel" "Cancel a build" . fmap RemoteCommand $
+    , command' "cancel" "Cancel a build" $
         Cancel
           <$> buildIdP
-    , command' "list" "list of projects / builds" . fmap RemoteCommand $
+    , command' "list" "list of projects / builds" $
         List
           <$> optional projectP
           <*> optional buildP
-    , command' "status" "status of build" . fmap RemoteCommand $
+    , command' "status" "status of build" $
         Status
           <$> buildIdP
-    , command' "log" "Log of a build" . fmap RemoteCommand $
+    , command' "log" "Log of a build" $
         Log
           <$> buildIdP
-    , command' "ignore" "Ignore a build" . fmap RemoteCommand $
+    , command' "ignore" "Ignore a build" $
         Ignore
           <$> projectP
           <*> buildP
-    , command' "validate" "Validate a configuration" . fmap LocalCommand $
-        Validate
-          <$> optional borisrefP
-          <*> optional boriscommandP
-    , command' "rebuild" "Rebuild a build" . fmap RemoteCommand $
+    , command' "rebuild" "Rebuild a build" $
         Rebuild
           <$>  buildIdP
     , command' "queue" "Get the current queue number" . pure $
@@ -238,10 +215,6 @@ renderBuildData r _i =
      , mconcat ["result: ", maybe "n/a" (\br -> case br of BuildOk -> "successful"; BuildKo -> "failure") . buildDataResult $ r]
      ]
 
-
-
-local :: LocalCommand -> IO ()
-local (Validate g b) = V.validate g b
 
 projectP :: Parser Project
 projectP =
