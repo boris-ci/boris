@@ -31,7 +31,9 @@ import qualified Data.Text.Encoding as Text
 
 import qualified Network.HTTP.Client as HTTP
 import qualified Network.HTTP.Types as  HTTP
-import qualified Network.OAuth2.JWT.Client as OAuth2
+--import qualified Network.OAuth2.JWT.Client as OAuth2
+
+import           System.IO (IO)
 
 
 -- |

@@ -25,6 +25,7 @@ library
     , filepath                        == 1.*
     , lens                            >= 4.6        && < 4.16
     , http-client                     >= 0.4        && < 0.6
+    , http-client-tls                 == 0.3.*
     , http-types                      >= 0.8        && < 0.13
     , mmorph                          >= 1.0        && < 1.2
     , process                         == 1.*
@@ -33,18 +34,26 @@ library
     , text                            == 1.2.*
     , time                            >= 1.5        && < 1.10
     , transformers                    >= 0.4        && < 0.6
+    , transformers-bifunctors         == 0.*
     , unordered-containers            == 0.2.*
 
   ghc-options: -Wall
   hs-source-dirs: src
   exposed-modules:
     Boris.Client.Build
+    Boris.Client.Config
     Boris.Client.Data
     Boris.Client.Discover
     Boris.Client.Log
     Boris.Client.Project
     Boris.Client.Scoreboard
-    Boris.Client.Validate
+    Boris.Client.Error
+    Boris.Client.Network
+    Boris.Client.Request
+    Boris.Client.Response
+    Boris.Client.Serial.Decode
+    Boris.Client.Serial.Encode
+
 
 executable boris
   ghc-options: -Wall -threaded -O2
@@ -59,6 +68,7 @@ executable boris
     , conduit
     , conduit-extra
     , connection                      == 0.2.*
+    , data-default-class              == 0.1.*
     , http-client
     , http-client-tls                 >= 0.2        && < 0.4
     , optparse-applicative            >= 0.11       && < 0.15

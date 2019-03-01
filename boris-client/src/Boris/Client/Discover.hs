@@ -16,15 +16,11 @@ import qualified Boris.Client.Serial.Encode as Encode
 
 import           Boris.Representation.ApiV1
 
-import           P
-
-import           Snooze.Balance.Control (BalanceConfig)
-
-import           System.IO (IO)
-
-import           X.Control.Monad.Trans.Either (EitherT)
+import           Boris.Prelude
 
 
-complete :: BalanceConfig -> BuildId -> Project -> [DiscoverInstance] -> EitherT BorisHttpClientError IO ()
-complete config i p ds = do
+
+
+complete :: BuildId -> Project -> [DiscoverInstance] -> Request ()
+complete i p ds = do
   error "todo"

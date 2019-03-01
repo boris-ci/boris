@@ -4,25 +4,20 @@ module Boris.Client.Scoreboard (
     scoreboard
   ) where
 
-import           Boris.Client.Http (BorisHttpClientError (..))
-import qualified Boris.Client.Http as H
+import qualified Boris.Client.Response as Response
+import           Boris.Client.Request (Request (..))
+import qualified Boris.Client.Request as Request
+import qualified Boris.Client.Serial.Decode as Decode
+import qualified Boris.Client.Serial.Encode as Encode
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Project
+import           Boris.Prelude
 
-import           Data.Aeson (FromJSON (..), withObject, (.:), (.:?))
-import           Data.Aeson.Types (Parser, Value)
-import qualified Data.Text as T
 
-import           P
-
-import           Snooze.Balance.Control (BalanceConfig)
-
-import           System.IO (IO)
-
-import           X.Control.Monad.Trans.Either (EitherT)
-
-scoreboard :: BalanceConfig -> EitherT BorisHttpClientError IO [Result]
-scoreboard c =
+scoreboard :: Request [Result]
+scoreboard =
+  error "todo"
+  {--
   fmap (maybe [] getResults) $
     H.get c ["scoreboard"]
 
@@ -46,3 +41,4 @@ toResult =
       <*> (fmap Build $ o .: "build")
       <*> ((fmap . fmap) Ref $ o .:? "ref")
       <*> (o .: "result" >>= \u -> fromMaybeM (fail $ "Unknown BuildResult: " <> T.unpack u) $ parseBuildResult u)
+--}

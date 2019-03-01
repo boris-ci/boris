@@ -32,7 +32,7 @@ module Boris.Client.Config (
 import           Control.Monad.IO.Class (MonadIO (..))
 import           Control.Monad.Trans.Except (ExceptT (..), runExceptT)
 
-import           Crypto.JWT (JWK)
+--import           Crypto.JWT (JWK)
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson
