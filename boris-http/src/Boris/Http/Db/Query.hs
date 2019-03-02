@@ -66,12 +66,12 @@ tick =
       SELECT nextval('tick')
     |]
 
-register :: MonadDb m => Project -> Build -> BuildId -> m ()
+register :: MonadDb m => ProjectId -> Build -> BuildId -> m ()
 register project build buildid =
   void $ Traction.execute [sql|
       INSERT INTO build (build_id, project, build, queued_time)
            VALUES (?, ?, ?, now())
-    |] (getBuildId buildid, renderProject project, renderBuild build)
+    |] (getBuildId buildid, getProjectId project, renderBuild build)
 
 discover :: MonadDb m => BuildId -> Project -> m ()
 discover buildid project =
@@ -317,7 +317,7 @@ updateUser user = do
 addUser :: MonadDb m => GithubUser -> m (Identified GithubUser)
 addUser user = do
   i <- Traction.value $ Traction.mandatory [sql|
-      INSERT INTO account (github_id, github_login, github_name, github_email)
+      INSERT INTO github_account (github_id, github_login, github_name, github_email)
            VALUES (?, ?, ?, ?)
         RETURNING id
     |] (githubId . githubUserId $ user
@@ -325,6 +325,7 @@ addUser user = do
       , fmap githubName . githubUserName $ user
       , fmap githubEmail . githubUserEmail $ user)
   pure $ Identified (UserId i) user
+
 
 newSession :: MonadDb m => Session -> UserId -> m ()
 newSession session user = do
@@ -413,43 +414,31 @@ setTenant settings =
 getAllProjects :: MonadDb m => m [Definition]
 getAllProjects = do
   let q = [sql|
-      SELECT p.id, p.source, p.name, p.repository, o.id, o.name, o.type
-        FROM project p, owner o
+      SELECT p.id, p.name, p.repository
+        FROM project p
     |]
   x <- Traction.query_ q
-  for x $ \(i, source, name, repository, oid, oname, otype) ->
-    case (,) <$> sourceFromInt source <*> ownerTypeFromInt otype of
-      Just (s, t) ->
-         pure $ Definition
-           (ProjectId i)
-           s
-           (Owner (OwnerId oid) (OwnerName oname) t)
-           (Project name)
-           (Repository repository)
-      Nothing ->
-        Traction.liftDb $ Traction.failWith (Traction.DbNoResults q)
+  pure . with x $ \(i, name, repository) ->
+     Definition
+       (ProjectId i)
+       (Project name)
+       (Repository repository)
 
 getAccountProjects :: MonadDb m => UserId -> m [Definition]
 getAccountProjects account = do
   let q = [sql|
-      SELECT p.id, p.source, p.name, p.repository, o.id, o.name, o.type
-        FROM project p, owner o, account_projects ap
+      SELECT p.id, p.name, p.repository
+        FROM project p
+        JOIN account_projects ap
+          ON ap.project = p.id
        WHERE ap.account = ?
-         AND ap.project = p.id
-         AND o.id = p.owner
     |]
   x <- Traction.query q (Traction.Only $ getUserId account)
-  for x $ \(i, source, name, repository, oid, oname, otype) ->
-    case (,) <$> sourceFromInt source <*> ownerTypeFromInt otype of
-      Just (s, t) ->
-         pure $ Definition
-           (ProjectId i)
-           s
-           (Owner (OwnerId oid) (OwnerName oname) t)
-           (Project name)
-           (Repository repository)
-      Nothing ->
-        Traction.liftDb $ Traction.failWith (Traction.DbNoResults q)
+  pure . with x $ \(i, name, repository) ->
+    Definition
+      (ProjectId i)
+      (Project name)
+      (Repository repository)
 
 createProject :: MonadDb m => (Identified OwnedBy) -> Project -> Repository -> m ()
 createProject _owner project repository =

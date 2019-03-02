@@ -1,1 +1,1 @@
-BORIS_ENDPOINT=http://localhost:9999
+export BORIS_ENDPOINT=http://localhost:9999

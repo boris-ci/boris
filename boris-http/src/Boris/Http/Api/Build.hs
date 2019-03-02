@@ -87,19 +87,19 @@ queued pool project build =
 
 submit :: DbPool -> Tenant -> AuthenticatedBy -> Project -> Build -> Maybe Ref -> EitherT BuildError IO (Maybe BuildId)
 submit pool tenant authenticated project build ref = do
-  repository' <- firstT BuildDbError $
+  definition' <- firstT BuildDbError $
     Project.pick pool tenant authenticated project
-  case repository' of
+  case definition' of
     Nothing ->
       pure Nothing
-    Just _repository -> do
+    Just definition -> do
       let
         -- FIX this needs to be stored with register
         _normalised = with ref $ \rr ->
           if Text.isPrefixOf "refs/" . renderRef $ rr then rr else Ref . ((<>) "refs/heads/") . renderRef $ rr
       firstT BuildDbError . Traction.runDb pool $ do
         i <- Query.tick
-        Query.register project build i
+        Query.register (definitionId definition) build i
         pure $ Just i
 
 heartbeat :: DbPool -> BuildId -> EitherT DbError IO BuildCancelled

@@ -27,6 +27,15 @@ module Boris.Http.Data (
   , Permission (..)
   , permissionToInt
   , permissionFromInt
+  , EntityId (..)
+  , EntityType (..)
+  , entityTypeToInt
+  , entityTypeFromInt
+  , IdentityId (..)
+  , IdentityType (..)
+  , identityTypeToInt
+  , identityTypeFromInt
+  , identityTypeToEntityType
   ) where
 
 import           Boris.Prelude
@@ -108,7 +117,7 @@ data GithubOrganisation =
 
 newtype UserId =
   UserId {
-      getUserId :: Int
+      getUserId :: Int64
     } deriving (Eq, Ord, Show)
 
 data Identified a =
@@ -198,5 +207,74 @@ permissionFromInt n =
       Just Write
     2 ->
       Just Read
+    _ ->
+      Nothing
+
+newtype EntityId =
+  EntityId {
+      getEntityId :: Int64
+    } deriving (Eq, Ord, Show)
+
+data EntityType =
+    IsUserEntity
+  | IsServiceEntity
+  | IsTeamEntity
+    deriving (Eq, Ord, Show, Enum, Bounded)
+
+entityTypeToInt :: EntityType -> Int
+entityTypeToInt i =
+  case i of
+    IsUserEntity ->
+      0
+    IsServiceEntity ->
+      1
+    IsTeamEntity ->
+      2
+
+entityTypeFromInt :: Int -> Maybe EntityType
+entityTypeFromInt i =
+  case i of
+    0 ->
+      Just IsUserEntity
+    1 ->
+      Just IsServiceEntity
+    2 ->
+      Just IsTeamEntity
+    _ ->
+      Nothing
+
+newtype IdentityId =
+  IdentityId {
+      getIdentityId :: Int64
+    } deriving (Eq, Ord, Show)
+
+identityTypeToEntityType :: IdentityType -> EntityType
+identityTypeToEntityType t =
+  case t of
+    IsUserAccount ->
+      IsUserEntity
+    IsServiceAccount ->
+      IsServiceEntity
+
+data IdentityType =
+    IsUserAccount
+  | IsServiceAccount
+    deriving (Eq, Ord, Show, Enum, Bounded)
+
+identityTypeToInt :: IdentityType -> Int
+identityTypeToInt i =
+  case i of
+    IsUserAccount ->
+      0
+    IsServiceAccount ->
+      1
+
+identityTypeFromInt :: Int -> Maybe IdentityType
+identityTypeFromInt i =
+  case i of
+    0 ->
+      Just IsUserAccount
+    1 ->
+      Just IsServiceAccount
     _ ->
       Nothing

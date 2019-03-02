@@ -24,11 +24,11 @@ import           Traction.Control (DbPool, DbError)
 import qualified Traction.Control as Traction
 
 
-picker :: Project -> [Definition] -> Maybe Repository
+picker :: Project -> [Definition] -> Maybe Definition
 picker project =
-  fmap definitionRepository . List.find ((==) project . definitionProject)
+  List.find ((==) project . definitionProject)
 
-pick :: DbPool -> Tenant -> AuthenticatedBy -> Project -> EitherT DbError IO (Maybe Repository)
+pick :: DbPool -> Tenant -> AuthenticatedBy -> Project -> EitherT DbError IO (Maybe Definition)
 pick pool tenant authenticated project =
   Traction.runDb pool $ case tenant of
     SingleTenant ->

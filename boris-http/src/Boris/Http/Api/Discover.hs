@@ -46,4 +46,5 @@ complete pool buildid project discovers = do
           Query.addProjectCommitDiscovered buildid build commit
           -- FIX should this just call Build.submit? Permissions will be wierd.
           newId <- Query.tick
-          Query.register project build newId
+          error "todo"
+--          Query.register project build newId

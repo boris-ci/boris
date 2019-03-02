@@ -98,8 +98,6 @@ data Owner =
 data Definition =
   Definition {
       definitionId :: ProjectId
-    , definitionSource :: Source
-    , definitionOwner :: Owner
     , definitionProject :: Project
     , definitionRepository :: Repository
     } deriving (Eq, Ord, Show)

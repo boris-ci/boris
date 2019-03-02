@@ -7,10 +7,4 @@ export BORIS_POSTGRES="dbname=boris_test host=localhost user=boris_test password
 export BORIS_TENANCY="single"
 export BORIS_AUTHENTICATION=none # or github
 
-# used to overide BORIS_POSTGRES/BORIS_AUTHENTICATION and
-# provide secrets for github when required.
-if [ -f $ROOT/.env ]; then
-    . $ROOT/.env
-fi
-
 ./mafia quick -p test/test.hs

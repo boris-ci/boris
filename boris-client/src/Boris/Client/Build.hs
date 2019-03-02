@@ -25,12 +25,14 @@ import           Boris.Core.Data.Project
 import           Boris.Prelude
 import           Boris.Representation.ApiV1
 
+import qualified Data.Text as Text
+
 import qualified Network.HTTP.Types as HTTP
 
 
 trigger :: Project -> Build -> Maybe Ref -> Request BuildData
 trigger p b r =
-  Request HTTP.POST (mconcat ["project", renderProject p , "build", renderBuild b])
+  Request HTTP.POST (Text.intercalate "/" ["project", renderProject p , "build", renderBuild b])
     (Response.json 201 $ Decode.wrapper getBuild)
     (Request.json . Encode.auto $ PostBuildRequest r)
 
