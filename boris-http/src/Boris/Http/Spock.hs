@@ -12,6 +12,7 @@ module Boris.Http.Spock (
   , liftDbError
 
   , transaction
+  , transactionT
 
   , authenticated
   , withAuthentication

@@ -166,36 +166,38 @@ route pool authentication mode = do
       withContentType $ \content ->
         case content of
           ContentTypeForm -> do
-            -- FIX project name validation
-            name <- ProjectName <$> Spock.param' "project"
-            -- FIX repository validation
+            project <- ProjectName <$> Spock.param' "project"
             repository <- Repository <$> Spock.param' "repository"
-            pure $ Project name repository
-
-            liftDbError $
-            r <- transactionT $ Project.new pool a project repository
+            r <- transactionT pool $ Project.new project repository
             case r of
               Left (Project.NewProjectAlreadyExists _) ->
                 error "Todo"
-              Left (Project.NewProjectInvalidNameError  _) ->
+              Left (Project.NewProjectInvalidNameError _) ->
+                error "Todo"
+              Left (Project.NewProjectInvalidRepositoryError _ _) ->
                 error "Todo"
               Right _ ->
                 Spock.redirect $ "/project/" <> renderProjectName project
           ContentTypeJSON -> do
             e <- Spock.jsonBody
-            -- FIX project name validation
-            -- FIX repository validation
             case e of
               Nothing -> do
                 -- FIX unhax
                 Spock.setStatus HTTP.status400
                 Spock.json $ object ["error" .= ("could not parse create project." :: Text)]
               Just (ApiV1.CreateProject project repository) -> do
-                liftDbError $
-                  Project.new pool a project repository
-                Spock.setStatus HTTP.created201
-                Spock.setHeader "Location" $ "/project/" <> renderProjectName project
-                Spock.json $ ApiV1.GetProject project []
+                r <- transactionT pool $ Project.new project repository
+                case r of
+                  Left (Project.NewProjectAlreadyExists _) ->
+                    error "Todo"
+                  Left (Project.NewProjectInvalidNameError _) ->
+                    error "Todo"
+                  Left (Project.NewProjectInvalidRepositoryError _ _) ->
+                    error "Todo"
+                  Right _ -> do
+                    Spock.setStatus HTTP.created201
+                    Spock.setHeader "Location" $ "/project/" <> renderProjectName project
+                    Spock.json $ ApiV1.GetProject project []
 
   Spock.get "project/new" $
     authenticated authentication pool $ \a -> do

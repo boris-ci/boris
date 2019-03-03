@@ -7,11 +7,12 @@ module Boris.Core.Data.Project (
   , isValidProjectName
   ) where
 
+import           Boris.Core.Data.Repository
+import           Boris.Prelude
+
 import qualified Data.Char as Char
 import qualified Data.Text as Text
 
-import           Boris.Core.Data.Repository
-import           Boris.Prelude
 
 data Project =
   Project {

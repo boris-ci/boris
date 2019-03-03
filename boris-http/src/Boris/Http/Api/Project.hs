@@ -5,6 +5,8 @@ module Boris.Http.Api.Project (
   , pick
   , list
   , discover
+
+  , NewProjectError (..)
   , new
   ) where
 
@@ -87,16 +89,17 @@ discover pool tenant authenticated project = do
 data NewProjectError =
     NewProjectAlreadyExists ProjectName
   | NewProjectInvalidNameError ProjectName
+  | NewProjectInvalidRepositoryError ProjectName Repository
     deriving (Eq, Ord, Show)
 
 new :: ProjectName -> Repository -> EitherT NewProjectError Db ProjectId
-new project repository =
-  case isValidProjectName project of
-    False ->
-      left $ NewProjectInvalidNameError project
-    True ->
-      newEitherT $ ProjectDb.insert project repository >>= \u -> case u of
-        Unique i ->
-          pure . Right $ i
-        Duplicate _ _ ->
-          pure . Left $ NewProjectAlreadyExists project
+new project repository = do
+  unless (isValidProjectName project) $
+    left $ NewProjectInvalidNameError project
+  unless (isValidRepository repository) $
+    left $ NewProjectInvalidRepositoryError project repository
+  newEitherT $ ProjectDb.insert project repository >>= \u -> case u of
+    Unique i ->
+      pure . Right $ i
+    Duplicate _ _ ->
+      pure . Left $ NewProjectAlreadyExists project
