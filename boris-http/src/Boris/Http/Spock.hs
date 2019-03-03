@@ -11,6 +11,8 @@ module Boris.Http.Spock (
   , liftError
   , liftDbError
 
+  , transaction
+
   , authenticated
   , withAuthentication
   ) where
@@ -18,6 +20,9 @@ module Boris.Http.Spock (
 import qualified Boris.Http.Api.Session as Session
 import           Boris.Http.Boot (AuthenticationMode (..))
 import           Boris.Http.Data
+import qualified Boris.Http.View as View
+import           Boris.Representation.ApiV1
+
 import           Boris.Prelude
 
 import           Control.Monad.IO.Class (MonadIO (..))
@@ -31,11 +36,19 @@ import qualified Network.HTTP.Types as HTTP
 import           System.IO (IO)
 import qualified System.IO as IO
 
-import           Traction.Control (DbPool, DbError)
+import           Traction.Control (Db, DbPool, DbError)
 import qualified Traction.Control as Traction
 
 import qualified Web.Spock.Core as Spock
 
+transaction :: DbPool -> Db a -> Spock.ActionT IO a
+transaction pool action = do
+  liftIO (runEitherT $ Traction.runDb pool action) >>=
+    liftDbError . hoistEither
+
+transactionT :: DbPool -> EitherT e Db a -> Spock.ActionT IO (Either e a)
+transactionT pool action = do
+  transaction pool (runEitherT action)
 
 liftError :: (e -> Text) -> EitherT e IO a -> Spock.ActionT IO a
 liftError render value =
@@ -43,9 +56,13 @@ liftError render value =
     Left err -> do
       eid <- liftIO newErrorId
       liftIO $ Text.hPutStrLn IO.stderr (mconcat $ [errorId eid, " ", "server error: ", render err])
-      Spock.setStatus HTTP.status500
-      -- View.render (View.serverError eid)
-      error "todo"
+      withAccept $ \content -> case content of
+        AcceptHTML -> do
+          Spock.setStatus HTTP.status500
+          View.renderPage Nothing $ View.serverError eid
+        AcceptJSON -> do
+          Spock.setStatus HTTP.status500
+          Spock.json $ ApiError "server-error" (Just . mconcat $ ["Fault recorded with id: ", errorId eid])
     Right v ->
       pure v
 

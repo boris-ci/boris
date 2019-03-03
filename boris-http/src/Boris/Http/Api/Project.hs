@@ -13,20 +13,22 @@ import           Boris.Core.Data.Project
 import           Boris.Core.Data.Repository
 import           Boris.Core.Data.Tenant
 import           Boris.Http.Data
-import qualified Boris.Http.Db.Query as Query
+import qualified Boris.Http.Db.Project as ProjectDb
 import           Boris.Prelude
 
 import qualified Data.List as List
 
 import           System.IO (IO)
 
-import           Traction.Control (DbPool, DbError)
+import           Traction.Sql (Unique (..))
+import           Traction.Control (Db, DbPool, DbError)
 import qualified Traction.Control as Traction
 
 
 picker :: ProjectName -> [Project] -> Maybe Project
 picker project =
   List.find ((==) project . projectName)
+
 
 pick :: DbPool -> Tenant -> AuthenticatedBy -> Project -> EitherT DbError IO (Maybe Project)
 pick pool tenant authenticated project =
@@ -82,14 +84,19 @@ discover pool tenant authenticated project = do
       pure (Just i)
 --}
 
-new :: DbPool -> AuthenticatedBy -> ProjectName -> Repository -> EitherT DbError IO ()
-new pool authenticated project repository =
-  error "todo"
-  {--
-  Traction.runDb pool $
-    case authenticated of
-      AuthenticatedByGithub _ u ->
-        Query.createProject (OwnedByGithubUser <$> fmap githubUserLogin u) project repository
-      AuthenticatedByDesign u ->
-        Query.createProject (OwnedByBoris <$> u) project repository
---}
+data NewProjectError =
+    NewProjectAlreadyExists ProjectName
+  | NewProjectInvalidNameError ProjectName
+    deriving (Eq, Ord, Show)
+
+new :: ProjectName -> Repository -> EitherT NewProjectError Db ProjectId
+new project repository =
+  case isValidProjectName project of
+    False ->
+      left $ NewProjectInvalidNameError project
+    True ->
+      newEitherT $ ProjectDb.insert project repository >>= \u -> case u of
+        Unique i ->
+          pure . Right $ i
+        Duplicate _ _ ->
+          pure . Left $ NewProjectAlreadyExists project

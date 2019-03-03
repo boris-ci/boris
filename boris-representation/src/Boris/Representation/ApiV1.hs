@@ -22,6 +22,7 @@ module Boris.Representation.ApiV1 (
   , PostCompleteResponse (..)
   , GetLogs (..)
   , CreateProject (..)
+  , ApiError (..)
   ) where
 
 import           Boris.Core.Data.Agent
@@ -446,3 +447,24 @@ instance FromJSON GetLogs where
     -- FIXME
     withObject "GetLogs" $ \_ ->
       pure . GetLogs $ DBLog []
+
+data ApiError =
+  ApiError {
+      apiErrorCode :: Text
+    , apiErrorMessage :: Maybe Text
+    } deriving (Eq, Ord, Show)
+
+
+instance ToJSON ApiError where
+  toJSON (ApiError code message) =
+    object [
+        "code" .= code
+      , "message" .= message
+      ]
+
+instance FromJSON ApiError where
+  parseJSON =
+    withObject "ApiError" $ \o ->
+      ApiError
+        <$> o .: "code"
+        <*> o .:? "message"

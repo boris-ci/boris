@@ -10,6 +10,7 @@ module Boris.Prelude.EitherT (
   , firstEitherT
   , secondEitherT
   , left
+  , hoistEither
   ) where
 
 import           Control.Applicative (Applicative (..))
@@ -55,3 +56,7 @@ firstEitherT f =
 secondEitherT :: Functor m => (a -> b) -> EitherT x m a -> EitherT x m b
 secondEitherT f =
   bimapEitherT id f
+
+hoistEither :: Monad m => Either x a -> EitherT x m a
+hoistEither =
+  newEitherT . return

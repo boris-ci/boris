@@ -29,11 +29,7 @@ migrate =
 
 schema :: [Migration]
 schema = [
-    Migration "create-tick" [sql|
-      CREATE SEQUENCE tick START 1;
-    |]
-
-  , Migration "create-projects" [sql|
+    Migration "create-projects" [sql|
       CREATE TABLE project (
           id SERIAL PRIMARY KEY
         , name TEXT NOT NULL UNIQUE
@@ -42,103 +38,50 @@ schema = [
         )
     |]
 
-  , Migration "create-build" [sql|
-      CREATE TABLE build (
-          build_id BIGINT PRIMARY KEY
+  , Migration "create-run" [sql|
+      CREATE TABLE run (
+          id SERIAL PRIMARY KEY
+        , run_type INT NOT NULL
         , project BIGINT NOT NULL REFERENCES project(id)
-        , build TEXT
-        , ref TEXT
-        , commit TEXT
         , queued_time TIMESTAMP WITH TIME ZONE
         , start_time TIMESTAMP WITH TIME ZONE
         , end_time TIMESTAMP WITH TIME ZONE
         , heartbeat_time TIMESTAMP WITH TIME ZONE
         , cancelled BOOLEAN
-        , build_result BOOLEAN
-        , log_group TEXT
-        , log_stream TEXT
         )
     |]
 
-
-  , Migration "create-github-account" [sql|
-      CREATE TABLE github_account (
-          id SERIAL PRIMARY KEY
-        , github_id BIGINT NOT NULL
-        , github_login TEXT NOT NULL
-        , github_name TEXT
-        , github_email TEXT
-        , created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-        , updated TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+  , Migration "create-build" [sql|
+      CREATE TABLE build (
+          build_id BIGINT PRIMARY KEY REFERENCES run(id)
+        , build TEXT
+        , ref TEXT
+        , commit TEXT
+        , build_result BOOLEAN
         )
     |]
 
   , Migration "create-discover" [sql|
       CREATE TABLE discover (
-          discover_id BIGINT PRIMARY KEY
-        , project TEXT NOT NULL
-        , queued_time TIMESTAMP WITH TIME ZONE
-        , start_time TIMESTAMP WITH TIME ZONE
-        , end_time TIMESTAMP WITH TIME ZONE
-        , heartbeat_time TIMESTAMP WITH TIME ZONE
+          discover_id BIGINT PRIMARY KEY REFERENCES run(id)
         )
     |]
 
   , Migration "create-discover-commit-build" [sql|
       CREATE TABLE discover_commit (
-          discover_id BIGINT NOT NULL
+          discover_id BIGINT NOT NULL REFERENCES discover(id)
         , build TEXT NOT NULL
         , commit TEXT NOT NULL
         , PRIMARY KEY (discover_id, build, commit)
         )
     |]
 
-  , Migration "create-session" [sql|
-      CREATE TABLE session (
-          id TEXT PRIMARY KEY
-        , account BIGINT NOT NULL
-        , oauth TEXT NOT NULL
-        , created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-        , updated TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-        )
-    |]
-
   , Migration "create-log" [sql|
       CREATE TABLE log (
-          build_id BIGINT NOT NULL
+          run_id BIGINT NOT NULL REFERENCES run(id)
         , log_id SERIAL PRIMARY KEY
-        , logged_at TIMESTAMP WITH TIME ZONE
-        , log_payload TEXT
+        , logged_at TIMESTAMP WITH TIME ZONE NOT NULL
+        , log_payload TEXT NOT NULL
         )
     |]
-  , Migration "create-agent" [sql|
-      CREATE TABLE agent (
-          id TEXT PRIMARY KEY
-        , tags TEXT[]
-        , poll_count BIGINT NOT NULL
-        , first_poll TIMESTAMP WITH TIME ZONE
-        , last_poll TIMESTAMP WITH TIME ZONE
-        )
-    |]
-
-  , Migration "create-owner" [sql|
-      CREATE TABLE owner (
-          id SERIAL PRIMARY KEY
-        , name TEXT UNIQUE NOT NULL
-        , type INT NOT NULL
-        )
-    |]
-
-  , Migration "insert-boris-system-owner" [sql|
-      INSERT INTO owner (id, name, type)
-           VALUES (0, 'boris', 0)
-    |]
-
-  , Migration "create-settings" [sql|
-      CREATE TABLE settings (
-          multi_tenant BOOLEAN
-        )
-    |]
-
-
   ]

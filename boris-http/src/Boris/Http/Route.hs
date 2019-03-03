@@ -167,12 +167,20 @@ route pool authentication mode = do
         case content of
           ContentTypeForm -> do
             -- FIX project name validation
-            project <- ProjectName <$> Spock.param' "project"
+            name <- ProjectName <$> Spock.param' "project"
             -- FIX repository validation
             repository <- Repository <$> Spock.param' "repository"
+            pure $ Project name repository
+
             liftDbError $
-              Project.new pool a project repository
-            Spock.redirect $ "/project/" <> renderProjectName project
+            r <- transactionT $ Project.new pool a project repository
+            case r of
+              Left (Project.NewProjectAlreadyExists _) ->
+                error "Todo"
+              Left (Project.NewProjectInvalidNameError  _) ->
+                error "Todo"
+              Right _ ->
+                Spock.redirect $ "/project/" <> renderProjectName project
           ContentTypeJSON -> do
             e <- Spock.jsonBody
             -- FIX project name validation
