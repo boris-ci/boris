@@ -13,4 +13,5 @@ projector \
   -o gen \
   -h examples \
   -m Boris.Http.Template \
+  -v \
   -w

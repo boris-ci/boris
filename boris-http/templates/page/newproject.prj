@@ -1,10 +1,39 @@
+\ error : Maybe NewProjectError -> Html =
+
 <p>
   Lets configure a new project...
 </p>
 <form action="/project" method="post">
   <div><label>Name: </label></div>
-  <div><input name="project" type="text"></input></div>
+  {
+  case error of
+    Just InvalidNameNewProjectError ->
+      <div>
+        <input class="form-error" name="project" type="text"></input>
+        <p class="help form-error">Invalid project name, allowed project-names are alpha-numeric with separators '-', '-', or '.'</p>
+      </div>
+    Just AlreadyExistsNewProjectError ->
+      <div>
+        <input class="form-error" name="project" type="text"></input>
+        <p class="help form-error">Project already exists, pick another name</p>
+      </div>
+    Just _ ->
+      <div><input name="project" type="text"></input></div>
+    Nothing ->
+      <div><input name="project" type="text"></input></div>
+  }
   <div><label>Repository URL: </label></div>
-  <div><input name="repository" type="text"></input></div>
+  {
+  case error of
+    Just InvalidRepositoryNewProjectError ->
+      <div>
+        <input class="form-error" name="repository" type="text"></input>
+        <p class="help form-error">Invalid repository url</p>
+      </div>
+    Just _ ->
+      <div><input name="repository" type="text"></input></div>
+    Nothing ->
+      <div><input name="repository" type="text"></input></div>
+  }
   <button name="create" class="btn" type="submit">create</button>
 </form>

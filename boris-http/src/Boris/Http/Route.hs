@@ -22,6 +22,7 @@ import           Boris.Http.Data
 import qualified Boris.Http.Db.Query as Query
 import           Boris.Http.Spock
 import qualified Boris.Http.View as View
+import qualified Boris.Http.Template.Page.Newproject.Data as Template
 import qualified Boris.Representation.ApiV1 as ApiV1
 import           Boris.Prelude
 
@@ -171,29 +172,28 @@ route pool authentication mode = do
             r <- transactionT pool $ Project.new project repository
             case r of
               Left (Project.NewProjectAlreadyExists _) ->
-                error "Todo"
+                View.renderAuthenticated a $ View.newproject (Just Template.AlreadyExistsNewProjectError)
               Left (Project.NewProjectInvalidNameError _) ->
-                error "Todo"
+                View.renderAuthenticated a $ View.newproject (Just Template.InvalidNameNewProjectError)
               Left (Project.NewProjectInvalidRepositoryError _ _) ->
-                error "Todo"
+                View.renderAuthenticated a $ View.newproject (Just Template.InvalidRepositoryNewProjectError)
               Right _ ->
                 Spock.redirect $ "/project/" <> renderProjectName project
           ContentTypeJSON -> do
             e <- Spock.jsonBody
             case e of
               Nothing -> do
-                -- FIX unhax
                 Spock.setStatus HTTP.status400
-                Spock.json $ object ["error" .= ("could not parse create project." :: Text)]
+                Spock.json $ ApiV1.ApiError "invalid-body" (Just "Could not bparse create project json.")
               Just (ApiV1.CreateProject project repository) -> do
                 r <- transactionT pool $ Project.new project repository
                 case r of
                   Left (Project.NewProjectAlreadyExists _) ->
-                    error "Todo"
+                    Spock.json $ ApiV1.ApiError "new-project-already-exists" (Just "Provided project already exists.")
                   Left (Project.NewProjectInvalidNameError _) ->
-                    error "Todo"
+                    Spock.json $ ApiV1.ApiError "new-project-invalid-name" (Just "Project name is not valid.")
                   Left (Project.NewProjectInvalidRepositoryError _ _) ->
-                    error "Todo"
+                    Spock.json $ ApiV1.ApiError "new-project-invalid-repository" (Just "Repository is not valid.")
                   Right _ -> do
                     Spock.setStatus HTTP.created201
                     Spock.setHeader "Location" $ "/project/" <> renderProjectName project
@@ -201,7 +201,7 @@ route pool authentication mode = do
 
   Spock.get "project/new" $
     authenticated authentication pool $ \a -> do
-      View.renderAuthenticated a $ View.newproject
+      View.renderAuthenticated a $ View.newproject Nothing
 
   Spock.get ("project" <//> Spock.var) $ \project ->
     authenticated authentication pool $ \a -> do

@@ -41,6 +41,7 @@ import qualified Boris.Http.Template.Page.Dashboard as Template
 import qualified Boris.Http.Template.Page.Error as Template
 import qualified Boris.Http.Template.Page.Login as Template
 import qualified Boris.Http.Template.Page.Newproject as Template
+import qualified Boris.Http.Template.Page.Newproject.Data as Template
 import qualified Boris.Http.Template.Page.Project as Template
 import qualified Boris.Http.Template.Page.Projects as Template
 import qualified Boris.Http.Template.Page.Scoreboard as Template
@@ -68,9 +69,9 @@ dashboard :: Hydrant.Html
 dashboard =
   Template.pageDashboard
 
-newproject :: Hydrant.Html
-newproject =
-  Template.pageNewproject
+newproject :: Maybe Template.NewProjectError -> Hydrant.Html
+newproject err =
+  Template.pageNewproject err
 
 settings :: Hydrant.Html
 settings =

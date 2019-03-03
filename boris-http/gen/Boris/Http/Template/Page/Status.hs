@@ -8,6 +8,7 @@ import Boris.Http.Template.Data.Build.Data
 import Boris.Http.Template.Data.Commit.Data
 import Boris.Http.Template.Data.Project.Data
 import Boris.Http.Template.Page.Builds.Data
+import Boris.Http.Template.Page.Newproject.Data
 import Boris.Http.Template.Page.Status.Data
 pageStatus :: Status -> Projector.Html.Runtime.Html
 pageStatus = \status -> case Projector.Html.Runtime.isEmpty (statusBuilds status) of

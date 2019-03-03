@@ -85,3 +85,18 @@ input[type=text] {
     padding:8px;
     box-sizing:border-box;
 }
+
+input.form-error {
+    border:2px solid #CC0000;
+    box-shadow: 0 0 3px #CC0000;
+}
+
+.help {
+    display: block;
+    font-size: 0.75rem;
+    margin-top: 0rem;
+}
+
+.help.form-error {
+    color: #CC0000;
+}

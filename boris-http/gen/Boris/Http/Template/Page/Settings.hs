@@ -8,6 +8,7 @@ import Boris.Http.Template.Data.Build.Data
 import Boris.Http.Template.Data.Commit.Data
 import Boris.Http.Template.Data.Project.Data
 import Boris.Http.Template.Page.Builds.Data
+import Boris.Http.Template.Page.Newproject.Data
 import Boris.Http.Template.Page.Status.Data
 pageSettings :: Projector.Html.Runtime.Html
 pageSettings = Projector.Html.Runtime.foldHtml [Projector.Html.Runtime.parentNode (Projector.Html.Runtime.Tag "h3") (Projector.Html.Runtime.fold []) (Projector.Html.Runtime.textNodeUnescaped "Settings"),

@@ -1,0 +1,6 @@
+-- machinator @ v3
+
+data NewProjectError =
+    InvalidNameNewProjectError
+  | InvalidRepositoryNewProjectError
+  | AlreadyExistsNewProjectError
