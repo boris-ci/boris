@@ -3,7 +3,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeOperators #-}
 module Boris.Http.Db.Query (
-    tick
+{--    tick
   , fetch
   , fetchLogs
   , fetchLogData
@@ -35,12 +35,7 @@ module Boris.Http.Db.Query (
   , getSessionOAuth
   , demandTenant
   , getTenant
-  , setTenant
-  , getAllProjects
-  , getAccountProjects
-  , createProject
-  , importProject
-  , linkProject
+  , setTenant--}
   ) where
 
 
@@ -59,7 +54,7 @@ import qualified Traction.Control as Traction
 import           Traction.QQ (sql)
 import qualified Traction.Sql as Traction
 
-
+{--
 tick :: MonadDb m => m BuildId
 tick =
   fmap BuildId . Traction.value $ Traction.mandatory_ [sql|
@@ -73,12 +68,12 @@ register project build buildid =
            VALUES (?, ?, ?, now())
     |] (getBuildId buildid, getProjectId project, renderBuild build)
 
-discover :: MonadDb m => BuildId -> Project -> m ()
+discover :: MonadDb m => BuildId -> ProjectName -> m ()
 discover buildid project =
   void $ Traction.execute [sql|
       INSERT INTO discover (discover_id, project, queued_time)
            VALUES (?, ?, now())
-    |] (getBuildId buildid, renderProject project)
+    |] (getBuildId buildid, renderProjectName project)
 
 fetch :: MonadDb m => BuildId -> m (Maybe BuildData)
 fetch i = do
@@ -92,7 +87,7 @@ fetch i = do
   pure . with x $ \((p, b, r, c, qt, st, et, ht) :. (br, cancelled)) ->
     BuildData
       i
-      (Project p)
+      (ProjectName p)
       (Build b)
       (Ref <$> r)
       (Commit <$> c)
@@ -120,7 +115,7 @@ fetchLogs i = do
       tm
       tt
 
-getProjects :: MonadDb m => Project -> m [Build]
+getProjects :: MonadDb m => ProjectName -> m [Build]
 getProjects project =
   (fmap . fmap) Build $ Traction.values $ Traction.query [sql|
       SELECT DISTINCT build
@@ -128,44 +123,44 @@ getProjects project =
         JOIN project p
           ON b.project = p.id
          AND p.name = ?
-    |] (Traction.Only $ renderProject project)
+    |] (Traction.Only $ renderProjectName project)
 
-getProjectCommits :: MonadDb m => Project -> m [Commit]
+getProjectCommits :: MonadDb m => ProjectName -> m [Commit]
 getProjectCommits project =
   (fmap . fmap) Commit $ Traction.values $ Traction.query [sql|
       SELECT DISTINCT commit
         FROM build
        WHERE project = ?
-    |] (Traction.Only $ renderProject project)
+    |] (Traction.Only $ renderProjectName project)
 
-getProjectRefs :: MonadDb m => Project -> Ref -> m [Build]
+getProjectRefs :: MonadDb m => ProjectName -> Ref -> m [Build]
 getProjectRefs project ref =
   (fmap . fmap) Build $ Traction.values $ Traction.query [sql|
       SELECT DISTINCT build
         FROM build
        WHERE project = ?
          AND ref = ?
-    |] (renderProject project, renderRef ref)
+    |] (renderProjectName project, renderRef ref)
 
-getProjectCommitBuildIds :: MonadDb m => Project -> Commit -> m [BuildId]
+getProjectCommitBuildIds :: MonadDb m => ProjectName -> Commit -> m [BuildId]
 getProjectCommitBuildIds project commit =
   (fmap . fmap) BuildId $ Traction.values $ Traction.query [sql|
       SELECT DISTINCT build_id
         FROM build
        WHERE project = ?
          AND commit = ?
-    |] (renderProject project, renderCommit commit)
+    |] (renderProjectName project, renderCommit commit)
 
-getProjectCommitSeen :: MonadDb m => Project -> Commit -> m [Build]
+getProjectCommitSeen :: MonadDb m => ProjectName -> Commit -> m [Build]
 getProjectCommitSeen project commit =
   (fmap . fmap) Build $ Traction.values $ Traction.query [sql|
       SELECT DISTINCT build
         FROM build
        WHERE project = ?
          AND commit = ?
-    |] (renderProject project, renderCommit commit)
+    |] (renderProjectName project, renderCommit commit)
 
-getProjectCommitDiscovered :: MonadDb m => Project -> Commit -> m [Build]
+getProjectCommitDiscovered :: MonadDb m => ProjectName -> Commit -> m [Build]
 getProjectCommitDiscovered project commit =
   (fmap . fmap) Build $ Traction.values $ Traction.query [sql|
       SELECT DISTINCT build
@@ -173,7 +168,7 @@ getProjectCommitDiscovered project commit =
        WHERE d.discover_id = c.discover_id
          AND d.project = ?
          AND c.commit = ?
-    |] (renderProject project, renderCommit commit)
+    |] (renderProjectName project, renderCommit commit)
 
 addProjectCommitDiscovered :: MonadDb m => BuildId -> Build -> Commit -> m ()
 addProjectCommitDiscovered buildId build commit =
@@ -182,7 +177,7 @@ addProjectCommitDiscovered buildId build commit =
            VALUES (?, ?, ?)
     |] (getBuildId buildId, renderBuild build, renderCommit commit)
 
-getBuildIds :: MonadDb m => Project -> Build -> Ref -> m [BuildId]
+getBuildIds :: MonadDb m => ProjectName -> Build -> Ref -> m [BuildId]
 getBuildIds project build ref =
   (fmap . fmap) BuildId $ Traction.values $ Traction.query [sql|
       SELECT DISTINCT build_id
@@ -190,9 +185,9 @@ getBuildIds project build ref =
        WHERE project = ?
          AND build = ?
          AND ref = ?
-    |] (renderProject project, renderBuild build, renderRef ref)
+    |] (renderProjectName project, renderBuild build, renderRef ref)
 
-getQueued :: MonadDb m => Project -> Build -> m [BuildId]
+getQueued :: MonadDb m => ProjectName -> Build -> m [BuildId]
 getQueued project build =
   (fmap . fmap) BuildId $ Traction.values $ Traction.query [sql|
       SELECT DISTINCT build_id
@@ -201,9 +196,9 @@ getQueued project build =
          AND build = ?
          AND ref IS NULL
          AND build_result IS NULL
-    |] (renderProject project, renderBuild build)
+    |] (renderProjectName project, renderBuild build)
 
-getBuildRefs :: MonadDb m => Project -> Build -> m [Ref]
+getBuildRefs :: MonadDb m => ProjectName -> Build -> m [Ref]
 getBuildRefs project build =
   (fmap . fmap) Ref $ Traction.values $ Traction.query [sql|
       SELECT DISTINCT ref
@@ -211,7 +206,7 @@ getBuildRefs project build =
        WHERE project = ?
          AND build = ?
          AND ref IS NOT NULL
-    |] (renderProject project, renderBuild build)
+    |] (renderProjectName project, renderBuild build)
 
 cancel :: MonadDb m => BuildId -> m ()
 cancel buildid =
@@ -277,7 +272,7 @@ results = do
   pure . with rs $ \(i, p, b, r, br) ->
     Result
       (BuildId i)
-      (Project p)
+      (ProjectName p)
       (Build b)
       (Ref <$> r)
       (bool BuildKo BuildOk br)
@@ -411,42 +406,6 @@ setTenant settings =
            SET multi_tenant = ?
       |] (Traction.Only $ MultiTenant == settings)
 
-getAllProjects :: MonadDb m => m [Definition]
-getAllProjects = do
-  let q = [sql|
-      SELECT p.id, p.name, p.repository
-        FROM project p
-    |]
-  x <- Traction.query_ q
-  pure . with x $ \(i, name, repository) ->
-     Definition
-       (ProjectId i)
-       (Project name)
-       (Repository repository)
-
-getAccountProjects :: MonadDb m => UserId -> m [Definition]
-getAccountProjects account = do
-  let q = [sql|
-      SELECT p.id, p.name, p.repository
-        FROM project p
-        JOIN account_projects ap
-          ON ap.project = p.id
-       WHERE ap.account = ?
-    |]
-  x <- Traction.query q (Traction.Only $ getUserId account)
-  pure . with x $ \(i, name, repository) ->
-    Definition
-      (ProjectId i)
-      (Project name)
-      (Repository repository)
-
-createProject :: MonadDb m => (Identified OwnedBy) -> Project -> Repository -> m ()
-createProject _owner project repository =
-  void $ Traction.execute [sql|
-      INSERT INTO project (name, repository, enabled)
-           VALUES (?, ?, true)
-    |] (renderProject project, renderRepository repository)
-
 createOrGetOwnedBy :: MonadDb m => OwnedBy -> m (Identified OwnedBy)
 createOrGetOwnedBy o =
   case o of
@@ -486,34 +445,4 @@ createOrGetOwnedBy o =
          pure $ Identified nn o
    OwnedByBoris _ ->
      pure $ Identified (UserId 0) o
-
-importProject :: MonadDb m => OwnedBy -> Project -> Repository -> m ProjectId
-importProject owner project repository = do
-  identified <- createOrGetOwnedBy owner
-  exists <- (fmap . fmap) ProjectId . Traction.values $ Traction.unique [sql|
-         SELECT p.id
-           FROM project p
-          WHERE p.source = ?
-            AND p.owner = ?
-            AND p.name = ?
-       |] (sourceToInt GithubSource, getUserId . userIdOf $ identified, renderProject project)
-
-  case exists of
-    Nothing ->
-      fmap ProjectId . Traction.value $ Traction.mandatory [sql|
-          INSERT INTO project (source, owner, name, repository, enabled)
-               VALUES (?, ?, ?, ?, false)
-            RETURNING id
-        |] (sourceToInt GithubSource, getUserId . userIdOf $ identified, renderProject project, renderRepository repository)
-    Just projectId ->
-      pure projectId
-
-
-linkProject :: MonadDb m => ProjectId -> UserId -> Permission -> m ()
-linkProject project user permission = do
-  void $ Traction.execute [sql|
-      INSERT INTO account_projects (account, project, permission)
-           VALUES (?, ?, ?)
-      ON CONFLICT (account, project)
-      DO UPDATE set permission = ?
-    |] (getUserId user, getProjectId project, permissionToInt permission, permissionToInt permission)
+--}

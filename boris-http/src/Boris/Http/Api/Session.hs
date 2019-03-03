@@ -55,6 +55,7 @@ renderAuthenticationError err =
 
 check :: DbPool -> Client.Manager -> GithubClient -> GithubSecret -> SessionId -> EitherT AuthenticationError IO (Maybe AuthenticatedUser)
 check pool _manager _client _secret sessionId = do
+  {--
   a <- firstT AuthenticationDbError . Traction.runDb pool $
     Query.getSession sessionId
   case a of
@@ -64,9 +65,12 @@ check pool _manager _client _secret sessionId = do
       firstT AuthenticationDbError . Traction.runDb pool $
         Query.tickSession sessionId
       pure a
-
+--}
+  error "todo"
 authenticate :: DbPool -> Client.Manager -> GithubClient -> GithubSecret -> GithubCode -> EitherT AuthenticationError IO Session
 authenticate pool manager client secret code = do
+  error "todo"
+  {--
   response <- liftIO $ Client.httpLbs Client.defaultRequest {
       Client.host = "github.com"
     , Client.port = 443
@@ -121,6 +125,7 @@ authenticate pool manager client secret code = do
   firstT AuthenticationDbError . Traction.runDb pool $
     Query.newSession session (userIdOf u)
   pure session
+--}
 
 data AccessToken =
   AccessToken {

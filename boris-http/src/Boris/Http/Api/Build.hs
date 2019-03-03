@@ -49,6 +49,8 @@ renderBuildError err =
 
 byId :: DbPool -> BuildId -> EitherT DbError IO (Maybe BuildData)
 byId pool build =
+  error "todo"
+  {--
   Traction.runDb pool $ do
     result <- Query.fetch build
     for result $ \r ->
@@ -73,20 +75,29 @@ byId pool build =
                   pure r
         Just _ ->
           pure r
+--}
 
-list :: DbPool -> Project -> Build -> EitherT DbError IO BuildTree
+list :: DbPool -> ProjectName -> Build -> EitherT DbError IO BuildTree
 list pool project build = Traction.runDb pool $ do
+  error "todo"
+  {--
   refs <- Query.getBuildRefs project build
   BuildTree project build <$> (for refs $ \ref ->
     BuildTreeRef ref <$> Query.getBuildIds project build ref)
+--}
 
-queued :: DbPool -> Project -> Build -> EitherT DbError IO [BuildId]
+queued :: DbPool -> ProjectName -> Build -> EitherT DbError IO [BuildId]
 queued pool project build =
+  error "todo"
+  {--
   Traction.runDb pool $
   Query.getQueued project build
+--}
 
-submit :: DbPool -> Tenant -> AuthenticatedBy -> Project -> Build -> Maybe Ref -> EitherT BuildError IO (Maybe BuildId)
+submit :: DbPool -> Tenant -> AuthenticatedBy -> ProjectName -> Build -> Maybe Ref -> EitherT BuildError IO (Maybe BuildId)
 submit pool tenant authenticated project build ref = do
+  error "Todo"
+  {--
   definition' <- firstT BuildDbError $
     Project.pick pool tenant authenticated project
   case definition' of
@@ -101,47 +112,71 @@ submit pool tenant authenticated project build ref = do
         i <- Query.tick
         Query.register (definitionId definition) build i
         pure $ Just i
+--}
 
 heartbeat :: DbPool -> BuildId -> EitherT DbError IO BuildCancelled
 heartbeat pool  buildId =
+  error "todo"
+  {--
   Traction.runDb pool $
     Query.heartbeat buildId
+--}
 
 acknowledge :: DbPool -> BuildId -> EitherT DbError IO Acknowledge
 acknowledge pool buildId =
+  error "todo"
+  {--
   Traction.runDb pool $
     Query.acknowledge buildId
+--}
 
 cancel :: DbPool -> BuildId -> EitherT DbError IO (Maybe ())
 cancel pool i =
+  error "Todo"
+  {--
   Traction.runDb pool $ do
     d <- Query.fetch i
     for d $ \_ ->
         Query.cancel i
-
-byCommit :: DbPool -> Project -> Commit -> EitherT DbError IO [BuildId]
+--}
+byCommit :: DbPool -> ProjectName -> Commit -> EitherT DbError IO [BuildId]
 byCommit pool project commit =
+  error "todo"
+  {--
   Traction.runDb pool $
     Query.getProjectCommitBuildIds project commit
 
-byProject :: DbPool -> Project -> EitherT DbError IO [Build]
+--}
+
+byProject :: DbPool -> ProjectName -> EitherT DbError IO [Build]
 byProject pool project =
+  error "todo"
+  {--
   Traction.runDb pool $
     Query.getProjects project
+--}
 
 logOf :: DbPool -> BuildId -> EitherT DbError IO (Maybe LogData)
 logOf pool i =
+  error "todo"
+  {--
   Traction.runDb pool $ do
     d <- Query.fetch i
     for d $ \_ ->
       Query.fetchLogData i
+--}
 
 avow :: DbPool -> BuildId -> Ref -> Commit -> EitherT DbError IO ()
 avow pool i ref commit =
+  error "todo"
+  {--
   Traction.runDb pool $
     Query.index i ref commit
-
+--}
 complete :: DbPool -> BuildId -> BuildResult -> EitherT DbError IO ()
 complete pool i result =
+  error "Todo"
+  {--
   void . Traction.runDb pool $
     Query.complete i result
+--}

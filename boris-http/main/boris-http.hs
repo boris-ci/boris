@@ -1,5 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+import           Boris.Core.Data.Tenant
 import qualified Boris.Http.Boot as Boot
 import qualified Boris.Http.Route as Route
 import qualified Boris.Http.Db.Schema as Schema
@@ -34,8 +35,9 @@ run = do
   orDie Traction.renderDbError $
     Schema.initialise pool
 
-  tenant <- orDie Traction.renderDbError $
-    Traction.runDb pool Query.getTenant
+--  tenant <- orDie Traction.renderDbError $
+--    Traction.runDb pool Query.getTenant
+  tenant <- pure $ Just SingleTenant
 
   port <- Nest.force $ Nest.numeric "PORT" `Nest.withDefault` 10080
 
@@ -43,8 +45,9 @@ run = do
     (Just _, _) ->
       pure $ Route.application pool authentication mode
     (Nothing, Just t) -> do
-      orDie Traction.renderDbError $
-        Traction.runDb pool $ Query.setTenant t
+      error "todo"
+--      orDie Traction.renderDbError $
+--        Traction.runDb pool $ Query.setTenant t
       pure $ Route.application pool authentication mode
     (Nothing, Nothing) -> do
       pure $ Route.configure pool authentication mode

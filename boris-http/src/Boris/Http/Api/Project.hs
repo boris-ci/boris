@@ -24,12 +24,14 @@ import           Traction.Control (DbPool, DbError)
 import qualified Traction.Control as Traction
 
 
-picker :: Project -> [Definition] -> Maybe Definition
+picker :: ProjectName -> [Project] -> Maybe Project
 picker project =
-  List.find ((==) project . definitionProject)
+  List.find ((==) project . projectName)
 
-pick :: DbPool -> Tenant -> AuthenticatedBy -> Project -> EitherT DbError IO (Maybe Definition)
+pick :: DbPool -> Tenant -> AuthenticatedBy -> Project -> EitherT DbError IO (Maybe Project)
 pick pool tenant authenticated project =
+  error "Todo"
+  {--
   Traction.runDb pool $ case tenant of
     SingleTenant ->
       case authenticated of
@@ -43,9 +45,11 @@ pick pool tenant authenticated project =
           pure Nothing
         AuthenticatedByGithub _session user ->
           picker project <$> Query.getAccountProjects (userIdOf user)
-
-list :: DbPool -> Tenant -> AuthenticatedBy -> EitherT DbError IO [Definition]
+--}
+list :: DbPool -> Tenant -> AuthenticatedBy -> EitherT DbError IO [Project]
 list pool tenant authenticated =
+  error "todo"
+  {--
   Traction.runDb pool $ case tenant of
     SingleTenant ->
       case authenticated of
@@ -59,10 +63,12 @@ list pool tenant authenticated =
           pure []
         AuthenticatedByGithub _session user ->
           Query.getAccountProjects (userIdOf user)
-
+--}
 -- FIX MTH error type
-discover :: DbPool -> Tenant -> AuthenticatedBy -> Project -> EitherT Text IO (Maybe BuildId)
+discover :: DbPool -> Tenant -> AuthenticatedBy -> ProjectName -> EitherT Text IO (Maybe BuildId)
 discover pool tenant authenticated project = do
+  error "todo"
+  {--
   r <- firstT Traction.renderDbError $
     pick pool tenant authenticated project
   case r of
@@ -74,12 +80,16 @@ discover pool tenant authenticated project = do
       firstT Traction.renderDbError . Traction.runDb pool $
         Query.discover i project
       pure (Just i)
+--}
 
-new :: DbPool -> AuthenticatedBy -> Project -> Repository -> EitherT DbError IO ()
+new :: DbPool -> AuthenticatedBy -> ProjectName -> Repository -> EitherT DbError IO ()
 new pool authenticated project repository =
+  error "todo"
+  {--
   Traction.runDb pool $
     case authenticated of
       AuthenticatedByGithub _ u ->
         Query.createProject (OwnedByGithubUser <$> fmap githubUserLogin u) project repository
       AuthenticatedByDesign u ->
         Query.createProject (OwnedByBoris <$> u) project repository
+--}

@@ -18,7 +18,8 @@ import           Traction.Control (MonadDb)
 
 scoreboard :: MonadDb m => m [Result]
 scoreboard =
-  Query.results
+  error "todo"
+  -- Query.results
 
 status :: MonadDb m => m [Result]
 status =

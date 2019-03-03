@@ -48,6 +48,8 @@ renderImportError err =
 
 importRepositories :: DbPool -> Session -> (Identified GithubUser) -> EitherT ImportError IO ()
 importRepositories pool session login = do
+  error "todo"
+  {--
   repositories <- fmap Vector.toList . firstT ImportGithubError . newEitherT $
     Github.currentUserRepos (Github.OAuth . githubOAuth . sessionOAuth $ session) Github.RepoPublicityAll
 
@@ -86,6 +88,7 @@ importRepositories pool session login = do
             "Imported ", name, "/", renderProject project
           ]
 
+ --}
 data GithubPermission =
     GithubPermissionAdmin
   | GithubPermissionWrite

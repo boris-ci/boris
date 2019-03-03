@@ -32,6 +32,35 @@ schema = [
     Migration "create-tick" [sql|
       CREATE SEQUENCE tick START 1;
     |]
+
+  , Migration "create-projects" [sql|
+      CREATE TABLE project (
+          id SERIAL PRIMARY KEY
+        , name TEXT NOT NULL UNIQUE
+        , repository TEXT NOT NULL
+        , enabled BOOLEAN NOT NULL
+        )
+    |]
+
+  , Migration "create-build" [sql|
+      CREATE TABLE build (
+          build_id BIGINT PRIMARY KEY
+        , project BIGINT NOT NULL REFERENCES project(id)
+        , build TEXT
+        , ref TEXT
+        , commit TEXT
+        , queued_time TIMESTAMP WITH TIME ZONE
+        , start_time TIMESTAMP WITH TIME ZONE
+        , end_time TIMESTAMP WITH TIME ZONE
+        , heartbeat_time TIMESTAMP WITH TIME ZONE
+        , cancelled BOOLEAN
+        , build_result BOOLEAN
+        , log_group TEXT
+        , log_stream TEXT
+        )
+    |]
+
+
   , Migration "create-github-account" [sql|
       CREATE TABLE github_account (
           id SERIAL PRIMARY KEY
@@ -105,37 +134,11 @@ schema = [
            VALUES (0, 'boris', 0)
     |]
 
-  , Migration "create-projects" [sql|
-      CREATE TABLE project (
-          id SERIAL PRIMARY KEY
-        , name TEXT NOT NULL UNIQUE
-        , repository TEXT NOT NULL
-        , enabled BOOLEAN NOT NULL
-        )
-    |]
-
   , Migration "create-settings" [sql|
       CREATE TABLE settings (
           multi_tenant BOOLEAN
         )
     |]
 
-  , Migration "create-build" [sql|
-      CREATE TABLE build (
-          build_id BIGINT PRIMARY KEY
-        , project BIGINT NOT NULL REFERENCES project(id)
-        , build TEXT
-        , ref TEXT
-        , commit TEXT
-        , queued_time TIMESTAMP WITH TIME ZONE
-        , start_time TIMESTAMP WITH TIME ZONE
-        , end_time TIMESTAMP WITH TIME ZONE
-        , heartbeat_time TIMESTAMP WITH TIME ZONE
-        , cancelled BOOLEAN
-        , build_result BOOLEAN
-        , log_group TEXT
-        , log_stream TEXT
-        )
-    |]
 
   ]

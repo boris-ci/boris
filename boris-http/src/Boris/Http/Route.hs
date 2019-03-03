@@ -65,11 +65,12 @@ configure pool authentication mode = do
     View.renderUnauthenticated $ View.configure
 
   Spock.post "configure" $ do
+    error "todo"
+    {--
     m <- Spock.param "multi"
     liftDbError $ Traction.runDb pool $ Query.setTenant $
       bool SingleTenant MultiTenant $ isJust (m :: Maybe Text)
     Spock.redirect "/"
-
   Spock.prehook (do
     settings <- liftDbError . Traction.runDb pool $
       Query.getTenant
@@ -79,7 +80,7 @@ configure pool authentication mode = do
         pure ()
       Nothing -> do
         Spock.redirect "/configure") $ route pool authentication mode
-
+--}
 application :: DbPool -> AuthenticationMode -> Mode -> Spock.SpockT IO ()
 application pool authentication mode = do
   init mode
@@ -158,7 +159,7 @@ route pool authentication mode = do
         AcceptHTML ->
           View.renderAuthenticated a $ View.projects projects
         AcceptJSON ->
-          Spock.json $ ApiV1.GetProjects (definitionProject <$> projects)
+          Spock.json $ ApiV1.GetProjects (projectName <$> projects)
 
   Spock.post "project" $
     authenticated authentication pool $ \a -> do
@@ -166,12 +167,12 @@ route pool authentication mode = do
         case content of
           ContentTypeForm -> do
             -- FIX project name validation
-            project <- Project <$> Spock.param' "project"
+            project <- ProjectName <$> Spock.param' "project"
             -- FIX repository validation
             repository <- Repository <$> Spock.param' "repository"
             liftDbError $
               Project.new pool a project repository
-            Spock.redirect $ "/project/" <> renderProject project
+            Spock.redirect $ "/project/" <> renderProjectName project
           ContentTypeJSON -> do
             e <- Spock.jsonBody
             -- FIX project name validation
@@ -185,7 +186,7 @@ route pool authentication mode = do
                 liftDbError $
                   Project.new pool a project repository
                 Spock.setStatus HTTP.created201
-                Spock.setHeader "Location" $ "/project/" <> renderProject project
+                Spock.setHeader "Location" $ "/project/" <> renderProjectName project
                 Spock.json $ ApiV1.GetProject project []
 
   Spock.get "project/new" $
@@ -194,18 +195,18 @@ route pool authentication mode = do
 
   Spock.get ("project" <//> Spock.var) $ \project ->
     authenticated authentication pool $ \a -> do
-      builds <- liftDbError $ Build.byProject pool (Project project)
+      builds <- liftDbError $ Build.byProject pool (ProjectName project)
       withAccept $ \case
         AcceptHTML ->
-          View.renderAuthenticated a $ View.project (Project project) builds
+          View.renderAuthenticated a $ View.project (ProjectName project) builds
         AcceptJSON ->
-          Spock.json $ ApiV1.GetProject (Project project) builds
+          Spock.json $ ApiV1.GetProject (ProjectName project) builds
 
   Spock.post ("project" <//> Spock.var) $ \project ->
     authenticated authentication pool $ \a -> do
       settings <- getTenant pool
       buildId <- liftError id $
-        Project.discover pool settings a (Project project)
+        Project.discover pool settings a (ProjectName project)
       case buildId of
         Nothing -> do
           -- TODO should have a body
@@ -219,7 +220,7 @@ route pool authentication mode = do
   Spock.get ("project" <//> Spock.var <//> "build" <//> Spock.var) $ \project' build'  ->
     authenticated authentication pool $ \a -> do
       let
-        project = Project project'
+        project = ProjectName project'
         build = Build build'
 
       builds <- liftDbError $ Build.list pool project build
@@ -235,7 +236,7 @@ route pool authentication mode = do
     authenticated authentication pool $ \a -> do
       settings <- getTenant pool
       let
-        project = Project project'
+        project = ProjectName project'
         build = Build build'
 
       withContentType $ \content ->
@@ -272,7 +273,7 @@ route pool authentication mode = do
   Spock.get ("project" <//> Spock.var <//> "commit" <//> Spock.var) $ \project' commit' ->
     authenticated authentication pool $ \a -> do
       let
-        project = Project project'
+        project = ProjectName project'
         commit = Commit commit'
 
       builds <- liftDbError $ Build.byCommit pool project commit
@@ -497,8 +498,11 @@ route pool authentication mode = do
 
 getTenant :: DbPool -> Spock.ActionT IO Tenant
 getTenant pool =
+  error "todo"
+  {--
   liftDbError . Traction.runDb pool $
     Query.demandTenant
+--}
 
 newSession :: Mode -> SessionId -> Spock.ActionT IO ()
 newSession mode session =

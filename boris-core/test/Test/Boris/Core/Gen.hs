@@ -50,9 +50,9 @@ genBuildNamePattern = do
     parseBuildNamePattern $ renderBuild b
   pure $ p
 
-genProject :: Gen Project
-genProject =
-  Project <$> Gen.element software
+genProjectName :: Gen ProjectName
+genProjectName =
+  ProjectName <$> Gen.element software
 
 software :: [Text]
 software = [
@@ -97,7 +97,7 @@ genPattern  =
 genBuildTree :: Gen BuildTree
 genBuildTree =
   BuildTree
-    <$> genProject
+    <$> genProjectName
     <*> genBuild
     <*> Gen.list (Range.linear 1 100) genBuildTreeRef
 
@@ -111,7 +111,7 @@ genBuildData :: Gen BuildData
 genBuildData =
   BuildData
     <$> genBuildId
-    <*> genProject
+    <*> genProjectName
     <*> genBuild
     <*> Gen.maybe genRef
     <*> Gen.maybe genCommit
@@ -126,7 +126,7 @@ genResult :: Gen Result
 genResult =
   Result
     <$> genBuildId
-    <*> genProject
+    <*> genProjectName
     <*> genBuild
     <*> Gen.maybe genRef
     <*> genBuildResult

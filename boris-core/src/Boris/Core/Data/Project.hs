@@ -11,7 +11,7 @@ module Boris.Core.Data.Project (
   , OwnerType (..)
   , ownerTypeFromInt
   , ownerTypeToInt
-  , Definition (..)
+  , ProjectName (..)
   , ProjectId (..)
   , Project (..)
   ) where
@@ -95,16 +95,15 @@ data Owner =
     , ownerType :: OwnerType
     } deriving (Eq, Ord, Show)
 
-data Definition =
-  Definition {
-      definitionId :: ProjectId
-    , definitionProject :: Project
-    , definitionRepository :: Repository
+data Project =
+  Project {
+      projectName :: ProjectName
+    , projectRepository :: Repository
     } deriving (Eq, Ord, Show)
 
-newtype Project =
-  Project {
-      renderProject :: Text
+newtype ProjectName =
+  ProjectName {
+      renderProjectName :: Text
     } deriving (Eq, Show, Ord)
 
 newtype ProjectId =

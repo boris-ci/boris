@@ -31,9 +31,11 @@ renderCompleteError err =
    CompleteDbError e ->
       mconcat ["Complete error via db: ", Traction.renderDbError e]
 
-complete :: DbPool -> BuildId -> Project -> [DiscoverInstance] -> EitherT CompleteError IO ()
+complete :: DbPool -> BuildId -> ProjectName -> [DiscoverInstance] -> EitherT CompleteError IO ()
 complete pool buildid project discovers = do
   -- FIX ref should be handled
+  error "todo"
+  {--
   for_ discovers $ \(DiscoverInstance build _ref commit) -> do
     current <- firstT CompleteDbError . Traction.runDb pool $
       Query.getProjectCommitSeen project commit
@@ -48,3 +50,4 @@ complete pool buildid project discovers = do
           newId <- Query.tick
           error "todo"
 --          Query.register project build newId
+--}

@@ -109,7 +109,7 @@ data BuildCancelled =
 data BuildData =
   BuildData {
       buildDataId :: BuildId
-    , buildDataProject :: Project
+    , buildDataProject :: ProjectName
     , buildDataBuild :: Build
     , buildDataRef :: Maybe Ref
     , buildDataCommit :: Maybe Commit
@@ -124,7 +124,7 @@ data BuildData =
 data Result =
   Result {
       resultBuildId :: !BuildId
-    , resultProject :: !Project
+    , resultProject :: !ProjectName
     , resultBuild :: !Build
     , resultRef :: !(Maybe Ref)
     , resultBuildResult :: !BuildResult
@@ -133,7 +133,7 @@ data Result =
 
 data BuildTree =
   BuildTree {
-      buildTreeProject :: Project
+      buildTreeProject :: ProjectName
     , buildTreeBuild :: Build
     , buildTreeRefs :: [BuildTreeRef]
     } deriving (Eq, Ord, Show)

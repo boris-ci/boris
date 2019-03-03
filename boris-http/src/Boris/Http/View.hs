@@ -89,19 +89,19 @@ status bs =
   Template.pageStatus . Template.Status .
     with (List.sortOn (\b -> (resultProject b, resultBuild b)) bs) $ \b ->
       Template.StatusBuild
-        (renderProject . resultProject $ b)
+        (renderProjectName . resultProject $ b)
         (renderBuild . resultBuild $ b)
         (renderBuildId . resultBuildId $ b)
 
 
-projects :: [Definition] -> Hydrant.Html
-projects definitions =
-  Template.pageProjects (fmap (renderProject . definitionProject) $ definitions)
+projects :: [Project] -> Hydrant.Html
+projects projects =
+  Template.pageProjects (fmap (renderProjectName . projectName) $ projects)
 
-project :: Project -> [Build] -> Hydrant.Html
+project :: ProjectName -> [Build] -> Hydrant.Html
 project p bs =
   Template.pageProject $
-    Template.Project (renderProject p) (List.sort . fmap renderBuild $ bs)
+    Template.Project (renderProjectName p) (List.sort . fmap renderBuild $ bs)
 
 builds :: BuildTree -> [BuildId] -> Hydrant.Html
 builds (BuildTree p b refs) queued =
@@ -111,13 +111,13 @@ builds (BuildTree p b refs) queued =
   in
     Template.pageBuilds $
       Template.Builds
-        (renderProject p)
+        (renderProjectName p)
         (renderBuild b)
         (renderBuildId <$> sortBuildIds queued)
         (with sorted $ \(BuildTreeRef r is) ->
           Template.BuildRef (renderRef r) (renderBuildId <$> sortBuildIds is))
 
-commit :: Project -> Commit -> [BuildData] -> Hydrant.Html
+commit :: ProjectName -> Commit -> [BuildData] -> Hydrant.Html
 commit p c bs =
   let
     byBuild =
@@ -125,7 +125,7 @@ commit p c bs =
   in
     Template.pageCommit $
       Template.Commit
-        (renderProject p)
+        (renderProjectName p)
         (renderCommit c)
         (with byBuild $ \(b, ids) ->
           Template.CommitBuild
@@ -148,7 +148,7 @@ build b =
       Template.Build
         (renderBuildId . buildDataId $ b)
         (Template.HasLog)
-        (renderProject . buildDataProject $ b)
+        (renderProjectName . buildDataProject $ b)
         (renderBuild . buildDataBuild $ b)
         (fmap renderRef . buildDataRef $ b)
         (fmap renderCommit . buildDataCommit $ b)
