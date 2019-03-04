@@ -5,6 +5,8 @@ module Boris.Http.Api.Discover (
 
   , CompleteError (..)
   , renderCompleteError
+
+  , discover
   ) where
 
 
@@ -13,6 +15,8 @@ import qualified Data.List as List
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Instance
 import           Boris.Core.Data.Project
+import           Boris.Core.Data.Tenant
+import           Boris.Http.Data
 import qualified Boris.Http.Db.Query as Query
 import           Boris.Prelude
 
@@ -50,4 +54,22 @@ complete pool buildid project discovers = do
           newId <- Query.tick
           error "todo"
 --          Query.register project build newId
+--}
+
+-- FIX MTH error type
+discover :: DbPool -> Tenant -> AuthenticatedBy -> ProjectName -> EitherT Text IO (Maybe BuildId)
+discover pool tenant authenticated project = do
+  error "todo"
+  {--
+  r <- firstT Traction.renderDbError $
+    pick pool tenant authenticated project
+  case r of
+    Nothing ->
+      pure Nothing
+    Just _repository -> do
+      i <- firstT Traction.renderDbError . Traction.runDb pool $
+        Query.tick
+      firstT Traction.renderDbError . Traction.runDb pool $
+        Query.discover i project
+      pure (Just i)
 --}

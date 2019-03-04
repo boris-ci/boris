@@ -8,6 +8,7 @@ module Boris.Http.Route (
   ) where
 
 import           Boris.Core.Data.Build
+import           Boris.Core.Data.Keyed
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Repository
 import           Boris.Core.Data.Tenant
@@ -19,7 +20,6 @@ import qualified Boris.Http.Api.Result as Result
 import qualified Boris.Http.Api.Session as Session
 import           Boris.Http.Boot
 import           Boris.Http.Data
-import qualified Boris.Http.Db.Query as Query
 import           Boris.Http.Spock
 import qualified Boris.Http.View as View
 import qualified Boris.Http.Template.Page.Newproject.Data as Template
@@ -59,7 +59,7 @@ init mode =
       Spock.middleware . StaticEmbedded.static $ $(FileEmbed.embedDir "assets")
 
 configure :: DbPool -> AuthenticationMode -> Mode -> Spock.SpockT IO ()
-configure pool authentication mode = do
+configure _pool _authentication mode = do
   init mode
 
   Spock.get "configure" $ do
@@ -153,14 +153,12 @@ route pool authentication mode = do
 
   Spock.get "project" $
     authenticated authentication pool $ \a -> do
-      settings <- getTenant pool
-      projects <- liftDbError $
-        Project.list pool settings a
+      projects <- transaction pool $ Project.list
       withAccept $ \case
         AcceptHTML ->
           View.renderAuthenticated a $ View.projects projects
         AcceptJSON ->
-          Spock.json $ ApiV1.GetProjects (projectName <$> projects)
+          Spock.json $ ApiV1.GetProjects ((projectName . valueOf) <$> projects)
 
   Spock.post "project" $
     authenticated authentication pool $ \a -> do
@@ -216,7 +214,7 @@ route pool authentication mode = do
     authenticated authentication pool $ \a -> do
       settings <- getTenant pool
       buildId <- liftError id $
-        Project.discover pool settings a (ProjectName project)
+        Discover.discover pool settings a (ProjectName project)
       case buildId of
         Nothing -> do
           -- TODO should have a body
@@ -507,7 +505,7 @@ route pool authentication mode = do
               Spock.json $ ApiV1.GetLogs logs
 
 getTenant :: DbPool -> Spock.ActionT IO Tenant
-getTenant pool =
+getTenant _pool =
   error "todo"
   {--
   liftDbError . Traction.runDb pool $

@@ -6,6 +6,7 @@ module Boris.Http.Db.Project (
     insert
   , list
   , byId
+  , byName
   ) where
 
 
@@ -43,7 +44,16 @@ byId i =
   (fmap . fmap) toProject $ Traction.unique [sql|
       SELECT id, name, repository
         FROM project
+       WHERE id = ?
     |] (Traction.Only . getProjectId $ i)
+
+byName :: MonadDb m => ProjectName -> m (Maybe (Keyed ProjectId Project))
+byName p =
+  (fmap . fmap) toProject $ Traction.unique [sql|
+      SELECT id, name, repository
+        FROM project
+       WHERE name = ?
+    |] (Traction.Only . renderProjectName $ p)
 
 
 toProject :: (Int64, Text, Text) -> Keyed ProjectId Project

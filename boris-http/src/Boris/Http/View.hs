@@ -26,6 +26,7 @@ module Boris.Http.View (
   ) where
 
 import           Boris.Core.Data.Build
+import           Boris.Core.Data.Keyed
 import           Boris.Core.Data.Project
 import           Boris.Http.Data
 import qualified Boris.Http.Template.Layout.Page as Template
@@ -95,9 +96,9 @@ status bs =
         (renderBuildId . resultBuildId $ b)
 
 
-projects :: [Project] -> Hydrant.Html
+projects :: [Keyed ProjectId Project] -> Hydrant.Html
 projects projects =
-  Template.pageProjects (fmap (renderProjectName . projectName) $ projects)
+  Template.pageProjects (fmap (renderProjectName . projectName . valueOf) $ projects)
 
 project :: ProjectName -> [Build] -> Hydrant.Html
 project p bs =
