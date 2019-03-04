@@ -1,13 +1,13 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Boris.Core.Data.Build (
-    Build (..)
+    BuildName (..)
   , BuildId (..)
   , Commit (..)
   , Ref (..)
   , Pattern (..)
   , sortBuildIds
-  , newBuild
+  , newBuildName
   , renderBuildId
 
   , Acknowledge (..)
@@ -33,9 +33,9 @@ import           Data.Time (UTCTime)
 import           Boris.Prelude
 
 
-newtype Build =
-  Build {
-      renderBuild :: Text
+newtype BuildName =
+  BuildName {
+      renderBuildName :: Text
     } deriving (Eq, Ord, Show)
 
 newtype BuildId =
@@ -67,10 +67,10 @@ sortBuildIds :: [BuildId] -> [BuildId]
 sortBuildIds =
   List.reverse . List.sort
 
-newBuild :: Text -> Maybe Build
-newBuild b =
+newBuildName :: Text -> Maybe BuildName
+newBuildName b =
   emptyOrValue (Text.isInfixOf "/" b) $
-    Build b
+    BuildName b
 
 data Acknowledge =
     Accept
@@ -110,7 +110,7 @@ data BuildData =
   BuildData {
       buildDataId :: BuildId
     , buildDataProject :: ProjectName
-    , buildDataBuild :: Build
+    , buildDataBuild :: BuildName
     , buildDataRef :: Maybe Ref
     , buildDataCommit :: Maybe Commit
     , buildDataQueueTime :: Maybe UTCTime
@@ -125,7 +125,7 @@ data Result =
   Result {
       resultBuildId :: !BuildId
     , resultProject :: !ProjectName
-    , resultBuild :: !Build
+    , resultBuild :: !BuildName
     , resultRef :: !(Maybe Ref)
     , resultBuildResult :: !BuildResult
     } deriving (Eq, Show, Ord)
@@ -134,7 +134,7 @@ data Result =
 data BuildTree =
   BuildTree {
       buildTreeProject :: ProjectName
-    , buildTreeBuild :: Build
+    , buildTreeBuild :: BuildName
     , buildTreeRefs :: [BuildTreeRef]
     } deriving (Eq, Ord, Show)
 

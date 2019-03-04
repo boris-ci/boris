@@ -96,7 +96,7 @@ instance FromJSON GetBuilds where
       fmap GetBuilds $
         BuildTree
           <$> (fmap ProjectName $ o .: "project")
-          <*> (fmap Build $ o .: "build")
+          <*> (fmap BuildName $ o .: "build")
           <*> (o .: "details" >>= mapM (withObject "BuildTreeRef" $ \oo ->
                   BuildTreeRef
                     <$> fmap Ref (oo .: "ref")
@@ -107,7 +107,7 @@ instance ToJSON GetBuilds where
   toJSON (GetBuilds (BuildTree p b ds)) =
     object [
         "project" .= renderProjectName p
-      , "build" .= renderBuild b
+      , "build" .= renderBuildName b
       , "details" .= with ds (\(BuildTreeRef ref ids) -> object [
             "ref" .= renderRef ref
           , "build_ids" .= fmap getBuildId (sortBuildIds ids)
@@ -237,7 +237,7 @@ instance FromJSON GetBuild where
         BuildData
           <$> (fmap BuildId $ o .: "build_id")
           <*> (fmap ProjectName $ o .: "project")
-          <*> (fmap Build $ o .: "build")
+          <*> (fmap BuildName $ o .: "build")
           <*> ((fmap . fmap) Ref $ o .:? "ref")
           <*> ((fmap . fmap) Commit $ o .:? "commit")
           <*> (o .:? "queued")
@@ -252,7 +252,7 @@ instance ToJSON GetBuild where
     object [
         "build_id" .= (getBuildId . buildDataId) b
       , "project" .= (renderProjectName . buildDataProject) b
-      , "build" .= (renderBuild . buildDataBuild) b
+      , "build" .= (renderBuildName . buildDataBuild) b
       , "ref" .= (fmap renderRef . buildDataRef) b
       , "commit" .= (fmap renderCommit . buildDataCommit) b
       , "queued" .= buildDataQueueTime b
@@ -319,14 +319,14 @@ instance FromJSON CreateProject where
 data GetProject =
     GetProject {
         getProjectName :: ProjectName
-      , getProjectBuilds :: [Build]
+      , getProjectBuilds :: [BuildName]
       } deriving (Eq, Ord, Show)
 
 instance ToJSON GetProject where
   toJSON (GetProject p bs) =
     object [
         "project" .= renderProjectName p
-      , "builds" .= fmap renderBuild bs
+      , "builds" .= fmap renderBuildName bs
       ]
 
 instance FromJSON GetProject where
@@ -334,7 +334,7 @@ instance FromJSON GetProject where
     withObject "GetProject" $ \o ->
       GetProject
         <$> (fmap ProjectName $ o .: "project")
-        <*> (o .: "builds" >>= pure . fmap Build)
+        <*> (o .: "builds" >>= pure . fmap BuildName)
 
 data GetScoreboard =
     GetScoreboard [Result]
@@ -354,7 +354,7 @@ instance FromJSON GetScoreboard where
             Result
               <$> (fmap BuildId $ oo .: "build_id")
               <*> (fmap ProjectName $ oo .: "project")
-              <*> (fmap Build $ oo .: "build")
+              <*> (fmap BuildName $ oo .: "build")
               <*> ((fmap . fmap) Ref $ oo .: "ref")
               <*> (oo .: "result" >>= fromMaybeM (fail "Invalid build result") . parseBuildResult)
           ))
@@ -364,7 +364,7 @@ fromResult r =
   object [
       "build_id" .= (getBuildId . resultBuildId) r
     , "project" .= (renderProjectName . resultProject) r
-    , "build" .= (renderBuild . resultBuild) r
+    , "build" .= (renderBuildName . resultBuild) r
     , "ref" .= (fmap renderRef . resultRef) r
     , "result" .= (renderBuildResult . resultBuildResult) r
     ]
@@ -385,7 +385,7 @@ instance FromJSON PostDiscover where
         <$> (ProjectName <$> o .: "project")
         <*> (o .: "discover" >>= mapM (withObject "DiscoverInstance" $ \oo ->
           DiscoverInstance
-            <$> (Build <$> oo .: "build")
+            <$> (BuildName <$> oo .: "build")
             <*> (Ref <$> oo .: "ref")
             <*> (Commit <$> oo .: "commit")))
 
@@ -394,7 +394,7 @@ instance ToJSON PostDiscover where
     object [
         "project" .= (renderProjectName . postDiscoverProject $ x)
       , "discover" .= (with (postDiscoverGuts x) $ \(DiscoverInstance build ref commit) -> object [
-          "build" .= renderBuild build
+          "build" .= renderBuildName build
         , "ref" .= renderRef ref
         , "commit" .= renderCommit commit
         ])

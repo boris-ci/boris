@@ -245,7 +245,7 @@ route pool authentication mode = do
     authenticated authentication pool $ \a -> do
       let
         project = ProjectName project'
-        build = Build build'
+        build = BuildName build'
 
       builds <- liftDbError $ Build.list pool project build
       withAccept $ \case
@@ -261,7 +261,7 @@ route pool authentication mode = do
       settings <- getTenant pool
       let
         project = ProjectName project'
-        build = Build build'
+        build = BuildName build'
 
       withContentType $ \content ->
         case content of

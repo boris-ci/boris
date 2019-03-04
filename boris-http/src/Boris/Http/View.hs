@@ -98,7 +98,7 @@ status bs =
     with (List.sortOn (\b -> (resultProject b, resultBuild b)) bs) $ \b ->
       Template.StatusBuild
         (renderProjectName . resultProject $ b)
-        (renderBuild . resultBuild $ b)
+        (renderBuildName . resultBuild $ b)
         (renderBuildId . resultBuildId $ b)
 
 
@@ -106,10 +106,10 @@ projects :: [Keyed ProjectId Project] -> Hydrant.Html
 projects ps =
   Template.pageProjects (fmap (renderProjectName . projectName . valueOf) $ ps)
 
-project :: Keyed ProjectId Project -> [Build] -> Hydrant.Html
+project :: Keyed ProjectId Project -> [BuildName] -> Hydrant.Html
 project p bs =
   Template.pageProject $
-    Template.Project (renderProjectName . projectName . valueOf $ p) (List.sort . fmap renderBuild $ bs)
+    Template.Project (renderProjectName . projectName . valueOf $ p) (List.sort . fmap renderBuildName $ bs)
 
 builds :: BuildTree -> [BuildId] -> Hydrant.Html
 builds (BuildTree p b refs) queued =
@@ -120,7 +120,7 @@ builds (BuildTree p b refs) queued =
     Template.pageBuilds $
       Template.Builds
         (renderProjectName p)
-        (renderBuild b)
+        (renderBuildName b)
         (renderBuildId <$> sortBuildIds queued)
         (with sorted $ \(BuildTreeRef r is) ->
           Template.BuildRef (renderRef r) (renderBuildId <$> sortBuildIds is))
@@ -137,7 +137,7 @@ commit p c bs =
         (renderCommit c)
         (with byBuild $ \(b, ids) ->
           Template.CommitBuild
-          (renderBuild b)
+          (renderBuildName b)
           (renderBuildId <$> sortBuildIds ids))
 
 build :: BuildData -> Hydrant.Html
@@ -157,7 +157,7 @@ build b =
         (renderBuildId . buildDataId $ b)
         (Template.HasLog)
         (renderProjectName . buildDataProject $ b)
-        (renderBuild . buildDataBuild $ b)
+        (renderBuildName . buildDataBuild $ b)
         (fmap renderRef . buildDataRef $ b)
         (fmap renderCommit . buildDataCommit $ b)
         (fmap renderTime . buildDataQueueTime $ b)

@@ -25,7 +25,7 @@ data Command =
 
 data Specification =
   Specification {
-      specificationBuild :: Build
+      specificationBuild :: BuildName
     , specificationPre :: [Command]
     , specificationCommand :: [Command]
     , specificationPost :: [Command]
@@ -64,8 +64,8 @@ parseBuildNamePattern =
   in
     bimap Text.pack BuildNamePattern . Glob.tryCompileWith options . Text.unpack
 
-matchesBuild :: BuildNamePattern -> Build -> Bool
+matchesBuild :: BuildNamePattern -> BuildName -> Bool
 matchesBuild (BuildNamePattern glob) build =
   Glob.match
     glob
-    (Text.unpack $ renderBuild build)
+    (Text.unpack $ renderBuildName build)

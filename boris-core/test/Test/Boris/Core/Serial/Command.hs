@@ -34,7 +34,7 @@ prop_parse_ok =
       ]
     checker "test/data/config/command/v1/basic.toml" . Right $ [
         Specification
-          (Build "basic")
+          (BuildName "basic")
           []
           [Command "./mafia" ["build"]]
           []
@@ -43,14 +43,14 @@ prop_parse_ok =
       ]
     checker "test/data/config/command/v1/inferred.toml" . Right $ [
         Specification
-          (Build "basic")
+          (BuildName "basic")
           []
           [Command "./mafia" ["build"]]
           []
           []
           []
       , Specification
-          (Build "inferred")
+          (BuildName "inferred")
           []
           []
           []
@@ -59,21 +59,21 @@ prop_parse_ok =
       ]
     checker "test/data/config/command/v1/multiple.toml" . Right $ [
         Specification
-          (Build "basic")
+          (BuildName "basic")
           []
           [Command "master" ["build", "dist"]]
           []
           []
           []
       , Specification
-          (Build "second")
+          (BuildName "second")
           []
           [Command "master" ["build", "second"]]
           []
           []
           []
       , Specification
-          (Build "third")
+          (BuildName "third")
           []
           []
           []
@@ -82,7 +82,7 @@ prop_parse_ok =
       ]
     checker "test/data/config/command/v1/all.toml" . Right $ [
         Specification
-          (Build "all")
+          (BuildName "all")
           [Command "before" []]
           [Command "master" ["build", "dist"]]
           [Command "after" []]
@@ -98,7 +98,7 @@ prop_parse_error =
     checker "test/data/config/command/v1/invalid.unknown-version.toml" . Left $
       ConfigUnknownVersionError 2
     checker "test/data/config/command/v1/invalid.empty-command.toml" . Left $
-      ConfigInvalidCommand (Build "invalid")
+      ConfigInvalidCommand (BuildName "invalid")
     checker "test/data/config/command/v1/invalid.build-name.toml" . Left $
       ConfigInvalidName "no/slash"
 

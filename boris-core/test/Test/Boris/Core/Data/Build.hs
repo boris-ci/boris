@@ -31,15 +31,15 @@ prop_build_id_ord =
 prop_build_create :: Property
 prop_build_create =
   property $ do
-    b <- forAll genBuild
-    assert . isJust . newBuild . renderBuild $ b
+    b <- forAll genBuildName
+    assert . isJust . newBuildName . renderBuildName $ b
 
 prop_build_create_invalid :: Property
 prop_build_create_invalid =
   property $ do
-    newBuild "no/slash" === Nothing
-    newBuild "/noslash" === Nothing
-    newBuild "noslash/" === Nothing
+    newBuildName "no/slash" === Nothing
+    newBuildName "/noslash" === Nothing
+    newBuildName "noslash/" === Nothing
 
 ordLaws :: (Eq a, Show a) => Gen a -> (a -> a -> Ordering) -> Property
 ordLaws genA f =

@@ -36,18 +36,18 @@ genBuildId =
   BuildId <$>
     Gen.int64 (Range.constant 0 99999)
 
-genBuild :: Gen Build
-genBuild =
-  Build <$> Gen.element [
+genBuildName :: Gen BuildName
+genBuildName =
+  BuildName <$> Gen.element [
       "master"
     , "branches"
     ]
 
 genBuildNamePattern :: Gen BuildNamePattern
 genBuildNamePattern = do
-  b <- genBuild
+  b <- genBuildName
   p <- either (const Gen.discard) (pure) $
-    parseBuildNamePattern $ renderBuild b
+    parseBuildNamePattern $ renderBuildName b
   pure $ p
 
 genProjectName :: Gen ProjectName
@@ -98,7 +98,7 @@ genBuildTree :: Gen BuildTree
 genBuildTree =
   BuildTree
     <$> genProjectName
-    <*> genBuild
+    <*> genBuildName
     <*> Gen.list (Range.linear 1 100) genBuildTreeRef
 
 genBuildTreeRef :: Gen BuildTreeRef
@@ -112,7 +112,7 @@ genBuildData =
   BuildData
     <$> genBuildId
     <*> genProjectName
-    <*> genBuild
+    <*> genBuildName
     <*> Gen.maybe genRef
     <*> Gen.maybe genCommit
     <*> Gen.maybe genUTCTime
@@ -127,7 +127,7 @@ genResult =
   Result
     <$> genBuildId
     <*> genProjectName
-    <*> genBuild
+    <*> genBuildName
     <*> Gen.maybe genRef
     <*> genBuildResult
 

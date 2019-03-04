@@ -50,7 +50,7 @@ data BorisPatternConfigError =
   | PatternConfigMissingVersionError
   | PatternConfigUnknownVersionError Int64
   | PatternConfigNoReference BuildNamePattern
-  | PatternConfigInvalidCommand Build
+  | PatternConfigInvalidCommand BuildName
   | PatternConfigBuildsTypeError
   | PatternConfigBuildNamePatternParseError Text
     deriving (Eq, Show)
@@ -103,7 +103,7 @@ renderBorisPatternConfigError err =
     PatternConfigNoReference b ->
       mconcat ["Boris configuration does not contain a mandatory 'refs' for build: ", renderBuildNamePattern b]
     PatternConfigInvalidCommand b ->
-      mconcat ["Boris configuration contains an invalid 'command' for build: ", renderBuild b]
+      mconcat ["Boris configuration contains an invalid 'command' for build: ", renderBuildName b]
     PatternConfigBuildsTypeError ->
       mconcat ["Boris configuration should contain a top level table 'build'."]
     PatternConfigBuildNamePatternParseError e ->

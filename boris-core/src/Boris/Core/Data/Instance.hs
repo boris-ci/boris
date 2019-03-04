@@ -18,7 +18,7 @@ data BuildInstance =
 
 data DiscoverInstance =
   DiscoverInstance {
-      discoverBuild :: Build
+      discoverBuild :: BuildName
     , discoverRef :: Ref
     , discoverCommit :: Commit
     } deriving (Eq, Ord, Show)

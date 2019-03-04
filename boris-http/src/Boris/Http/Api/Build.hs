@@ -51,7 +51,7 @@ renderBuildError err =
     BuildDbError e ->
       mconcat ["Build error via db: ", Traction.renderDbError e]
 
-byProjectId :: ProjectId -> Db [Build]
+byProjectId :: ProjectId -> Db [BuildName]
 byProjectId _p =
   pure []
 
@@ -85,7 +85,7 @@ byId pool build =
           pure r
 --}
 
-list :: DbPool -> ProjectName -> Build -> EitherT DbError IO BuildTree
+list :: DbPool -> ProjectName -> BuildName -> EitherT DbError IO BuildTree
 list pool project build = Traction.runDb pool $ do
   error "todo"
   {--
@@ -94,7 +94,7 @@ list pool project build = Traction.runDb pool $ do
     BuildTreeRef ref <$> Query.getBuildIds project build ref)
 --}
 
-queued :: DbPool -> ProjectName -> Build -> EitherT DbError IO [BuildId]
+queued :: DbPool -> ProjectName -> BuildName -> EitherT DbError IO [BuildId]
 queued pool project build =
   error "todo"
   {--
@@ -102,7 +102,7 @@ queued pool project build =
   Query.getQueued project build
 --}
 
-submit :: DbPool -> Tenant -> AuthenticatedBy -> ProjectName -> Build -> Maybe Ref -> EitherT BuildError IO (Maybe BuildId)
+submit :: DbPool -> Tenant -> AuthenticatedBy -> ProjectName -> BuildName -> Maybe Ref -> EitherT BuildError IO (Maybe BuildId)
 submit pool tenant authenticated project build ref = do
   error "Todo"
   {--
@@ -156,7 +156,7 @@ byCommit pool project commit =
 
 --}
 
-byProject :: DbPool -> ProjectName -> EitherT DbError IO [Build]
+byProject :: DbPool -> ProjectName -> EitherT DbError IO [BuildName]
 byProject pool project =
   error "todo"
   {--
