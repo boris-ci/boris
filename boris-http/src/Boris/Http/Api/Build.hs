@@ -1,7 +1,10 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Boris.Http.Api.Build (
-    byId
+    byProjectId
+
+
+  , byId
   , list
   , queued
   , submit
@@ -24,6 +27,7 @@ import qualified Data.Text as Text
 import qualified Data.Time as Time
 
 import           Boris.Core.Data.Build
+import           Boris.Core.Data.Keyed
 import           Boris.Core.Data.Log
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Tenant
@@ -34,7 +38,7 @@ import           Boris.Prelude
 
 import           System.IO (IO)
 
-import           Traction.Control (DbPool, DbError)
+import           Traction.Control (Db, DbPool, DbError)
 import qualified Traction.Control as Traction
 
 
@@ -46,6 +50,10 @@ renderBuildError err =
   case err of
     BuildDbError e ->
       mconcat ["Build error via db: ", Traction.renderDbError e]
+
+byProjectId :: ProjectId -> Db [Build]
+byProjectId _p =
+  pure []
 
 byId :: DbPool -> BuildId -> EitherT DbError IO (Maybe BuildData)
 byId pool build =

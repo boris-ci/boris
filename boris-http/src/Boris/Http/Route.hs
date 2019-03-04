@@ -201,14 +201,30 @@ route pool authentication mode = do
     authenticated authentication pool $ \a -> do
       View.renderAuthenticated a $ View.newproject Nothing
 
-  Spock.get ("project" <//> Spock.var) $ \project ->
+  Spock.get ("project" <//> Spock.var) $ \name ->
     authenticated authentication pool $ \a -> do
-      builds <- liftDbError $ Build.byProject pool (ProjectName project)
+      r <- transaction pool $ do
+        p <- Project.byName (ProjectName name)
+        for p $ \pp -> do
+          bs <- Build.byProjectId . keyOf $ pp
+          pure (pp, bs)
       withAccept $ \case
         AcceptHTML ->
-          View.renderAuthenticated a $ View.project (ProjectName project) builds
+          case r of
+            Nothing -> do
+              View.renderAuthenticated a $ View.notFound
+            Just (project, builds) -> do
+              Spock.setStatus HTTP.status200
+              View.renderAuthenticated a $ View.project project builds
         AcceptJSON ->
-          Spock.json $ ApiV1.GetProject (ProjectName project) builds
+          case r of
+            Nothing -> do
+              Spock.setStatus HTTP.status404
+              Spock.json $ ApiV1.ApiError "not-found" Nothing
+            Just (project, builds) -> do
+              Spock.setStatus HTTP.status200
+              Spock.json $ ApiV1.GetProject (projectName . valueOf $ project) builds
+
 
   Spock.post ("project" <//> Spock.var) $ \project ->
     authenticated authentication pool $ \a -> do

@@ -11,6 +11,7 @@ module Boris.Http.View (
   , settings
   , configure
   , serverError
+  , notFound
   , status
   , projects
   , project
@@ -43,6 +44,7 @@ import qualified Boris.Http.Template.Page.Error as Template
 import qualified Boris.Http.Template.Page.Login as Template
 import qualified Boris.Http.Template.Page.Newproject as Template
 import qualified Boris.Http.Template.Page.Newproject.Data as Template
+import qualified Boris.Http.Template.Page.NotFound as Template
 import qualified Boris.Http.Template.Page.Project as Template
 import qualified Boris.Http.Template.Page.Projects as Template
 import qualified Boris.Http.Template.Page.Scoreboard as Template
@@ -86,6 +88,10 @@ serverError :: ErrorId -> Hydrant.Html
 serverError =
   Template.pageError . errorId
 
+notFound :: Hydrant.Html
+notFound =
+  Template.pageNotFound
+
 status :: [Result] -> Hydrant.Html
 status bs =
   Template.pageStatus . Template.Status .
@@ -97,13 +103,13 @@ status bs =
 
 
 projects :: [Keyed ProjectId Project] -> Hydrant.Html
-projects projects =
-  Template.pageProjects (fmap (renderProjectName . projectName . valueOf) $ projects)
+projects ps =
+  Template.pageProjects (fmap (renderProjectName . projectName . valueOf) $ ps)
 
-project :: ProjectName -> [Build] -> Hydrant.Html
+project :: Keyed ProjectId Project -> [Build] -> Hydrant.Html
 project p bs =
   Template.pageProject $
-    Template.Project (renderProjectName p) (List.sort . fmap renderBuild $ bs)
+    Template.Project (renderProjectName . projectName . valueOf $ p) (List.sort . fmap renderBuild $ bs)
 
 builds :: BuildTree -> [BuildId] -> Hydrant.Html
 builds (BuildTree p b refs) queued =

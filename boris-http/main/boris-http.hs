@@ -4,7 +4,7 @@ import           Boris.Core.Data.Tenant
 import qualified Boris.Http.Boot as Boot
 import qualified Boris.Http.Route as Route
 import qualified Boris.Http.Db.Schema as Schema
-import qualified Boris.Http.Db.Query as Query
+--import qualified Boris.Http.Db.Query as Query
 import           Boris.Prelude
 
 import qualified Data.Text as Text
@@ -44,8 +44,7 @@ run = do
   routes <- case (tenant, defaults) of
     (Just _, _) ->
       pure $ Route.application pool authentication mode
-    (Nothing, Just t) -> do
-      error "todo"
+    (Nothing, Just _t) -> do
 --      orDie Traction.renderDbError $
 --        Traction.runDb pool $ Query.setTenant t
       pure $ Route.application pool authentication mode
