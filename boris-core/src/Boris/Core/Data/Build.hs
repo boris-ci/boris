@@ -3,6 +3,7 @@
 module Boris.Core.Data.Build (
     BuildName (..)
   , BuildId (..)
+  , Build (..)
   , Commit (..)
   , Ref (..)
   , Pattern (..)
@@ -24,6 +25,7 @@ module Boris.Core.Data.Build (
 
   ) where
 
+import           Boris.Core.Data.Keyed
 import           Boris.Core.Data.Project
 
 import qualified Data.List as List
@@ -43,6 +45,19 @@ newtype BuildId =
       getBuildId :: Int64
     } deriving (Eq, Ord, Show)
 
+data Build =
+  Build {
+      buildProject :: Keyed ProjectId Project
+    , buildName :: BuildName
+    , buildRef :: Maybe Ref
+    , buildCommit :: Maybe Commit
+    , buildResult :: Maybe BuildResult
+    , buildCancelled :: Maybe BuildCancelled
+    , buildQueueTime :: Maybe UTCTime
+    , buildStartTime :: Maybe UTCTime
+    , buildEndTime :: Maybe UTCTime
+    , buildHeartbeatTime :: Maybe UTCTime
+    } deriving (Eq, Ord, Show)
 
 renderBuildId :: BuildId -> Text
 renderBuildId =

@@ -182,7 +182,7 @@ route pool authentication mode = do
             case e of
               Nothing -> do
                 Spock.setStatus HTTP.status400
-                Spock.json $ ApiV1.ApiError "invalid-body" (Just "Could not bparse create project json.")
+                Spock.json $ ApiV1.ApiError "invalid-body" (Just "Could not parse create project json.")
               Just (ApiV1.CreateProject project repository) -> do
                 r <- transactionT pool $ Project.new project repository
                 case r of
@@ -212,6 +212,7 @@ route pool authentication mode = do
         AcceptHTML ->
           case r of
             Nothing -> do
+              Spock.setStatus HTTP.status404
               View.renderAuthenticated a $ View.notFound
             Just (project, builds) -> do
               Spock.setStatus HTTP.status200
@@ -223,7 +224,7 @@ route pool authentication mode = do
               Spock.json $ ApiV1.ApiError "not-found" Nothing
             Just (project, builds) -> do
               Spock.setStatus HTTP.status200
-              Spock.json $ ApiV1.GetProject (projectName . valueOf $ project) builds
+              Spock.json $ ApiV1.GetProject (projectName . valueOf $ project) (fmap (buildName . valueOf) builds)
 
 
   Spock.post ("project" <//> Spock.var) $ \project ->
@@ -258,7 +259,6 @@ route pool authentication mode = do
 
   Spock.post ("project" <//> Spock.var <//> "build" <//> Spock.var) $ \project' build' ->
     authenticated authentication pool $ \a -> do
-      settings <- getTenant pool
       let
         project = ProjectName project'
         build = BuildName build'
@@ -267,31 +267,31 @@ route pool authentication mode = do
         case content of
           ContentTypeForm -> do
             ref <- fmap Ref <$> Spock.param "ref"
-            i <- liftError Build.renderBuildError $
-              Build.submit pool settings a project build ref
+            i <- transaction pool $
+              Build.submit project build ref
             case i of
               Nothing -> do
-                Spock.setStatus HTTP.notFound404
-                Spock.html "TODO: 404 page."
+                Spock.setStatus HTTP.status404
+                View.renderAuthenticated a $ View.notFound
               Just ii ->
-                Spock.redirect $ "/build/" <> renderBuildId ii
+                Spock.redirect $ "/build/" <> (renderBuildId . keyOf) ii
           ContentTypeJSON -> do
             e <- Spock.jsonBody
             case e of
               Nothing -> do
-                -- FIX unhax
                 Spock.setStatus HTTP.status400
-                Spock.json $ object ["error" .= ("could not parse ref." :: Text)]
+                Spock.json $ ApiV1.ApiError "invalid-body" (Just "Could not parse create build submission json.")
               Just (ApiV1.PostBuildRequest ref) -> do
-                i <- liftError Build.renderBuildError $
-                  Build.submit pool settings a project build ref
+                i <- transaction pool $
+                  Build.submit project build ref
                 case i of
-                  Nothing ->
-                    Spock.setStatus HTTP.notFound404
-                  Just ii -> do
+                  Nothing -> do
+                    Spock.setStatus HTTP.status404
+                    Spock.json $ ApiV1.ApiError "not-found" Nothing
+                  Just result -> do
                     Spock.setStatus HTTP.created201
-                    Spock.setHeader "Location" $ "/build/" <> renderBuildId ii
-                    Spock.json $ ApiV1.GetBuild (BuildData ii project build ref Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
+                    Spock.setHeader "Location" $ "/build/" <> (renderBuildId . keyOf) result
+                    Spock.json $ ApiV1.GetBuild result
 
 
   Spock.get ("project" <//> Spock.var <//> "commit" <//> Spock.var) $ \project' commit' ->
@@ -303,7 +303,7 @@ route pool authentication mode = do
       builds <- liftDbError $ Build.byCommit pool project commit
       withAccept $ \case
         AcceptHTML -> do
-          datas <- for builds $ \i -> liftDbError (Build.byId pool i)
+          datas <- for builds $ \i -> transaction pool (Build.byId i)
           View.renderAuthenticated a $ View.commit project commit (catMaybes datas)
         AcceptJSON ->
           Spock.json $ ApiV1.GetCommit project builds
@@ -338,8 +338,8 @@ route pool authentication mode = do
       let
         buildId = BuildId buildId'
 
-      build <- liftDbError $
-        Build.byId pool buildId
+      build <- transaction pool $
+        Build.byId buildId
       withAccept $ \case
         AcceptHTML -> do
           case build of

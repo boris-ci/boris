@@ -28,6 +28,7 @@ module Boris.Representation.ApiV1 (
 import           Boris.Core.Data.Agent
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Instance
+import           Boris.Core.Data.Keyed
 import           Boris.Core.Data.Log
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Repository
@@ -116,7 +117,7 @@ instance ToJSON GetBuilds where
 
 newtype GetBuild =
   GetBuild {
-      getBuild :: BuildData
+      getBuild :: Keyed BuildId Build
     } deriving (Eq, Ord, Show)
 
 newtype PostHeartbeatResponse =
@@ -234,33 +235,40 @@ instance FromJSON GetBuild where
   parseJSON =
     withObject "GetBuild" $ \o ->
       fmap GetBuild $
-        BuildData
+        Keyed
           <$> (fmap BuildId $ o .: "build_id")
-          <*> (fmap ProjectName $ o .: "project")
-          <*> (fmap BuildName $ o .: "build")
-          <*> ((fmap . fmap) Ref $ o .:? "ref")
-          <*> ((fmap . fmap) Commit $ o .:? "commit")
-          <*> (o .:? "queued")
-          <*> (o .:? "started")
-          <*> (o .:? "completed")
-          <*> (o .:? "heartbeat")
-          <*> ((fmap . fmap) (bool BuildKo BuildOk) $ o .:? "result")
-          <*> ((fmap . fmap) (bool BuildNotCancelled BuildCancelled) $ o .:? "cancelled")
+          <*> (Build
+            <$> (Keyed
+              <$> (fmap ProjectId $ o .: "project_id")
+              <*> (Project
+                <$> (fmap ProjectName $ o .: "project")
+                <*> (fmap Repository $ o .: "repository")))
+            <*> (fmap BuildName $ o .: "build")
+            <*> ((fmap . fmap) Ref $ o .:? "ref")
+            <*> ((fmap . fmap) Commit $ o .:? "commit")
+            <*> ((fmap . fmap) (bool BuildKo BuildOk) $ o .:? "result")
+            <*> ((fmap . fmap) (bool BuildNotCancelled BuildCancelled) $ o .:? "cancelled")
+            <*> (o .:? "queued")
+            <*> (o .:? "started")
+            <*> (o .:? "completed")
+            <*> (o .:? "heartbeat"))
 
 instance ToJSON GetBuild where
   toJSON (GetBuild b) =
     object [
-        "build_id" .= (getBuildId . buildDataId) b
-      , "project" .= (renderProjectName . buildDataProject) b
-      , "build" .= (renderBuildName . buildDataBuild) b
-      , "ref" .= (fmap renderRef . buildDataRef) b
-      , "commit" .= (fmap renderCommit . buildDataCommit) b
-      , "queued" .= buildDataQueueTime b
-      , "started" .= buildDataStartTime b
-      , "completed" .= buildDataEndTime b
-      , "heartbeat" .= buildDataHeartbeatTime b
-      , "result" .= (flip fmap (buildDataResult b) $ \bb -> case bb of BuildOk -> True; BuildKo -> False)
-      , "cancelled" .= (flip fmap (buildDataCancelled b) $ \bb -> case bb of BuildCancelled -> True; BuildNotCancelled -> False)
+        "build_id" .= (getBuildId . keyOf) b
+      , "project_id" .= (getProjectId . keyOf . buildProject . valueOf) b
+      , "project" .= (renderProjectName . projectName . valueOf . buildProject . valueOf) b
+      , "repository" .= (renderRepository . projectRepository . valueOf . buildProject . valueOf) b
+      , "build" .= (renderBuildName . buildName . valueOf) b
+      , "ref" .= (fmap renderRef . buildRef . valueOf) b
+      , "commit" .= (fmap renderCommit . buildCommit . valueOf) b
+      , "queued" .= (buildQueueTime . valueOf) b
+      , "started" .= (buildStartTime . valueOf) b
+      , "completed" .= (buildEndTime . valueOf) b
+      , "heartbeat" .= (buildHeartbeatTime . valueOf) b
+      , "result" .= (flip fmap ((buildResult . valueOf) b) $ \bb -> case bb of BuildOk -> True; BuildKo -> False)
+      , "cancelled" .= (flip fmap ((buildCancelled . valueOf) b) $ \bb -> case bb of BuildCancelled -> True; BuildNotCancelled -> False)
       ]
 
 newtype PutBuildIgnore =

@@ -1,11 +1,11 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Boris.Core.Data.Run (
-    RunType
+    RunType (..)
   , runTypeToInt
   , runTypeFromInt
 
-  , RunId
+  , RunId (..)
   ) where
 
 import           Boris.Prelude

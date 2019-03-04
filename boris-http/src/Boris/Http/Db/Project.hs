@@ -7,6 +7,7 @@ module Boris.Http.Db.Project (
   , list
   , byId
   , byName
+  , toProject
   ) where
 
 

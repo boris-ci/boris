@@ -12,8 +12,8 @@ import           Boris.Prelude
 data BuildInstance =
   BuildInstance {
       buildSpecification :: Specification
-    , buildRef :: Ref
-    , buildCommit :: Commit
+    , buildIRef :: Ref
+    , buildICommit :: Commit
     } deriving (Eq, Show)
 
 data DiscoverInstance =

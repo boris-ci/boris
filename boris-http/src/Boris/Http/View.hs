@@ -106,10 +106,10 @@ projects :: [Keyed ProjectId Project] -> Hydrant.Html
 projects ps =
   Template.pageProjects (fmap (renderProjectName . projectName . valueOf) $ ps)
 
-project :: Keyed ProjectId Project -> [BuildName] -> Hydrant.Html
+project :: Keyed ProjectId Project -> [Keyed BuildId Build] -> Hydrant.Html
 project p bs =
   Template.pageProject $
-    Template.Project (renderProjectName . projectName . valueOf $ p) (List.sort . fmap renderBuildName $ bs)
+    Template.Project (renderProjectName . projectName . valueOf $ p) (List.sort . fmap (renderBuildName . buildName . valueOf) $ bs)
 
 builds :: BuildTree -> [BuildId] -> Hydrant.Html
 builds (BuildTree p b refs) queued =
@@ -125,11 +125,11 @@ builds (BuildTree p b refs) queued =
         (with sorted $ \(BuildTreeRef r is) ->
           Template.BuildRef (renderRef r) (renderBuildId <$> sortBuildIds is))
 
-commit :: ProjectName -> Commit -> [BuildData] -> Hydrant.Html
+commit :: ProjectName -> Commit -> [Keyed BuildId Build] -> Hydrant.Html
 commit p c bs =
   let
     byBuild =
-      Map.toList . mapFromListGrouped . fmap (\b -> (buildDataBuild b, buildDataId b)) $ bs
+      Map.toList . mapFromListGrouped . fmap (\b -> (buildName . valueOf $ b, keyOf b)) $ bs
   in
     Template.pageCommit $
       Template.Commit
@@ -140,11 +140,11 @@ commit p c bs =
           (renderBuildName b)
           (renderBuildId <$> sortBuildIds ids))
 
-build :: BuildData -> Hydrant.Html
+build :: Keyed BuildId Build -> Hydrant.Html
 build b =
   let
     s =
-      case buildDataResult b of
+      case buildResult . valueOf $  b of
         Nothing ->
           Template.BuildUndecided
         Just BuildOk ->
@@ -154,19 +154,19 @@ build b =
   in
     Template.pageBuild s $
       Template.Build
-        (renderBuildId . buildDataId $ b)
+        (renderBuildId . keyOf $ b)
         (Template.HasLog)
-        (renderProjectName . buildDataProject $ b)
-        (renderBuildName . buildDataBuild $ b)
-        (fmap renderRef . buildDataRef $ b)
-        (fmap renderCommit . buildDataCommit $ b)
-        (fmap renderTime . buildDataQueueTime $ b)
-        (fmap renderTime . buildDataStartTime $ b)
-        (fmap renderTime . buildDataEndTime $ b)
-        (fmap renderTime . buildDataHeartbeatTime $ b)
-        (fmap (uncurry renderDuration) $ liftA2 (,) (buildDataStartTime b) (buildDataEndTime b))
-        (fmap renderBuildResult . buildDataResult $ b)
-        ((isNothing . buildDataResult $ b) && buildDataCancelled b /= (Just BuildCancelled))
+        (renderProjectName . projectName . valueOf . buildProject . valueOf $ b)
+        (renderBuildName . buildName . valueOf $ b)
+        (fmap renderRef . buildRef . valueOf $ b)
+        (fmap renderCommit . buildCommit . valueOf$ b)
+        (fmap renderTime . buildQueueTime . valueOf $ b)
+        (fmap renderTime . buildStartTime . valueOf $ b)
+        (fmap renderTime . buildEndTime . valueOf $ b)
+        (fmap renderTime . buildHeartbeatTime . valueOf $ b)
+        (fmap (uncurry renderDuration) $ liftA2 (,) (buildStartTime . valueOf $ b) (buildEndTime . valueOf $ b))
+        (fmap renderBuildResult . buildResult . valueOf $ b)
+        ((isNothing . buildResult . valueOf $ b) && (buildCancelled . valueOf) b /= (Just BuildCancelled))
 
 
 mapFromListGrouped :: Ord a => [(a, b)] -> Map a [b]

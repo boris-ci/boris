@@ -30,9 +30,13 @@ import           Boris.Core.Data.Build
 import           Boris.Core.Data.Keyed
 import           Boris.Core.Data.Log
 import           Boris.Core.Data.Project
+import           Boris.Core.Data.Run
 import           Boris.Core.Data.Tenant
 import qualified Boris.Http.Api.Project as Project
 import           Boris.Http.Data
+import qualified Boris.Http.Db.Build as BuildDb
+import qualified Boris.Http.Db.Project as ProjectDb
+import qualified Boris.Http.Db.Run as RunDb
 import qualified Boris.Http.Db.Query as Query
 import           Boris.Prelude
 
@@ -51,13 +55,14 @@ renderBuildError err =
     BuildDbError e ->
       mconcat ["Build error via db: ", Traction.renderDbError e]
 
-byProjectId :: ProjectId -> Db [BuildName]
-byProjectId _p =
-  pure []
+byProjectId :: ProjectId -> Db [Keyed BuildId Build]
+byProjectId =
+  BuildDb.byProjectId
 
-byId :: DbPool -> BuildId -> EitherT DbError IO (Maybe BuildData)
-byId pool build =
-  error "todo"
+byId :: BuildId -> Db (Maybe (Keyed BuildId Build))
+byId =
+  BuildDb.byId
+
   {--
   Traction.runDb pool $ do
     result <- Query.fetch build
@@ -102,25 +107,16 @@ queued pool project build =
   Query.getQueued project build
 --}
 
-submit :: DbPool -> Tenant -> AuthenticatedBy -> ProjectName -> BuildName -> Maybe Ref -> EitherT BuildError IO (Maybe BuildId)
-submit pool tenant authenticated project build ref = do
-  error "Todo"
-  {--
-  definition' <- firstT BuildDbError $
-    Project.pick pool tenant authenticated project
-  case definition' of
-    Nothing ->
-      pure Nothing
-    Just definition -> do
-      let
-        -- FIX this needs to be stored with register
-        _normalised = with ref $ \rr ->
-          if Text.isPrefixOf "refs/" . renderRef $ rr then rr else Ref . ((<>) "refs/heads/") . renderRef $ rr
-      firstT BuildDbError . Traction.runDb pool $ do
-        i <- Query.tick
-        Query.register (definitionId definition) build i
-        pure $ Just i
---}
+submit :: ProjectName -> BuildName -> Maybe Ref -> Db (Maybe (Keyed BuildId Build))
+submit p build ref = do
+  mproject <- ProjectDb.byName p
+  for mproject $ \project -> do
+    let
+      normalised = with ref $ \rr ->
+        if Text.isPrefixOf "refs/" . renderRef $ rr then rr else Ref . ((<>) "refs/heads/") . renderRef $ rr
+    run <- RunDb.insert IsBuild (keyOf project)
+    i <- BuildDb.insert run build normalised
+    pure $ Keyed i (Build project build ref Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
 
 heartbeat :: DbPool -> BuildId -> EitherT DbError IO BuildCancelled
 heartbeat pool  buildId =
