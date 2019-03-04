@@ -38,6 +38,7 @@ library
     Boris.Core.Data.Owner
     Boris.Core.Data.Project
     Boris.Core.Data.Repository
+    Boris.Core.Data.Run
     Boris.Core.Data.Tenant
     Boris.Core.Data.Time
     Boris.Core.Data.Workspace

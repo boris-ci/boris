@@ -53,7 +53,7 @@ schema = [
 
   , Migration "create-build" [sql|
       CREATE TABLE build (
-          build_id BIGINT PRIMARY KEY REFERENCES run(id)
+          id BIGINT PRIMARY KEY REFERENCES run(id)
         , build TEXT
         , ref TEXT
         , commit TEXT
@@ -63,7 +63,7 @@ schema = [
 
   , Migration "create-discover" [sql|
       CREATE TABLE discover (
-          discover_id BIGINT PRIMARY KEY REFERENCES run(id)
+          id BIGINT PRIMARY KEY REFERENCES run(id)
         )
     |]
 
