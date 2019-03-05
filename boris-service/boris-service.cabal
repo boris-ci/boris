@@ -26,11 +26,11 @@ library
     , directory                       == 1.*
     , filepath                        == 1.*
     , lens                            >= 4.6        && < 4.16
-    , mmorph                          == 1.0.*
+    , mmorph                          == 1.*
     , mtl                             == 2.2.*
     , nest                            == 0.*
     , process                         == 1.*
-    , resourcet                       == 1.1.*
+    , resourcet                       == 1.2.*
     , semigroups                      >= 0.16       && < 0.19
     , text                            == 1.2.*
     , time                            >= 1.5        && < 1.10
@@ -63,8 +63,8 @@ executable boris-service
     , boris-service
     , connection                      == 0.2.*
     , data-default                    == 0.6.*
-    , http-client
-    , http-client-tls                 == 0.2.*
+    , http-client                     >= 0.4        && < 0.6
+    , http-client-tls                 >= 0.2        && < 0.4
     , nest
     , text
 
@@ -82,8 +82,8 @@ executable boris-build
     , conduit
     , connection                      == 0.2.*
     , data-default                    == 0.6.*
-    , http-client
-    , http-client-tls                 == 0.2.*
+    , http-client                     >= 0.4        && < 0.6
+    , http-client-tls                 >= 0.2        && < 0.4
     , nest
     , optparse-applicative            >= 0.11       && < 0.15
     , text
