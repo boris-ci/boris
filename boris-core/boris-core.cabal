@@ -32,6 +32,7 @@ library
     Boris.Core.Data.Agent
     Boris.Core.Data.Build
     Boris.Core.Data.Configuration
+    Boris.Core.Data.Discover
     Boris.Core.Data.Instance
     Boris.Core.Data.Log
     Boris.Core.Data.Keyed

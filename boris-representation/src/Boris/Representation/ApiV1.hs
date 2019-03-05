@@ -5,7 +5,9 @@ module Boris.Representation.ApiV1 (
   , GetQueue (..)
   , GetBuilds (..)
   , GetBuild (..)
+  , GetDiscover (..)
   , PostBuildRequest (..)
+  , PostDiscoverRequest (..)
   , PutBuildIgnore (..)
   , GetProjects (..)
   , GetProject (..)
@@ -27,6 +29,7 @@ module Boris.Representation.ApiV1 (
 
 import           Boris.Core.Data.Agent
 import           Boris.Core.Data.Build
+import           Boris.Core.Data.Discover
 import           Boris.Core.Data.Instance
 import           Boris.Core.Data.Keyed
 import           Boris.Core.Data.Log
@@ -69,21 +72,44 @@ instance FromJSON GetQueue where
     withObject "GetQueue" $ \o ->
       (GetQueue . QueueSize) <$> o .: "size"
 
-newtype PostBuildRequest =
+data PostBuildRequest =
   PostBuildRequest {
-      getPostBuildsRef :: Maybe Ref
+      getPostBuildsProject :: ProjectName
+    , getPostBuildsBuild :: BuildName
+    , getPostBuildsRef :: Maybe Ref
     } deriving (Eq, Ord, Show)
 
 instance FromJSON PostBuildRequest where
   parseJSON =
     withObject "PostBuilds" $ \o ->
-                                PostBuildRequest
-        <$> (fmap . fmap) Ref (o .:? "ref")
+      PostBuildRequest
+        <$> fmap ProjectName (o .: "project")
+        <*> fmap BuildName (o .: "build")
+        <*> (fmap . fmap) Ref (o .:? "ref")
 
 instance ToJSON PostBuildRequest where
-  toJSON (PostBuildRequest r) =
+  toJSON (PostBuildRequest p b r) =
     object [
-        "ref" .= fmap renderRef r
+        "project" .= renderProjectName p
+      , "build" .= renderBuildName b
+      , "ref" .= fmap renderRef r
+      ]
+
+data PostDiscoverRequest =
+  PostDiscoverRequest {
+      getPostDiscoverProject :: ProjectName
+    } deriving (Eq, Ord, Show)
+
+instance FromJSON PostDiscoverRequest where
+  parseJSON =
+    withObject "PostDiscover" $ \o ->
+      PostDiscoverRequest
+        <$> fmap ProjectName (o .: "project")
+
+instance ToJSON PostDiscoverRequest where
+  toJSON (PostDiscoverRequest p) =
+    object [
+        "project" .= renderProjectName p
       ]
 
 data GetBuilds =
@@ -118,6 +144,12 @@ instance ToJSON GetBuilds where
 newtype GetBuild =
   GetBuild {
       getBuild :: Keyed BuildId Build
+    } deriving (Eq, Ord, Show)
+
+
+newtype GetDiscover =
+  GetDiscover {
+      getDiscover :: Keyed DiscoverId Discover
     } deriving (Eq, Ord, Show)
 
 newtype PostHeartbeatResponse =
@@ -270,6 +302,22 @@ instance ToJSON GetBuild where
       , "result" .= (flip fmap ((buildResult . valueOf) b) $ \bb -> case bb of BuildOk -> True; BuildKo -> False)
       , "cancelled" .= (flip fmap ((buildCancelled . valueOf) b) $ \bb -> case bb of BuildCancelled -> True; BuildNotCancelled -> False)
       ]
+
+
+instance FromJSON GetDiscover where
+  parseJSON =
+    withObject "GetDiscover" $ \o ->
+      fmap GetDiscover $
+        Keyed
+          <$> (fmap DiscoverId $ o .: "discover_id")
+          <*> pure Discover
+
+instance ToJSON GetDiscover where
+  toJSON (GetDiscover b) =
+    object [
+        "discover_id" .= (getDiscoverId . keyOf) b
+      ]
+
 
 newtype PutBuildIgnore =
   PutBuildIgnore {

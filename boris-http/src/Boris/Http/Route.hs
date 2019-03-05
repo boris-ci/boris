@@ -8,10 +8,10 @@ module Boris.Http.Route (
   ) where
 
 import           Boris.Core.Data.Build
+import           Boris.Core.Data.Discover
 import           Boris.Core.Data.Keyed
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Repository
-import           Boris.Core.Data.Tenant
 import qualified Boris.Http.Api.Build as Build
 import qualified Boris.Http.Api.Discover as Discover
 import qualified Boris.Http.Api.Github as Github
@@ -227,21 +227,6 @@ route pool authentication mode = do
               Spock.json $ ApiV1.GetProject (projectName . valueOf $ project) (fmap (buildName . valueOf) builds)
 
 
-  Spock.post ("project" <//> Spock.var) $ \project ->
-    authenticated authentication pool $ \a -> do
-      settings <- getTenant pool
-      buildId <- liftError id $
-        Discover.discover pool settings a (ProjectName project)
-      case buildId of
-        Nothing -> do
-          -- TODO should have a body
-          Spock.setStatus HTTP.status404
-          Spock.json ()
-        Just _i -> do
-          -- TODO this matches old behaviour but should be a 201 with location and better body
-          Spock.setStatus HTTP.status202
-          Spock.json ()
-
   Spock.get ("project" <//> Spock.var <//> "build" <//> Spock.var) $ \project' build'  ->
     authenticated authentication pool $ \a -> do
       let
@@ -256,16 +241,38 @@ route pool authentication mode = do
         AcceptJSON ->
           Spock.json $ ApiV1.GetBuilds builds
 
-
-  Spock.post ("project" <//> Spock.var <//> "build" <//> Spock.var) $ \project' build' ->
+  Spock.post "discover" $
     authenticated authentication pool $ \a -> do
-      let
-        project = ProjectName project'
-        build = BuildName build'
-
       withContentType $ \content ->
         case content of
           ContentTypeForm -> do
+            Spock.setStatus HTTP.status404
+            View.renderAuthenticated a $ View.notFound
+          ContentTypeJSON -> do
+            e <- Spock.jsonBody
+            case e of
+              Nothing -> do
+                Spock.setStatus HTTP.status400
+                Spock.json $ ApiV1.ApiError "invalid-body" (Just "Could not parse create discover submission json.")
+              Just (ApiV1.PostDiscoverRequest project) -> do
+                i <- transaction pool $
+                  Discover.discover project
+                case i of
+                  Nothing -> do
+                    Spock.setStatus HTTP.status404
+                    Spock.json $ ApiV1.ApiError "not-found" Nothing
+                  Just result -> do
+                    Spock.setStatus HTTP.created201
+                    Spock.setHeader "Location" $ "/discover/" <> (renderDiscoverId . keyOf) result
+                    Spock.json $ ApiV1.GetDiscover result
+
+  Spock.post "build" $
+    authenticated authentication pool $ \a -> do
+      withContentType $ \content ->
+        case content of
+          ContentTypeForm -> do
+            project <- ProjectName <$> Spock.param' "project"
+            build <- BuildName <$> Spock.param' "build"
             ref <- fmap Ref <$> Spock.param "ref"
             i <- transaction pool $
               Build.submit project build ref
@@ -281,7 +288,7 @@ route pool authentication mode = do
               Nothing -> do
                 Spock.setStatus HTTP.status400
                 Spock.json $ ApiV1.ApiError "invalid-body" (Just "Could not parse create build submission json.")
-              Just (ApiV1.PostBuildRequest ref) -> do
+              Just (ApiV1.PostBuildRequest project build ref) -> do
                 i <- transaction pool $
                   Build.submit project build ref
                 case i of
@@ -519,14 +526,6 @@ route pool authentication mode = do
               Spock.json ()
             Just logs -> do
               Spock.json $ ApiV1.GetLogs logs
-
-getTenant :: DbPool -> Spock.ActionT IO Tenant
-getTenant _pool =
-  error "todo"
-  {--
-  liftDbError . Traction.runDb pool $
-    Query.demandTenant
---}
 
 newSession :: Mode -> SessionId -> Spock.ActionT IO ()
 newSession mode session =

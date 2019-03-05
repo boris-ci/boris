@@ -13,6 +13,8 @@ module Boris.Http.Api.Discover (
 import qualified Data.List as List
 
 import           Boris.Core.Data.Build
+import           Boris.Core.Data.Discover
+import           Boris.Core.Data.Keyed
 import           Boris.Core.Data.Instance
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Tenant
@@ -22,7 +24,7 @@ import           Boris.Prelude
 
 import           System.IO (IO)
 
-import           Traction.Control (DbPool, DbError)
+import           Traction.Control (Db, DbPool, DbError)
 import qualified Traction.Control as Traction
 
 
@@ -56,9 +58,8 @@ complete pool buildid project discovers = do
 --          Query.register project build newId
 --}
 
--- FIX MTH error type
-discover :: DbPool -> Tenant -> AuthenticatedBy -> ProjectName -> EitherT Text IO (Maybe BuildId)
-discover pool tenant authenticated project = do
+discover :: ProjectName -> Db (Maybe (Keyed DiscoverId Discover))
+discover project = do
   error "todo"
   {--
   r <- firstT Traction.renderDbError $
