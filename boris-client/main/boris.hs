@@ -6,6 +6,7 @@ import           DependencyInfo_boris_client
 
 import           Boris.Core.Data.Agent
 import           Boris.Core.Data.Build
+import           Boris.Core.Data.Keyed
 import           Boris.Core.Data.Log
 import           Boris.Core.Data.Project
 import           Boris.Client.Error
@@ -39,13 +40,13 @@ import qualified System.IO as IO
 
 
 data Cli =
-    Trigger Project Build (Maybe Ref)
-  | Discover Project
+    Trigger ProjectName BuildName (Maybe Ref)
+  | Discover ProjectName
   | Cancel BuildId
-  | List (Maybe Project) (Maybe Build)
+  | List (Maybe ProjectName) (Maybe BuildName)
   | Status BuildId
   | Log BuildId
-  | Ignore Project Build
+  | Ignore ProjectName BuildName
   | Rebuild BuildId
   | Queue
   | Version
@@ -219,32 +220,32 @@ run c = case c of
         exitSuccess
 --}
 
-renderBuildData :: BuildData -> BuildId -> Text
-renderBuildData r _i =
+renderBuildData :: (Keyed BuildId Build) -> Text
+renderBuildData r =
    Text.unlines $ [
-       mconcat ["id: ", renderBuildId . buildDataId $ r]
-     , mconcat ["project: ", renderProject . buildDataProject $ r]
-     , mconcat ["build: ", renderBuild . buildDataBuild $ r]
-     , mconcat ["ref: ", maybe "n/a" renderRef . buildDataRef $ r]
-     , mconcat ["queued-at: ", maybe "n/a" renderTime . buildDataQueueTime $ r]
-     , mconcat ["started-at: ", maybe "n/a" renderTime . buildDataStartTime $ r]
-     , mconcat ["end-at: ", maybe "n/a" renderTime . buildDataEndTime $ r]
-     , mconcat ["heartbeat-at: ", maybe "n/a" renderTime . buildDataHeartbeatTime $ r]
-     , mconcat ["duration: ", maybe "n/a" (uncurry renderDuration) $ (,) <$> buildDataStartTime r <*> buildDataEndTime r]
-     , mconcat ["result: ", maybe "n/a" (\br -> case br of BuildOk -> "successful"; BuildKo -> "failure") . buildDataResult $ r]
+       mconcat ["id: ", renderBuildId . keyOf $ r]
+     , mconcat ["project: ", renderProjectName . projectName . valueOf . buildProject . valueOf $ r]
+     , mconcat ["build: ", renderBuildName . buildName . valueOf $ r]
+     , mconcat ["ref: ", maybe "n/a" renderRef . buildRef . valueOf $ r]
+     , mconcat ["queued-at: ", maybe "n/a" renderTime . buildQueueTime . valueOf $ r]
+     , mconcat ["started-at: ", maybe "n/a" renderTime . buildStartTime . valueOf $ r]
+     , mconcat ["end-at: ", maybe "n/a" renderTime . buildEndTime . valueOf $ r]
+     , mconcat ["heartbeat-at: ", maybe "n/a" renderTime . buildHeartbeatTime . valueOf $ r]
+     , mconcat ["duration: ", maybe "n/a" (uncurry renderDuration) $ (,) <$> (buildStartTime . valueOf) r <*> (buildEndTime . valueOf) r]
+     , mconcat ["result: ", maybe "n/a" (\br -> case br of BuildOk -> "successful"; BuildKo -> "failure") . buildResult . valueOf $ r]
      ]
 
 
-projectP :: Options.Parser Project
+projectP :: Options.Parser ProjectName
 projectP =
-  fmap Project . Options.argument textRead . mconcat $ [
+  fmap ProjectName . Options.argument textRead . mconcat $ [
       Options.metavar "PROJECT"
     , Options.help "Project name, this relates to the project name configured in boris, e.g. boris."
     ]
 
-buildP :: Options.Parser Build
+buildP :: Options.Parser BuildName
 buildP =
-  fmap Build . Options.argument textRead . mconcat $ [
+  fmap BuildName . Options.argument textRead . mconcat $ [
       Options.metavar "BUILD"
     , Options.help "Build name, this relates to the project name configured in repository, e.g. dist, branches."
     ]

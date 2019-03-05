@@ -21,6 +21,7 @@ import qualified Boris.Client.Request as Request
 import qualified Boris.Client.Serial.Encode as Encode
 import qualified Boris.Client.Serial.Decode as Decode
 import           Boris.Core.Data.Build
+import           Boris.Core.Data.Keyed
 import           Boris.Core.Data.Project
 import           Boris.Prelude
 import           Boris.Representation.ApiV1
@@ -30,12 +31,12 @@ import qualified Data.Text as Text
 import qualified Network.HTTP.Types as HTTP
 
 
-trigger :: Project -> Build -> Maybe Ref -> Request BuildData
+-- TODO HANDLE 404
+trigger :: ProjectName -> BuildName -> Maybe Ref -> Request (Keyed BuildId Build)
 trigger p b r =
-  Request HTTP.POST (Text.intercalate "/" ["project", renderProject p , "build", renderBuild b])
+  Request HTTP.POST "build"
     (Response.json 201 $ Decode.wrapper getBuild)
-    (Request.json . Encode.auto $ PostBuildRequest r)
-
+    (Request.json . Encode.auto $ PostBuildRequest p b r)
 
 {--  fmap getBuild $
     H.post  ()

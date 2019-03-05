@@ -18,20 +18,20 @@ import           Boris.Representation.ApiV1
 import qualified Network.HTTP.Types as HTTP
 
 
-list :: Request [Project]
+list :: Request [ProjectName]
 list =
   Request HTTP.GET "project"
     (Response.json 200 $ Decode.wrapper getProjects)
     Request.none
 
-fetch :: Project -> Request [Build]
+fetch :: ProjectName -> Request [BuildName]
 fetch p =
-  Request HTTP.GET (mconcat ["project/", renderProject p])
+  Request HTTP.GET (mconcat ["project/", renderProjectName p])
     (Response.json 200 $ Decode.wrapper getProjectBuilds)
     Request.none
 
-discover :: Project -> Request ()
+discover :: ProjectName -> Request ()
 discover p =
-  Request HTTP.POST (mconcat ["project", renderProject p])
+  Request HTTP.POST (mconcat ["project", renderProjectName p])
     (Response.none 202)
     Request.none
