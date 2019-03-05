@@ -15,6 +15,7 @@ library
       base                            >= 3          && < 5
     , aeson                           == 1.*
     , boris-core
+    , boris-git
     , async                           == 2.*
     , bytestring                      == 0.10.*
     , conduit                         >= 1.2        && < 1.4

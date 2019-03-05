@@ -1,18 +1,19 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Test.IO.Boris.Build where
 
 import           Boris.Build
-import           Boris.Core.Data
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Configuration
+import           Boris.Prelude
 
 import qualified Data.Conduit.Binary as CB
 import qualified Data.Text as T
 
-import           Disorder.Core.IO
-
-import           P
+import           Hedgehog hiding (Command, check)
+import qualified Hedgehog.Gen as Gen
+import qualified Hedgehog.Range as Range
 
 import qualified System.Directory as D
 import           System.Exit (ExitCode (..))
@@ -20,13 +21,11 @@ import           System.FilePath (FilePath, (</>))
 import           System.IO (IO, stderr, stdout)
 import           System.IO.Temp (withSystemTempDirectory)
 
-import           Test.Boris.Core.Arbitrary ()
-import           Test.QuickCheck
-import           Test.QuickCheck.Instances ()
+import qualified Test.Boris.Core.Gen as Gen
 
-import           X.Control.Monad.Trans.Either (runEitherT)
+prop_runBuild_happy :: Property
+prop_runBuild_happy = do
 
-prop_runBuild_happy b =
   testIO . withSystemTempDirectory "build"  $ \t ->
     check t (Right (), True, True, True, True, False) $
       Specification b
@@ -36,6 +35,7 @@ prop_runBuild_happy b =
         [touch "success"]
         [touch "failure"]
 
+prop_runBuild_pre_fails_first :: Property
 prop_runBuild_pre_fails_first b =
   testIO . withSystemTempDirectory "build"  $ \t ->
     check t (Left . PreError $ ExitFailure 1, False, False, True, False, True) $
@@ -46,6 +46,7 @@ prop_runBuild_pre_fails_first b =
         [touch "success"]
         [touch "failure"]
 
+prop_runBuild_pre_fails_second :: Property
 prop_runBuild_pre_fails_second b =
   testIO . withSystemTempDirectory "build"  $ \t ->
     check t (Left . PreError $ ExitFailure 1, True, False, True, False, True) $
@@ -56,6 +57,7 @@ prop_runBuild_pre_fails_second b =
         [touch "success"]
         [touch "failure"]
 
+prop_runBuild_build_fails_first :: Property
 prop_runBuild_build_fails_first b =
   testIO . withSystemTempDirectory "build"  $ \t ->
     check t (Left . RunError $ ExitFailure 1, True, False, True, False, True) $
@@ -66,6 +68,7 @@ prop_runBuild_build_fails_first b =
         [touch "success"]
         [touch "failure"]
 
+prop_runBuild_build_fails_second :: Property
 prop_runBuild_build_fails_second b =
   testIO . withSystemTempDirectory "build"  $ \t ->
     check t (Left . RunError $ ExitFailure 1, True, True, True, False, True) $
@@ -76,6 +79,7 @@ prop_runBuild_build_fails_second b =
         [touch "success"]
         [touch "failure"]
 
+prop_runBuild_post_fails_first :: Property
 prop_runBuild_post_fails_first b =
   testIO . withSystemTempDirectory "build"  $ \t ->
     check t (Left . PostError $ ExitFailure 1, True, True, False, False, False) $
@@ -86,6 +90,7 @@ prop_runBuild_post_fails_first b =
         [touch "success"]
         [touch "failure"]
 
+prop_runBuild_post_fails_second :: Property
 prop_runBuild_post_fails_second b =
   testIO . withSystemTempDirectory "build"  $ \t ->
     check t (Left . PostError $ ExitFailure 1, True, True, True, False, False) $
@@ -96,6 +101,7 @@ prop_runBuild_post_fails_second b =
         [touch "success"]
         [touch "failure"]
 
+prop_runBuild_success_fails_first :: Property
 prop_runBuild_success_fails_first b =
   testIO . withSystemTempDirectory "build"  $ \t ->
     check t (Left . SuccessError $ ExitFailure 1, True, True, True, False, False) $
@@ -106,6 +112,7 @@ prop_runBuild_success_fails_first b =
         [bad, touch "success"]
         [touch "failure"]
 
+prop_runBuild_success_fails_second :: Property
 prop_runBuild_success_fails_second b =
   testIO . withSystemTempDirectory "build"  $ \t ->
     check t (Left . SuccessError $ ExitFailure 1, True, True, True, True, False) $
@@ -116,6 +123,7 @@ prop_runBuild_success_fails_second b =
         [touch "success", bad]
         [touch "failure"]
 
+prop_runBuild_multi_fail_failure :: Property
 prop_runBuild_multi_fail_failure  b =
   testIO . withSystemTempDirectory "build"  $ \t ->
     check t (Left . FailureError $ ExitFailure 1, True, True, True, False, True) $
@@ -126,6 +134,7 @@ prop_runBuild_multi_fail_failure  b =
         [touch "success"]
         [touch "failure", bad]
 
+prop_runBuild_multi_fail_post :: Property
 prop_runBuild_multi_fail_post  b =
   testIO . withSystemTempDirectory "build"  $ \t ->
     check t (Left . PostError $ ExitFailure 1, True, True, True, False, False) $
@@ -136,6 +145,7 @@ prop_runBuild_multi_fail_post  b =
         [touch "success"]
         [touch "failure", bad]
 
+prop_runBuild_multi :: Property
 prop_runBuild_multi b =
   testIO . withSystemTempDirectory "build"  $ \x -> do
     let
@@ -186,9 +196,12 @@ check x expected specification = do
 
   pure $ (r, pre, command, post, success, failure) === expected
 
+touch :: Text -> Command
 touch f =
   Command "touch" [f]
 
+
+bad :: Command
 bad =
   Command "false" []
 
@@ -198,5 +211,6 @@ o =
 e =
   CB.sinkHandle stderr
 
-return []
-tests = $forAllProperties $ quickCheckWithResult (stdArgs { maxSuccess = 10 })
+tests :: IO Bool
+tests =
+  checkParallel $$(discover)

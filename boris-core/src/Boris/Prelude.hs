@@ -24,7 +24,7 @@ import           Data.Bits as X (Bits (..))
 import           Data.Bool as X (Bool (..), (||), (&&), not, bool, otherwise)
 import           Data.Char as X (Char)
 import           Data.Bifunctor as X (Bifunctor (..))
-import           Data.Either as X (Either (..), either)
+import           Data.Either as X (Either (..), either, isLeft, isRight)
 import           Data.Foldable as X
 import           Data.Function as X ((.), ($), (&), flip, id, const, on)
 import           Data.Functor as X (($>))

@@ -2,6 +2,6 @@ module BuildInfo_boris_client where
 import Prelude
 data RuntimeBuildInfo = RuntimeBuildInfo { buildVersion :: String, timestamp :: String, gitVersion :: String }
 buildInfo :: RuntimeBuildInfo
-buildInfo = RuntimeBuildInfo "0.0.1" "20190306091820" "1ca395a-M"
+buildInfo = RuntimeBuildInfo "0.0.1" "20190306091956" "55e49d3-M"
 buildInfoVersion :: String
-buildInfoVersion = "0.0.1-20190306091820-1ca395a-M"
+buildInfoVersion = "0.0.1-20190306091956-55e49d3-M"

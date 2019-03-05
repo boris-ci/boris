@@ -6,25 +6,22 @@ module Boris.Build (
   , renderBuildError
   ) where
 
-import           Boris.Core.Data
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Configuration
 import           Boris.Core.Data.Repository
 import           Boris.Core.Data.Workspace
+import           Boris.Git.X (Out, WithEnv (..))
+import qualified Boris.Git.X as X
+import           Boris.Prelude
+
 
 import           Control.Monad.IO.Class (liftIO)
 
 import qualified Data.Text as T
 
-import           P
-
-import           Tine.Conduit (Out, WithEnv (..))
-import qualified Tine.Conduit as X
-
 import           System.Exit (ExitCode (..))
 import           System.IO (IO)
 
-import           X.Control.Monad.Trans.Either (EitherT, bimapEitherT, hoistEither, runEitherT)
 
 data BuildError =
     RunError ExitCode
