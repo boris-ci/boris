@@ -88,8 +88,10 @@ case build.result of
 }
 
 <div>
-    <form action="/project/{{build.project}}/build/{{build.build}}" method="post">
+    <form action="/build" method="post">
       <button class="btn" type="submit">build again</button>
+      <input type="hidden" name="project" value="{{build.project}}"/>
+      <input type="hidden" name="build" value="{{build.build}}"/>
       {
       case build.ref of
         Nothing ->
