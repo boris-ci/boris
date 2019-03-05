@@ -6,6 +6,9 @@ module Boris.Http.Db.Build (
     insert
   , byId
   , byProjectId
+  , byBuildName
+  , refTree
+  , isQueued
   ) where
 
 
@@ -21,9 +24,7 @@ import           Data.Time (UTCTime)
 import           Database.PostgreSQL.Simple ((:.) (..))
 
 import           Traction.Control (MonadDb)
-import qualified Traction.Control as Traction
 import           Traction.QQ (sql)
-import           Traction.Sql (Unique (..))
 import qualified Traction.Sql as Traction
 
 insert :: MonadDb m => RunId -> BuildName -> Maybe Ref -> m BuildId
@@ -63,6 +64,68 @@ byProjectId project =
        WHERE p.id = ?
     |] (runTypeToInt IsBuild, getProjectId project)
 
+byBuildName :: MonadDb m => ProjectName -> BuildName -> m [Keyed BuildId Build]
+byBuildName project  build=
+  (fmap . fmap) toBuild $ Traction.query [sql|
+      SELECT p.id, p.name, p.repository, b.id, b.build, b.ref, b.commit, b.build_result, r.cancelled, r.queued_time,
+             r.start_time, r.end_time, r.heartbeat_time
+        FROM build b
+        JOIN run r
+          ON r.id = b.id
+         AND r.run_type = ?
+        JOIN project p
+          ON r.project = p.id
+       WHERE p.name = ?
+         AND b.name = ?
+    |] (runTypeToInt IsBuild, renderProjectName project, renderBuildName build)
+
+isQueued :: MonadDb m => ProjectName -> BuildName -> m [Keyed BuildId Build]
+isQueued project build=
+  (fmap . fmap) toBuild $ Traction.query [sql|
+      SELECT p.id, p.name, p.repository, b.id, b.build, b.ref, b.commit, b.build_result, r.cancelled, r.queued_time,
+             r.start_time, r.end_time, r.heartbeat_time
+        FROM build b
+        JOIN run r
+          ON r.id = b.id
+         AND r.run_type = ?
+        JOIN project p
+          ON r.project = p.id
+       WHERE p.name = ?
+         AND b.build = ?
+         AND b.build_result IS NULL
+         AND r.start_time IS NULL
+    |] (runTypeToInt IsBuild, renderProjectName project, renderBuildName build)
+
+refTree :: MonadDb m => ProjectName -> BuildName -> m BuildTree
+refTree project build = do
+  refs <- Traction.valuesWith Ref $ Traction.query [sql|
+      SELECT DISTINCT b.ref
+        FROM build b
+        JOIN run r
+          ON r.id = b.id
+         AND r.run_type = ?
+        JOIN project p
+          ON r.project = p.id
+       WHERE p.name = ?
+         AND b.build = ?
+         AND b.ref IS NOT NULL
+    |] (runTypeToInt IsBuild, renderProjectName project, renderBuildName build)
+
+  fmap (BuildTree project build) . for refs $ \ref ->
+    fmap (BuildTreeRef ref) . Traction.valuesWith BuildId $ Traction.query [sql|
+        SELECT b.id
+          FROM build b
+          JOIN run r
+            ON r.id = b.id
+           AND r.run_type = ?
+          JOIN project p
+            ON r.project = p.id
+         WHERE p.name = ?
+           AND b.build = ?
+           AND b.ref = ?
+      |] (runTypeToInt IsBuild, renderProjectName project, renderBuildName build, renderRef ref)
+
+
 toBuild :: ((Int64, Text, Text) :. (Int64, Text, Maybe Text, Maybe Text, Maybe Bool, Maybe Bool, Maybe UTCTime, Maybe UTCTime, Maybe UTCTime, Maybe UTCTime)) -> Keyed BuildId Build
 toBuild (project :. (key, name, ref, commit, result, cancelled, queued, start, end, hearbeat)) =
   Keyed
@@ -73,7 +136,7 @@ toBuild (project :. (key, name, ref, commit, result, cancelled, queued, start, e
       (Ref <$> ref)
       (Commit <$> commit)
       (bool BuildKo BuildOk <$> result)
-      (bool BuildCancelled BuildNotCancelled <$> result)
+      (bool BuildCancelled BuildNotCancelled <$> cancelled)
       queued
       start
       end

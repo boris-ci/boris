@@ -248,11 +248,11 @@ route pool authentication mode = do
         project = ProjectName project'
         build = BuildName build'
 
-      builds <- liftDbError $ Build.list pool project build
+      builds <- transaction pool $ Build.byBuildName project build
       withAccept $ \case
         AcceptHTML -> do
-          queued <- liftDbError $ Build.queued pool project build
-          View.renderAuthenticated a $ View.builds builds queued
+          queued <- transaction pool $ Build.queued project build
+          View.renderAuthenticated a $ View.builds builds (keyOf <$> queued)
         AcceptJSON ->
           Spock.json $ ApiV1.GetBuilds builds
 

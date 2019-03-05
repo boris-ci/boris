@@ -2,11 +2,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Boris.Http.Api.Build (
     byProjectId
-
-
   , byId
-  , list
+  , byBuildName
   , queued
+
+
   , submit
   , heartbeat
   , acknowledge
@@ -63,49 +63,13 @@ byId :: BuildId -> Db (Maybe (Keyed BuildId Build))
 byId =
   BuildDb.byId
 
-  {--
-  Traction.runDb pool $ do
-    result <- Query.fetch build
-    for result $ \r ->
-      case buildDataResult r of
-        Nothing ->
-          case buildDataHeartbeatTime r of
-            Nothing -> do
-              case buildDataCancelled r of
-                Nothing ->
-                  pure r
-                Just BuildNotCancelled ->
-                  pure r
-                Just BuildCancelled ->
-                  pure $ r { buildDataResult = Just . fromMaybe BuildKo . buildDataResult $ r }
-            Just h -> do
-              now <- liftIO Time.getCurrentTime
-              if Time.diffUTCTime now h > 120
-                then do
-                  Query.cancel build
-                  pure $ r { buildDataResult = Just . fromMaybe BuildKo . buildDataResult $ r }
-                else
-                  pure r
-        Just _ ->
-          pure r
---}
+byBuildName :: ProjectName -> BuildName -> Db BuildTree
+byBuildName project build =
+  BuildDb.refTree project build
 
-list :: DbPool -> ProjectName -> BuildName -> EitherT DbError IO BuildTree
-list pool project build = Traction.runDb pool $ do
-  error "todo"
-  {--
-  refs <- Query.getBuildRefs project build
-  BuildTree project build <$> (for refs $ \ref ->
-    BuildTreeRef ref <$> Query.getBuildIds project build ref)
---}
-
-queued :: DbPool -> ProjectName -> BuildName -> EitherT DbError IO [BuildId]
-queued pool project build =
-  error "todo"
-  {--
-  Traction.runDb pool $
-  Query.getQueued project build
---}
+queued :: ProjectName -> BuildName -> Db [Keyed BuildId Build]
+queued project build =
+  BuildDb.isQueued project build
 
 submit :: ProjectName -> BuildName -> Maybe Ref -> Db (Maybe (Keyed BuildId Build))
 submit p build ref = do
