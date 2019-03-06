@@ -24,6 +24,13 @@ genRef =
   Ref <$> Gen.element [
       "master"
     , "topic/fred"
+    , "topic/red"
+    , "topic/green"
+    , "topic/blue"
+    , "topic/orange"
+    , "topic/yellow"
+    , "topic/indigo"
+    , "topic/violet"
     ]
 
 genCommit :: Gen Commit

@@ -56,6 +56,9 @@ prop_initialise =
       flail $
         X.exec o e $ (proc "git" ["init"]) { cwd = Just repository }
 
+      flail $
+        X.exec o e $ (proc "git" ["config", "commit.gpgsign", "false"]) { cwd = Just repository }
+
       T.writeFile (repository </> "boris-git.toml") "\
         \[boris] \n\
         \  version = 1 \n\
@@ -66,6 +69,7 @@ prop_initialise =
 
       flail $
         X.exec o e $ (proc "git" ["add", "-A", "boris-git.toml"]) { cwd = Just repository }
+
 
       flail $
         X.exec o e $ (proc "git" ["commit", "-m", "first"]) { cwd = Just repository }
@@ -93,7 +97,7 @@ prop_initialise =
       result <- runEitherT . withWorkspace path i $ \w -> do
         Git.initialise o e w build (Repository . T.pack $ repository) Nothing
 
-      pure $ result === (Right $ BuildInstance (Specification build [Command "tsar" ["pre"]] [Command "echo" ["test"]] [] [Command "tsar" ["success"]] [Command "tsar" ["failure"]]) (Ref "refs/heads/test") (Commit "7d4324a0cb9bb7bd0e627d6ea86dbe02aa31be62"))
+      pure $ result === (Right $ BuildInstance (Specification build [] [Command "echo" ["test"]] [] [] []) (Ref "refs/heads/test") (Commit "7d4324a0cb9bb7bd0e627d6ea86dbe02aa31be62"))
 
 
 prop_discovering :: Property
@@ -118,6 +122,9 @@ prop_discovering =
 
       flail $
         X.exec o e $ (proc "git" ["init"]) { cwd = Just repository }
+
+      flail $
+        X.exec o e $ (proc "git" ["config", "commit.gpgsign", "false"]) { cwd = Just repository }
 
       T.writeFile (repository </> "README.md") "This is a test."
 
@@ -151,7 +158,7 @@ prop_discovering =
         \[boris] \n\
         \  version = 1 \n\
         \\n\
-        \[build.test-*]\n\
+        \[build.\"test-*\"]\n\
         \  git = \"refs/heads/test\"\n\
         \[build.no-test-yet]\n\
         \  git = \"refs/heads/no-test-yet\"\n\
@@ -265,6 +272,9 @@ prop_discovering_broken_branch =
       flail $
         X.exec o e $ (proc "git" ["init"]) { cwd = Just repository }
 
+      flail $
+        X.exec o e $ (proc "git" ["config", "commit.gpgsign", "false"]) { cwd = Just repository }
+
       T.writeFile (repository </> "README.md") "This is a test."
 
       flail $
@@ -277,7 +287,7 @@ prop_discovering_broken_branch =
         \[boris] \n\
         \  version = 1 \n\
         \\n\
-        \[build.test-*]\n\
+        \[build.\"test-*\"]\n\
         \  git = \"refs/heads/test-*\"\n\
         \\n"
 
@@ -327,7 +337,8 @@ prop_discovering_broken_branch =
 
       (commit, _, _) <- X.capture o e $ (proc "git" ["rev-parse", "refs/heads/test-good"]) { cwd = Just repository }
 
-      pure $ result === Right [
+      pure $ do
+        result === Right [
               DiscoverInstance (BuildName "test-1") (Ref "refs/heads/test-good") (Commit . T.strip . T.decodeUtf8 $ commit)
             ]
 

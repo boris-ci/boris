@@ -47,6 +47,12 @@ prop_parse_ok =
           (Pattern "refs/heads/*")
       ]
 
+    checker "test/data/config/ref/v1/wildcard.toml" . Right $ [
+        BuildPattern
+          (newBuildNamePattern "test-*")
+          (Pattern "refs/heads/test-*")
+      ]
+
 prop_parse_error :: Property
 prop_parse_error =
   property $ do

@@ -1,0 +1,5 @@
+[boris]
+  version = 1
+
+[build."test-*"]
+  git = "refs/heads/test-*"

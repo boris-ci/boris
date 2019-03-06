@@ -12,7 +12,6 @@ import qualified Data.Text as T
 
 import           Hedgehog
 import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
 
 import           Test.Boris.Core.Gen
 import           System.IO (IO)
