@@ -1,15 +1,22 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-import           BuildInfo_ambiata_boris_service
-import           DependencyInfo_ambiata_boris_service
+import           BuildInfo_boris_service
+import           DependencyInfo_boris_service
 
-import           Boris.Core.Data
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Project
+import           Boris.Core.Data.Repository
+import           Boris.Core.Data.Workspace
+import qualified Boris.Client.Config as Config
 import qualified Boris.Service.Boot as Boot
 import qualified Boris.Service.Discover as Discover
+import           Boris.Prelude
 
 import           Data.Default (def)
 import           Data.String (String)
+import qualified Data.Text as T
+import qualified Data.Text as Text
 
 import qualified Nest
 
@@ -17,43 +24,29 @@ import           Network.Connection (ProxySettings (..))
 import           Network.HTTP.Client (ManagerSettings, newManager)
 import           Network.HTTP.Client.TLS (mkManagerSettings)
 
+import qualified Options.Applicative as Options
 import           Options.Applicative
 
-import           P
-
-import           Snooze.Balance.Data (BalanceTable (..), BalanceEntry (..), Host (..), Port (..), balanceTableStatic)
-import           Snooze.Balance.Control (BalanceConfig (..))
-
-import           System.Exit (exitSuccess)
+import           System.Exit (exitSuccess, exitFailure)
 import           System.Environment (lookupEnv)
 import           System.IO
 
-import           X.Options.Applicative
-import           X.Control.Monad.Trans.Either.Exit (orDie)
 
 data Cli =
-    BuildCommand BuildId Project Repository Build (Maybe Ref)
-  | DiscoverCommand BuildId Project Repository
+    BuildCommand BuildId ProjectName Repository BuildName (Maybe Ref)
+  | DiscoverCommand BuildId ProjectName Repository
+  | Version
     deriving (Eq, Show)
 
 main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
   hSetBuffering stderr LineBuffering
-  dispatch parser >>= \sc ->
-    case sc of
-      VersionCommand ->
-        putStrLn buildInfoVersion >> exitSuccess
-      DependencyCommand ->
-        mapM putStrLn dependencyInfo >> exitSuccess
-      RunCommand DryRun c ->
-        print c >> exitSuccess
-      RunCommand RealRun c ->
-        run c
+  dispatch (Version <$ versionP <|> parser) >>= run
 
-parser :: Parser (SafeCommand Cli)
+parser :: Options.Parser Cli
 parser =
-  safeCommand . subparser . mconcat $ [
+  Options.hsubparser . mconcat $ [
       command' "build" "Trigger a build" $
         BuildCommand
           <$> buildIdP
@@ -71,13 +64,19 @@ parser =
 
 run :: Cli -> IO ()
 run c = case c of
+  Version ->
+    putStrLn buildInfoVersion >> exitSuccess
   DiscoverCommand buildid project repository -> do
     let
       path =
         WorkspacePath "."
 
+      configure =
+        orDie Config.renderBorisConfigureError . newEitherT $
+          Config.configure
+
     Boot.Boot logs discovers _ <-
-      Nest.force $ Boot.boot mkBalanceConfig
+      Nest.force $ Boot.boot configure
 
     orDie Discover.renderDiscoverError $
       Discover.discover logs discovers path buildid project repository
@@ -85,15 +84,20 @@ run c = case c of
     exitSuccess
 
   BuildCommand _buildid _project _repository _build _ref -> do
+    let
+      configure =
+        orDie Config.renderBorisConfigureError . newEitherT $
+          Config.configure
+
     Boot.Boot _logs _ _build <-
-      Nest.force $ Boot.boot mkBalanceConfig
+      Nest.force $ Boot.boot configure
 
     -- TODO implement
     exitSuccess
 
-projectP :: Parser Project
+projectP :: Parser ProjectName
 projectP =
-  fmap Project . argument textRead . mconcat $ [
+  fmap ProjectName . argument textRead . mconcat $ [
       metavar "PROJECT"
     , help "Project name, this relates to the project name configured in boris, e.g. boris."
     ]
@@ -105,9 +109,9 @@ repositoryP =
     , help "Repository url."
     ]
 
-buildP :: Parser Build
+buildP :: Parser BuildName
 buildP =
-  fmap Build . argument textRead . mconcat $ [
+  fmap BuildName . argument textRead . mconcat $ [
       metavar "BUILD"
     , help "Build name, this relates to the project name configured in repository, e.g. dist, branches."
     ]
@@ -121,26 +125,43 @@ refP =
 
 buildIdP :: Parser BuildId
 buildIdP =
-  fmap BuildId . argument textRead . mconcat $ [
+  fmap BuildId . argument auto . mconcat $ [
       metavar "BUILD_ID"
     , help "Unique build identifier."
     ]
 
-mkBalanceConfig :: IO BalanceConfig
-mkBalanceConfig = do
-  ms <- getManagerSettings
-  mgr <- newManager ms
-  h <- Nest.force $ Host <$> Nest.string "HOST"
-  p <- Nest.force $ Port <$> Nest.numeric "PORT" `Nest.withDefault` 9999
-  t <- balanceTableStatic $ BalanceTable [BalanceEntry h p]
-  pure $ BalanceConfig t mempty mgr
+versionP :: Options.Parser ()
+versionP =
+  Options.flag' () . mconcat $ [
+      Options.short 'V'
+    , Options.long "version"
+    , Options.help "Version information"
+    ]
 
-socksProxyKey :: String
-socksProxyKey =
-  "SOCKS_PROXY"
+orDie :: (e -> Text) -> EitherT e IO a -> IO a
+orDie render e =
+  runEitherT e >>=
+    either (\err -> (hPutStrLn stderr . T.unpack . render) err >> exitFailure) pure
 
-getManagerSettings :: IO ManagerSettings
-getManagerSettings = do
-  msocks <- lookupEnv socksProxyKey
-  pure . mkManagerSettings def $
-    SockSettingsEnvironment (Just socksProxyKey) <$ msocks
+command' :: String -> String -> Options.Parser a -> Options.Mod Options.CommandFields a
+command' label description parser =
+  Options.command label (Options.info parser (Options.progDesc description))
+
+dispatch :: Options.Parser a -> IO a
+dispatch p = do
+  Options.customExecParser
+    (Options.prefs . mconcat $ [
+        Options.showHelpOnEmpty
+      , Options.showHelpOnError
+      ])
+    (Options.info
+      (p <**> Options.helper)
+      (mconcat [
+          Options.fullDesc
+        , Options.progDesc "Manage and interact with boris builds."
+        , Options.header "boris build bot"
+        ]))
+
+textRead :: Options.ReadM Text
+textRead =
+  Text.pack <$> Options.str
