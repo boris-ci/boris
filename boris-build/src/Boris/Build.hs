@@ -6,9 +6,7 @@ module Boris.Build (
   , renderBuildError
   ) where
 
-import           Boris.Core.Data.Build
 import           Boris.Core.Data.Configuration
-import           Boris.Core.Data.Repository
 import           Boris.Core.Data.Workspace
 import           Boris.Git.X (Out, WithEnv (..))
 import qualified Boris.Git.X as X
