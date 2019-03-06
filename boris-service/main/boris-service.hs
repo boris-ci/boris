@@ -1,10 +1,13 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-import           Boris.Core.Data
-import           Boris.Queue (BuildQueue (..))
+import           Boris.Core.Data.Workspace
+import           Boris.Core.Data.Workspace
+import qualified Boris.Client.Config as Config
 import qualified Boris.Service.Boot as Boot
 import           Boris.Service.Daemon
+import           Boris.Prelude
+import           Boris.Git.Pin (newPin)
 
 import           Control.Concurrent.Async (async, waitCatch)
 
@@ -14,47 +17,36 @@ import           Data.String (String)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
-import           Mismi (renderRegionError, discoverAWSEnv)
-import           Mismi.DynamoDB.Control (configureRetries)
-
 import qualified Nest
 
 import           Network.Connection (ProxySettings (..))
 import           Network.HTTP.Client (ManagerSettings, newManager)
 import           Network.HTTP.Client.TLS (mkManagerSettings)
 
-import           P
-
-import           Snooze.Balance.Data (BalanceTable (..), BalanceEntry (..), Host (..), Port (..), balanceTableStatic)
-import           Snooze.Balance.Control (BalanceConfig (..))
-
 import           System.Environment (lookupEnv)
 import           System.Exit (exitSuccess, exitFailure)
 import           System.IO
 
-import           Twine.Data.Pin (newPin)
-
-
-import           X.Control.Monad.Trans.Either.Exit (orDie)
 
 main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
   hSetBuffering stderr LineBuffering
   pin <- newPin
-  env <- orDie renderRegionError discoverAWSEnv
-  environment <- Environment <$> text "BORIS_ENVIRONMENT"
-  T.putStrLn $ "boris-environment: " <> (T.pack . show) environment
-  queue <- BuildQueue <$> text "BORIS_BUILD_QUEUE"
+--  environment <- Environment <$> text "BORIS_ENVIRONMENT"
+--  T.putStrLn $ "boris-environment: " <> (T.pack . show) environment
   work <- WorkspacePath <$> text "BORIS_WORKSPACE_PATH"
   n <- intOr "BORIS_WORK_THREADS" 1
+
   let
-    cenv = configureRetries env
+    configure =
+      orDie Config.renderBorisConfigureError . newEitherT $
+        Config.configure
 
   Boot.Boot logx discoverx buildx <-
-    Nest.force $ Boot.boot mkBalanceConfig
+    Nest.force $ Boot.boot configure
 
-  asyncs <- mapM async $ L.replicate n (run logx buildx discoverx cenv queue work pin)
+  asyncs <- mapM async $ L.replicate n (run logx buildx discoverx work pin)
   results <- forM asyncs $ waitCatch
   forM_ results $ \result -> case result of
     Left e ->
@@ -84,21 +76,7 @@ bomb :: Text -> IO a
 bomb msg =
   T.hPutStrLn stderr msg >> exitFailure
 
-mkBalanceConfig :: IO BalanceConfig
-mkBalanceConfig = do
-  ms <- getManagerSettings
-  mgr <- newManager ms
-  h <- Nest.force $ Host <$> Nest.string "HOST"
-  p <- Nest.force $ Port <$> Nest.numeric "PORT" `Nest.withDefault` 9999
-  t <- balanceTableStatic $ BalanceTable [BalanceEntry h p]
-  pure $ BalanceConfig t mempty mgr
-
-socksProxyKey :: String
-socksProxyKey =
-  "SOCKS_PROXY"
-
-getManagerSettings :: IO ManagerSettings
-getManagerSettings = do
-  msocks <- lookupEnv socksProxyKey
-  pure . mkManagerSettings def $
-    SockSettingsEnvironment (Just socksProxyKey) <$ msocks
+orDie :: (e -> Text) -> EitherT e IO a -> IO a
+orDie render e =
+  runEitherT e >>=
+    either (\err -> (hPutStrLn stderr . T.unpack . render) err >> exitFailure) pure

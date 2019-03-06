@@ -7,32 +7,37 @@ module Boris.Service.Discover (
   , renderDiscoverError
   ) where
 
+import           Boris.Client.Error
 import qualified Boris.Client.Discover as Discover
-import qualified Boris.Client.Http as Http
-import           Boris.Core.Data
+import qualified Boris.Client.Network as Network
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Discover
+import           Boris.Core.Data.Instance
+import           Boris.Core.Data.Project
+import           Boris.Core.Data.Repository
+import           Boris.Core.Data.Workspace
+import qualified Boris.Git.X as X
 import           Boris.Service.Boot
 import           Boris.Service.Git
 import           Boris.Service.Log
 import           Boris.Service.Workspace
-
-import           P
+import           Boris.Prelude
 
 import           System.IO (IO)
-
-import qualified Tine.Conduit as X
-
-import           X.Control.Monad.Trans.Either (EitherT, bimapEitherT, joinEitherE, newEitherT, runEitherT)
 
 data DiscoverError =
     DiscoverInitialiseError InitialiseError
   | DiscoverLogError LogError
-  | DiscoverHttpError Http.BorisHttpClientError
+  | DiscoverHttpError BorisError
 
-discover :: LogService -> DiscoverService ->  WorkspacePath -> BuildId -> Project -> Repository -> EitherT DiscoverError IO ()
+discover :: LogService -> DiscoverService ->  WorkspacePath -> BuildId -> ProjectName -> Repository -> EitherT DiscoverError IO ()
 discover logs discovers w buildid project repository = do
+  error "todo"
+
+  {--
   joinEitherE join . newEitherT . firstT DiscoverLogError . withLogger logs $ \out -> runEitherT $
     withWorkspace w buildid $ \workspace -> do
-      X.xPutStrLn out . mconcat $ ["[boris:discover] ", renderProject project]
+      X.xPutStrLn out . mconcat $ ["[boris:discover] ", renderProjectName project]
 
       discovered <- bimapEitherT DiscoverInitialiseError id $
         discovering out out workspace repository
@@ -42,13 +47,14 @@ discover logs discovers w buildid project repository = do
           firstT DiscoverHttpError $
             Discover.complete config buildid project discovered
         LogDiscover -> do
-           X.xPutStrLn out . mconcat $ ["project = ", renderProject project]
+           X.xPutStrLn out . mconcat $ ["project = ", renderProjectName project]
            X.xPutStrLn out . mconcat $ ["repository = ", renderRepository repository]
            for_ discovered $ \(DiscoverInstance b r c) -> do
              X.xPutStrLn out . mconcat $ ["  build = ", renderBuild b]
              X.xPutStrLn out . mconcat $ ["  ref = ", renderRef r]
              X.xPutStrLn out . mconcat $ ["  commit = ", renderCommit c]
              X.xPutStrLn out . mconcat $ [""]
+--}
 
 renderDiscoverError :: DiscoverError -> Text
 renderDiscoverError err =
@@ -58,4 +64,4 @@ renderDiscoverError err =
     DiscoverLogError e ->
       mconcat ["A logging error has occurred trying to discover builds: ", renderLogError e]
     DiscoverHttpError e ->
-      mconcat ["A http error has occurred trying to discover builds: ", Http.renderBorisHttpClientError e]
+      mconcat ["A http error has occurred trying to discover builds: ", renderBorisError e]

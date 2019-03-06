@@ -6,30 +6,25 @@ module Boris.Service.Listener (
   , renderListenerError
   ) where
 
-import           Boris.Core.Data
-import           Boris.Queue (BuildQueue (..), Request (..), RequestBuild (..), RequestDiscover (..))
-import qualified Boris.Queue as Q
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Workspace
+--import           Boris.Queue (BuildQueue (..), Request (..), RequestBuild (..), RequestDiscover (..))
+--import qualified Boris.Queue as Q
 import           Boris.Service.Boot
 import           Boris.Service.Build
 import           Boris.Service.Discover
-
-import           Mismi (Error, renderError, runAWST)
-import           Mismi.Amazonka (Env)
-
-import           P
+import           Boris.Prelude
 
 import           System.IO (IO)
 
-import           X.Control.Monad.Trans.Either (EitherT, bimapEitherT)
-
 data ListenerError =
-    ListenerQueueError Q.QueueError
-  | ListenerAwsError Error
-  | ListenerBuilderError BuilderError
+    ListenerBuilderError BuilderError
   | ListenerDiscoverError DiscoverError
 
-listen :: LogService -> BuildService -> DiscoverService -> Env -> BuildQueue -> WorkspacePath -> EitherT ListenerError IO ()
-listen logs builds discovers env q w = do
+listen :: LogService -> BuildService -> DiscoverService -> WorkspacePath -> EitherT ListenerError IO ()
+listen logs builds discovers w = do
+  error "todo"
+  {--
   r <- runAWST env ListenerAwsError . bimapEitherT ListenerQueueError id $
     Q.get q
 
@@ -41,14 +36,11 @@ listen logs builds discovers env q w = do
       RequestBuild' x ->
         bimapEitherT ListenerBuilderError id $
           builder logs builds w (requestBuildId x) (requestBuildProject x) (requestBuildRepository x) (requestBuildName x) (requestBuildRef x)
+--}
 
 renderListenerError :: ListenerError -> Text
 renderListenerError err =
   case err of
-    ListenerQueueError e ->
-      mconcat ["An error occurred trying to obtain a build to run: ", Q.renderQueueError e]
-    ListenerAwsError e ->
-      mconcat ["An AWS error occurred trying to obtain a build to run: ", renderError e]
     ListenerDiscoverError e ->
       mconcat ["An error occurred during a discovery: ", renderDiscoverError e]
     ListenerBuilderError e ->

@@ -7,26 +7,27 @@ module Boris.Service.Build (
   ) where
 
 import           Boris.Build
-import           Boris.Core.Data
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Discover
+import           Boris.Core.Data.Instance
+import           Boris.Core.Data.Project
+import           Boris.Core.Data.Repository
+import           Boris.Core.Data.Workspace
 import           Boris.Service.Boot
 import           Boris.Service.Git
 import           Boris.Service.Log
 import qualified Boris.Service.Remote as Remote
 import           Boris.Service.Workspace
+import           Boris.Prelude
+import           Boris.Git.X (WithEnv (..))
+import qualified Boris.Git.X as X
+
 
 import           Control.Concurrent.Async (async, waitEitherCancel)
 import           Control.Monad.IO.Class (MonadIO (..))
 
-import           P
-
 import           System.IO (IO)
 
-import           Tine.Conduit (WithEnv (..))
-import qualified Tine.Conduit as X
-
-import           Twine.Snooze (seconds, snooze)
-
-import           X.Control.Monad.Trans.Either (EitherT, joinEitherE, newEitherT, runEitherT)
 
 data BuilderError =
     BuildLogError LogError
@@ -60,6 +61,8 @@ data LifecycleError =
 --
 builder :: LogService -> BuildService -> WorkspacePath -> BuildId -> Project -> Repository -> Build -> Maybe Ref -> EitherT BuilderError IO ()
 builder logs builds w buildId project repository build mref = do
+  error "todo"
+  {--
   joinEitherE join . newEitherT . firstT BuildLogError . withLogger logs $ \out -> runEitherT $ do
     initial <- firstT BuildRemoteError $
       Remote.heartbeat builds buildId
@@ -125,9 +128,11 @@ builder logs builds w buildId project repository build mref = do
         firstT BuildRemoteError $
           Remote.complete builds buildId BuildKo
 
-
+--}
 lifecycle :: X.Out -> BuildService -> WorkspacePath -> Project -> Build -> Repository -> Maybe Ref -> BuildId -> EitherT LifecycleError IO (Either BuildError ())
 lifecycle out builds w project build repository mref buildId =
+  error "todo"
+  {--
   withWorkspace w buildId $ \workspace -> do
     instant <- firstT LifecycleInitialiseError $
       initialise out out workspace build repository mref
@@ -176,6 +181,7 @@ lifecycle out builds w project build repository mref buildId =
 
     liftIO . runEitherT $
       runBuild out out workspace specification context
+--}
 
 renderBuilderError :: BuilderError -> Text
 renderBuilderError err =

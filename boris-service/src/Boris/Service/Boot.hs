@@ -9,6 +9,9 @@ module Boris.Service.Boot (
   , BuildService (..)
   ) where
 
+import qualified Boris.Client.Config as Config
+import           Boris.Prelude
+
 import           Control.Monad.IO.Class (MonadIO (..))
 
 import qualified Data.Map as Map
@@ -16,27 +19,24 @@ import qualified Data.Map as Map
 import           Nest (Parser)
 import qualified Nest
 
-import           P
-
-import           Snooze.Balance.Control (BalanceConfig (..))
-
 import           System.IO (IO)
+
 
 data LogService =
     Std
 
 data DiscoverService =
-    PushDiscover BalanceConfig
+    PushDiscover Config.Boris
   | LogDiscover
 
 data BuildService =
-    PushBuild BalanceConfig
+    PushBuild Config.Boris
   | LogBuild
 
 data Boot =
   Boot LogService DiscoverService BuildService
 
-boot :: MonadIO m => IO BalanceConfig -> Parser m Boot
+boot :: MonadIO m => IO Config.Boris -> Parser m Boot
 boot mkHttp = do
   logs <- join $ Nest.setting "BORIS_LOG_SERVICE" (Map.fromList [
       ("std", std)
