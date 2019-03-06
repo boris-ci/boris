@@ -6,16 +6,16 @@ module Boris.Service.Workspace (
   , withWorkspace
   ) where
 
-import           Boris.Core.Data
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Workspace
+import           Boris.Prelude
+
 
 import           Control.Monad.IO.Class (liftIO)
-
-import           P
 
 import           System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
 import           System.IO (IO)
 
-import           X.Control.Monad.Trans.Either (EitherT, bracketEitherT')
 
 newWorkspace :: WorkspacePath -> BuildId -> IO Workspace
 newWorkspace work build =
