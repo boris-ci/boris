@@ -172,3 +172,26 @@ genDay =
 genDiffTime :: Gen DiffTime
 genDiffTime =
   fromRational . toRational <$> Gen.double (Range.linearFrac 0 86400)
+
+data BuildWithPattern =
+  BuildWithPattern BuildName BuildNamePattern
+  deriving (Eq, Show)
+
+
+genBuildNamePatternWith :: BuildName -> Gen BuildNamePattern
+genBuildNamePatternWith b' = do
+  let
+    b = renderBuildName b'
+  i <- Gen.int (Range.linear 0 (Text.length b))
+  Gen.just . fmap (rightToMaybe . parseBuildNamePattern) . Gen.element $ [
+      b
+    , "*" <> Text.drop i b
+    , Text.take i b <> "*"
+    ]
+    <> valueOrEmpty (i > 0) (Text.take (i - 1) b <> "?" <> Text.drop i b)
+
+
+genBuildWithPattern :: Gen BuildWithPattern
+genBuildWithPattern = do
+  b <- genBuildName
+  BuildWithPattern b <$> genBuildNamePatternWith b

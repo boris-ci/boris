@@ -14,6 +14,7 @@ library
   build-depends:
       base >= 3 && < 5
     , containers == 0.5.*
+    , exceptions == 0.10.*
     , Glob == 0.10.*
     , lens >= 4.6 && < 4.18
     , filepath == 1.*
