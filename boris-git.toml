@@ -1,11 +1,11 @@
 [boris]
   version = 1
 
-[build.dist-*]
+[build."dist-*"]
   git = "refs/heads/master"
 
-[build.branches-*]
+[build."branches-*"]
   git = "refs/heads/topic/*"
 
-[build.all-*]
+[build."all-*"]
   git = "refs/heads/**"

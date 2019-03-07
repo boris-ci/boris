@@ -1,84 +1,9 @@
 [boris]
   version = 1
 
-[build.dist-8-0-build]
+[build.dist]
   command = [
-      ["master", "build", "dist-8-0", "-C", "boris-build"]
-    ]
-w
-[build.dist-8-0-client]
-  command = [
-      ["master", "build", "dist-8-0", "-C", "boris-client"]
-    ]
-
-[build.dist-8-0-core]
-  command = [
-      ["master", "build", "dist-8-0", "-C", "boris-core"]
-    ]
-
-[build.dist-8-0-git]
-  command = [
-      ["master", "build", "dist-8-0", "-C", "boris-git"]
-    ]
-
-[build.dist-8-0-http]
-  command = [
-      ["master", "build", "dist-8-0", "-C", "boris-http"]
-    ]
-
-[build.dist-8-0-queue]
-  command = [
-      ["master", "build", "dist-8-0", "-C", "boris-queue"]
-    ]
-
-[build.dist-8-0-service]
-  command = [
-      ["master", "build", "dist-8-0", "-C", "boris-service"]
-    ]
-
-[build.dist-8-0-representation]
-  command = [
-      ["master", "build", "dist-8-0", "-C", "boris-representation"]
-    ]
-
-[build.branches-8-0-build]
-  command = [
-      ["master", "build", "branches-8-0", "-C", "boris-build"]
-    ]
-
-[build.branches-8-0-client]
-  command = [
-      ["master", "build", "branches-8-0", "-C", "boris-client"]
-    ]
-
-[build.branches-8-0-core]
-  command = [
-      ["master", "build", "branches-8-0", "-C", "boris-core"]
-    ]
-
-[build.branches-8-0-git]
-  command = [
-      ["master", "build", "branches-8-0", "-C", "boris-git"]
-    ]
-
-[build.branches-8-0-http]
-  command = [
-      ["master", "build", "branches-8-0", "-C", "boris-http"]
-    ]
-
-[build.branches-8-0-queue]
-  command = [
-      ["master", "build", "branches-8-0", "-C", "boris-queue"]
-    ]
-
-[build.branches-8-0-service]
-  command = [
-      ["master", "build", "branches-8-0", "-C", "boris-service"]
-    ]
-
-[build.branches-8-0-representation]
-  command = [
-      ["master", "build", "branches-8-0", "-C", "boris-representation"]
+      ["echo", "hello"]
     ]
 
 [build.dist-validate]
