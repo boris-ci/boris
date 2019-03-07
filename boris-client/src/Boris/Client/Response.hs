@@ -6,6 +6,7 @@ module Boris.Client.Response (
 
   , json
   , none
+  , option
   ) where
 
 import           Boris.Prelude
@@ -49,6 +50,15 @@ json code parser =
       x ->
         Left $
           BorisStatusCodeError x (HTTP.responseBody res)
+
+option :: Responder a-> Responder (Maybe a)
+option responder =
+  Responder $ \res ->
+    case (HTTP.statusCode . HTTP.responseStatus) res of
+      404 ->
+        pure Nothing
+      _ ->
+        Just <$> runResponder responder res
 
 none :: Int -> Responder ()
 none code =

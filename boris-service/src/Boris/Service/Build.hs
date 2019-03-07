@@ -10,12 +10,14 @@ import           Boris.Build
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Discover
 import           Boris.Core.Data.Instance
+import           Boris.Core.Data.Keyed
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Repository
 import           Boris.Core.Data.Workspace
 import           Boris.Service.Boot
 import           Boris.Service.Git
 import           Boris.Service.Log
+import           Boris.Service.Snooze (snooze, seconds)
 import qualified Boris.Service.Remote as Remote
 import           Boris.Service.Workspace
 import           Boris.Prelude
@@ -59,11 +61,16 @@ data LifecycleError =
 --  * we record the results.
 --
 --
-builder :: LogService -> BuildService -> WorkspacePath -> BuildId -> Project -> Repository -> Build -> Maybe Ref -> EitherT BuilderError IO ()
-builder logs builds w buildId project repository build mref = do
-  error "todo"
-  {--
-  joinEitherE join . newEitherT . firstT BuildLogError . withLogger logs $ \out -> runEitherT $ do
+builder :: LogService -> BuildService -> WorkspacePath -> Keyed BuildId Build -> EitherT BuilderError IO ()
+builder logs builds w build = do
+  mapEitherT (fmap join) . firstT BuildLogError . withLogger logs $ \out -> runEitherT $ do
+    let
+      mref = buildRef . valueOf $ build
+      buildId = keyOf build
+      project = projectName . valueOf . buildProject . valueOf $ build
+      name = buildName . valueOf $ build
+      repository = projectRepository . valueOf . buildProject . valueOf $ build
+
     initial <- firstT BuildRemoteError $
       Remote.heartbeat builds buildId
 
@@ -85,7 +92,7 @@ builder logs builds w buildId project repository build mref = do
                   newEitherT heartbeater
 
         heartbeater' <- liftIO . async $ heartbeater
-        lifecycle' <- liftIO . async . runEitherT $ lifecycle out builds w project build repository mref buildId
+        lifecycle' <- liftIO . async . runEitherT $ lifecycle out builds w project name repository mref buildId
 
         state <- liftIO $ waitEitherCancel heartbeater' lifecycle'
 
@@ -128,18 +135,15 @@ builder logs builds w buildId project repository build mref = do
         firstT BuildRemoteError $
           Remote.complete builds buildId BuildKo
 
---}
-lifecycle :: X.Out -> BuildService -> WorkspacePath -> Project -> Build -> Repository -> Maybe Ref -> BuildId -> EitherT LifecycleError IO (Either BuildError ())
+lifecycle :: X.Out -> BuildService -> WorkspacePath -> ProjectName -> BuildName -> Repository -> Maybe Ref -> BuildId -> EitherT LifecycleError IO (Either BuildError ())
 lifecycle out builds w project build repository mref buildId =
-  error "todo"
-  {--
   withWorkspace w buildId $ \workspace -> do
     instant <- firstT LifecycleInitialiseError $
       initialise out out workspace build repository mref
 
     let
-      ref = buildRef instant
-      commit = buildCommit instant
+      ref = buildIRef instant
+      commit = buildICommit instant
       specification = buildSpecification instant
 
       -- FIX inherit list should be defined externally
@@ -170,8 +174,8 @@ lifecycle out builds w project build repository mref buildId =
         , InheritEnv "HADOOP_USER_NAME"
         , InheritEnv "HADOOP_CONF_BASE"
         , SetEnv "BORIS_BUILD_ID" (renderBuildId buildId)
-        , SetEnv "BORIS_PROJECT" (renderProject project)
-        , SetEnv "BORIS_BUILD" (renderBuild build)
+        , SetEnv "BORIS_PROJECT" (renderProjectName project)
+        , SetEnv "BORIS_BUILD" (renderBuildName build)
         , SetEnv "BORIS_REF" (renderRef ref)
         , SetEnv "BORIS_COMMIT" (renderCommit commit)
         ]
@@ -181,7 +185,6 @@ lifecycle out builds w project build repository mref buildId =
 
     liftIO . runEitherT $
       runBuild out out workspace specification context
---}
 
 renderBuilderError :: BuilderError -> Text
 renderBuilderError err =

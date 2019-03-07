@@ -38,15 +38,13 @@ main = do
   work <- WorkspacePath <$> text "BORIS_WORKSPACE_PATH"
   n <- intOr "BORIS_WORK_THREADS" 1
 
-  let
-    configure =
-      orDie Config.renderBorisConfigureError . newEitherT $
-        Config.configure
+  boris <- orDie Config.renderBorisConfigureError . newEitherT $
+    Config.configure
 
   Boot.Boot logx discoverx buildx <-
-    Nest.force $ Boot.boot configure
+    Nest.force $ Boot.boot (pure boris)
 
-  asyncs <- mapM async $ L.replicate n (run logx buildx discoverx work pin)
+  asyncs <- mapM async $ L.replicate n (run logx buildx discoverx boris work pin)
   results <- forM asyncs $ waitCatch
   forM_ results $ \result -> case result of
     Left e ->

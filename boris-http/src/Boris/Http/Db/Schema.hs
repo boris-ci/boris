@@ -51,6 +51,7 @@ schema = [
         )
     |]
 
+      -- FIX build_result -> run result?
   , Migration "create-build" [sql|
       CREATE TABLE build (
           id BIGINT PRIMARY KEY REFERENCES run(id)

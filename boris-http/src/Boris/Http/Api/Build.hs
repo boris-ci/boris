@@ -5,10 +5,10 @@ module Boris.Http.Api.Build (
   , byId
   , byBuildName
   , queued
-
-
+  , next
   , submit
   , heartbeat
+
   , acknowledge
   , cancel
   , byCommit
@@ -71,6 +71,10 @@ queued :: ProjectName -> BuildName -> Db [Keyed BuildId Build]
 queued project build =
   BuildDb.isQueued project build
 
+next :: Db (Maybe (Keyed BuildId Build))
+next =
+  BuildDb.next
+
 submit :: ProjectName -> BuildName -> Maybe Ref -> Db (Maybe (Keyed BuildId Build))
 submit p build ref = do
   mproject <- ProjectDb.byName p
@@ -82,31 +86,18 @@ submit p build ref = do
     i <- BuildDb.insert run build normalised
     pure $ Keyed i (Build project build ref Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
 
-heartbeat :: DbPool -> BuildId -> EitherT DbError IO BuildCancelled
-heartbeat pool  buildId =
-  error "todo"
-  {--
-  Traction.runDb pool $
-    Query.heartbeat buildId
---}
+heartbeat :: BuildId -> Db BuildCancelled
+heartbeat buildId =
+  BuildDb.heartbeat buildId
 
-acknowledge :: DbPool -> BuildId -> EitherT DbError IO Acknowledge
-acknowledge pool buildId =
-  error "todo"
-  {--
-  Traction.runDb pool $
-    Query.acknowledge buildId
---}
+acknowledge :: BuildId -> Db Acknowledge
+acknowledge buildId =
+  BuildDb.acknowledge buildId
 
-cancel :: DbPool -> BuildId -> EitherT DbError IO (Maybe ())
-cancel pool i =
-  error "Todo"
-  {--
-  Traction.runDb pool $ do
-    d <- Query.fetch i
-    for d $ \_ ->
-        Query.cancel i
---}
+cancel :: BuildId -> Db (Maybe ())
+cancel i = do
+  bool Nothing (Just ()) <$> BuildDb.cancel i
+
 byCommit :: DbPool -> ProjectName -> Commit -> EitherT DbError IO [BuildId]
 byCommit pool project commit =
   error "todo"
@@ -134,17 +125,10 @@ logOf pool i =
       Query.fetchLogData i
 --}
 
-avow :: DbPool -> BuildId -> Ref -> Commit -> EitherT DbError IO ()
-avow pool i ref commit =
-  error "todo"
-  {--
-  Traction.runDb pool $
-    Query.index i ref commit
---}
-complete :: DbPool -> BuildId -> BuildResult -> EitherT DbError IO ()
-complete pool i result =
-  error "Todo"
-  {--
-  void . Traction.runDb pool $
-    Query.complete i result
---}
+avow :: BuildId -> Ref -> Commit -> Db ()
+avow i ref commit =
+  BuildDb.index i ref commit
+
+complete :: BuildId -> BuildResult -> Db ()
+complete i result =
+  void $ BuildDb.complete i result

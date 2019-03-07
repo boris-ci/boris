@@ -47,9 +47,11 @@ library
     Boris.Service.Daemon
     Boris.Service.Discover
     Boris.Service.Git
+    Boris.Service.Guard
     Boris.Service.Listener
     Boris.Service.Log
     Boris.Service.Remote
+    Boris.Service.Snooze
     Boris.Service.Workspace
 
 executable boris-service

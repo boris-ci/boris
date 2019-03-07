@@ -9,6 +9,12 @@ module Boris.Http.Db.Build (
   , byBuildName
   , refTree
   , isQueued
+  , next
+  , heartbeat
+  , acknowledge
+  , cancel
+  , complete
+  , index
   ) where
 
 
@@ -96,6 +102,22 @@ isQueued project build=
          AND r.start_time IS NULL
     |] (runTypeToInt IsBuild, renderProjectName project, renderBuildName build)
 
+-- TODO locking, different table for queue, invisibility timeout
+next :: MonadDb m => m (Maybe (Keyed BuildId Build))
+next =
+  (fmap . fmap) toBuild $ Traction.unique_ [sql|
+      SELECT p.id, p.name, p.repository, b.id, b.build, b.ref, b.commit, b.build_result, r.cancelled, r.queued_time,
+             r.start_time, r.end_time, r.heartbeat_time
+        FROM build b
+        JOIN run r
+          ON r.id = b.id
+        JOIN project p
+          ON r.project = p.id
+       WHERE b.build_result IS NULL
+         AND r.start_time IS NULL
+       LIMIT 1
+    |]
+
 refTree :: MonadDb m => ProjectName -> BuildName -> m BuildTree
 refTree project build = do
   refs <- Traction.valuesWith Ref $ Traction.query [sql|
@@ -125,9 +147,71 @@ refTree project build = do
            AND b.ref = ?
       |] (runTypeToInt IsBuild, renderProjectName project, renderBuildName build, renderRef ref)
 
+-- TODO All of this stuff should be on Run
+
+heartbeat :: MonadDb m => BuildId -> m BuildCancelled
+heartbeat buildid =
+  fmap (fromMaybe BuildNotCancelled) . (fmap . fmap) (bool BuildNotCancelled BuildCancelled) . fmap join . Traction.values $ Traction.unique [sql|
+          UPDATE run
+             SET heartbeat_time = now()
+           WHERE id = ?
+       RETURNING cancelled
+    |] (Traction.Only $ getBuildId buildid)
+
+acknowledge :: MonadDb m => BuildId -> m Acknowledge
+acknowledge buildId =
+  fmap (bool Accept AlreadyRunning . (==) (0 :: Int64)) $ Traction.execute [sql|
+          UPDATE run
+             SET start_time = now()
+           WHERE id = ?
+             AND start_time IS NULL
+    |] (Traction.Only $ getBuildId buildId)
+
+cancel :: MonadDb m => BuildId -> m Bool
+cancel buildid = do
+  cancelled <- fmap (> 0) $ Traction.execute [sql|
+      UPDATE run
+         SET cancelled = true,
+             end_time = now()
+       WHERE id = ?
+         AND cancelled IS NULL
+    |] (Traction.Only . getBuildId $ buildid)
+  when cancelled $
+    void $ Traction.execute [sql|
+        UPDATE build
+           SET build_result = false
+         WHERE id = ?
+      |] (Traction.Only . getBuildId $ buildid)
+  pure cancelled
+
+complete :: MonadDb m => BuildId -> BuildResult -> m Bool
+complete buildid result = do
+  completed <- fmap (> 0) $ Traction.execute [sql|
+      UPDATE run
+         SET end_time = now()
+       WHERE id = ?
+    |] (Traction.Only . getBuildId $ buildid)
+
+  when completed $
+    void $ Traction.execute [sql|
+          UPDATE build
+             SET build_result = ?
+           WHERE id = ?
+    |] (case result of BuildOk -> True; BuildKo -> False, getBuildId buildid)
+
+  pure completed
+
+index :: MonadDb m => BuildId -> Ref -> Commit -> m ()
+index buildid ref commit =
+  void $ Traction.execute [sql|
+      UPDATE build
+         SET ref = ?,
+             commit = ?
+       WHERE id = ?
+    |] (renderRef ref, renderCommit commit, getBuildId buildid)
 
 toBuild :: ((Int64, Text, Text) :. (Int64, Text, Maybe Text, Maybe Text, Maybe Bool, Maybe Bool, Maybe UTCTime, Maybe UTCTime, Maybe UTCTime, Maybe UTCTime)) -> Keyed BuildId Build
-toBuild (project :. (key, name, ref, commit, result, cancelled, queued, start, end, hearbeat)) =
+toBuild (project :. (key, name, ref, commit, result, cancelled, queued, start, end, heartbeatx)) =
   Keyed
     (BuildId key)
     (Build
@@ -140,4 +224,4 @@ toBuild (project :. (key, name, ref, commit, result, cancelled, queued, start, e
       queued
       start
       end
-      hearbeat)
+      heartbeatx)

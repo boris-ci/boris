@@ -8,22 +8,37 @@ module Boris.Service.Listener (
 
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Workspace
---import           Boris.Queue (BuildQueue (..), Request (..), RequestBuild (..), RequestDiscover (..))
---import qualified Boris.Queue as Q
+import           Boris.Client.Error
+import           Boris.Client.Config (Boris)
+import qualified Boris.Client.Build as Build
+import qualified Boris.Client.Network as Network
 import           Boris.Service.Boot
 import           Boris.Service.Build
 import           Boris.Service.Discover
 import           Boris.Prelude
 
+import           Control.Monad.IO.Class (MonadIO (..))
+
 import           System.IO (IO)
+import qualified System.IO as IO
 
 data ListenerError =
     ListenerBuilderError BuilderError
   | ListenerDiscoverError DiscoverError
+  | ListenerNetworkError BorisError
 
-listen :: LogService -> BuildService -> DiscoverService -> WorkspacePath -> EitherT ListenerError IO ()
-listen logs builds discovers w = do
-  error "todo"
+listen :: LogService -> BuildService -> DiscoverService -> Boris -> WorkspacePath -> EitherT ListenerError IO ()
+listen logs builds discovers boris w = do
+  candidate <- firstT ListenerNetworkError . Network.runRequestT boris $
+    Build.next
+
+  case candidate of
+    Nothing ->
+      liftIO $ IO.putStrLn "no builds found on queue."
+    Just build ->
+      firstT ListenerBuilderError $
+        builder logs builds w build
+
   {--
   r <- runAWST env ListenerAwsError . bimapEitherT ListenerQueueError id $
     Q.get q
@@ -45,3 +60,5 @@ renderListenerError err =
       mconcat ["An error occurred during a discovery: ", renderDiscoverError e]
     ListenerBuilderError e ->
       mconcat ["An error occurred during a build: ", renderBuilderError e]
+    ListenerNetworkError e ->
+      mconcat ["An error occurred talking to service: ", renderBorisError e]

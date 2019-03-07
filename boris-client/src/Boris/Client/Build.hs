@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Boris.Client.Build (
     trigger
+  , next
   , cancel
   , fetch
   , list
@@ -15,6 +16,9 @@ module Boris.Client.Build (
   ) where
 
 
+import           Data.Aeson ((.=))
+
+import qualified Data.Aeson as Aeson
 import qualified Boris.Client.Response as Response
 import           Boris.Client.Request (Request (..))
 import qualified Boris.Client.Request as Request
@@ -42,6 +46,12 @@ trigger p b r =
     H.post  ()
 --}
 
+next :: Request (Maybe (Keyed BuildId Build))
+next =
+  Request HTTP.POST "queue"
+    (Response.option . Response.json 200 $ Decode.wrapper getBuild)
+    (Request.json . Encode.auto $ ())
+
 fetch :: BuildId -> Request (Maybe BuildData)
 fetch i =
   error "todo" {--
@@ -63,48 +73,37 @@ list p b =
     H.get ["project", renderProject p , "build", renderBuild b]
 --}
 
-ignore :: Project -> Build -> Bool -> Request ()
+ignore :: ProjectName -> BuildName -> Bool -> Request ()
 ignore p b i =
-  error "todo"
-  {--
-  H.put ["project", renderProject p , "build", renderBuild b, "ignore"] (PutBuildIgnore i)
---}
+  Request HTTP.PUT (Text.intercalate "/" ["project", renderProjectName p, "build", renderBuildName b, "ignore"])
+    (Response.none 200)
+    (Request.json . Encode.auto $ PutBuildIgnore i)
+
 heartbeat :: BuildId -> Request BuildCancelled
 heartbeat i =
-  error "todo"
-  {--
-  fmap postHeartbeatCancelled $
-    H.post ["build", renderBuildId i, "heartbeat"] ()
---}
+  Request HTTP.POST (Text.intercalate "/" ["build", renderBuildId i, "heartbeat"])
+    (Response.json 200 $ Decode.wrapper postHeartbeatCancelled)
+    (Request.json . Encode.auto $ ())
 
 acknowledge :: BuildId -> Request Acknowledge
 acknowledge i =
-  error "todo"
-  {--
-  fmap postAcknowledge $
-    H.post ["build", renderBuildId i, "acknowledge"] PostAcknowledgeRequest
---}
+  Request HTTP.POST (Text.intercalate "/" ["build", renderBuildId i, "acknowledge"])
+    (Response.json 200 $ Decode.wrapper postAcknowledge)
+    (Request.json . Encode.auto $ PostAcknowledgeRequest)
 
 avow :: BuildId -> Ref -> Commit -> Request ()
-avow i r =
-  error "todo"
-  {--
-
-  PostAvowResponse <- H.post config ["build", renderBuildId i, "avow"] $
-    PostAvowRequest r c
-  pure ()
---}
+avow i r c =
+  Request HTTP.POST (Text.intercalate "/" ["build", renderBuildId i, "avow"])
+    (Response.json 200 $ Decode.wrapper (\PostAvowResponse -> ()))
+    (Request.json . Encode.auto $ PostAvowRequest r c)
 
 complete :: BuildId -> BuildResult -> Request ()
 complete i r =
-  error "todo"
-  {--
-
-  PostCompleteResponse <- H.post config ["build", renderBuildId i, "complete"] $ object [
-      "result" .= case r of BuildOk -> True; BuildKo -> False
-    ]
-  pure ()
---}
+  Request HTTP.POST (Text.intercalate "/" ["build", renderBuildId i, "complete"])
+    (Response.json 200 $ Decode.wrapper (\PostCompleteResponse -> ()))
+    (Request.json . Encode.auto $ Aeson.object [
+        "result" .= case r of BuildOk -> True; BuildKo -> False
+      ])
 
 rebuild :: BuildId -> Request (Maybe BuildData)
 rebuild i =

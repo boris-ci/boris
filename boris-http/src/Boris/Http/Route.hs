@@ -301,6 +301,26 @@ route pool authentication mode = do
                     Spock.json $ ApiV1.GetBuild result
 
 
+
+  Spock.post "queue" $
+    authenticated authentication pool $ \a -> do
+      withContentType $ \content ->
+        case content of
+          ContentTypeForm -> do
+            Spock.setStatus HTTP.status404
+            View.renderAuthenticated a $ View.notFound
+          ContentTypeJSON -> do
+            i <- transaction pool $
+              Build.next
+            case i of
+              Nothing -> do
+                Spock.setStatus HTTP.status404
+                Spock.json $ ApiV1.ApiError "not-found" Nothing
+              Just result -> do
+                Spock.setStatus HTTP.status200
+                Spock.json $ ApiV1.GetBuild result
+
+------ above here should be okish ---
   Spock.get ("project" <//> Spock.var <//> "commit" <//> Spock.var) $ \project' commit' ->
     authenticated authentication pool $ \a -> do
       let
@@ -368,8 +388,8 @@ route pool authentication mode = do
       let
         buildId = BuildId buildId'
 
-      result <- liftDbError $
-        Build.cancel pool buildId
+      result <- transaction pool $
+        Build.cancel  buildId
 
       withAccept $ \case
         AcceptHTML -> do
@@ -399,8 +419,8 @@ route pool authentication mode = do
             Spock.setStatus HTTP.notFound404
             Spock.html "TODO: 404 page."
           ContentTypeJSON -> do
-            r <- liftDbError $
-              Build.heartbeat pool buildId
+            r <- transaction pool $
+              Build.heartbeat buildId
             Spock.setHeader "Location" $ "/build/" <> renderBuildId buildId
             Spock.json $ ApiV1.PostHeartbeatResponse r
 
@@ -417,8 +437,8 @@ route pool authentication mode = do
             Spock.setStatus HTTP.notFound404
             Spock.html "TODO: 404 page."
           ContentTypeJSON -> do
-            a <- liftDbError $
-              Build.acknowledge pool buildId
+            a <- transaction pool $
+              Build.acknowledge buildId
             Spock.setHeader "Location" $ "/build/" <> renderBuildId buildId
             Spock.json $ ApiV1.PostAcknowledgeResponse a
 
@@ -442,8 +462,8 @@ route pool authentication mode = do
                 Spock.setStatus HTTP.status400
                 Spock.json $ object ["error" .= ("could not parse ref." :: Text)]
               Just (ApiV1.PostAvowRequest ref commit) -> do
-                liftDbError $
-                  Build.avow pool buildId ref commit
+                transaction pool $
+                  Build.avow buildId ref commit
                 Spock.setHeader "Location" $ "/build/" <> renderBuildId buildId
                 Spock.json $ ApiV1.PostAvowResponse
 
@@ -466,8 +486,8 @@ route pool authentication mode = do
                 Spock.setStatus HTTP.status400
                 Spock.json $ object ["error" .= ("could not parse ref." :: Text)]
               Just (ApiV1.PostCompleteRequest result) -> do
-                liftDbError $
-                  Build.complete pool buildId result
+                transaction pool $
+                  Build.complete buildId result
                 Spock.setHeader "Location" $ "/build/" <> renderBuildId buildId
                 Spock.json $ ApiV1.PostCompleteResponse
 
@@ -477,8 +497,8 @@ route pool authentication mode = do
       let
         buildId = BuildId buildId'
 
-      result <- liftDbError $
-        Build.cancel pool buildId
+      result <- transaction pool $
+        Build.cancel buildId
 
       withContentType $ \content ->
         case content of

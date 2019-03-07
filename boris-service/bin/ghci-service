@@ -1,3 +1,10 @@
 #!/bin/sh -eu
 
+mkdir -p tmp/workspace
+export BORIS_WORKSPACE_PATH=tmp/workspace
+export BORIS_WORK_THREADS=1
+export BORIS_ENDPOINT=http://localhost:9999
+export BORIS_BUILD_SERVICE_NOTIFICATION=http
+export BORIS_DISCOVER_SERVICE_NOTIFICATION=http
+
 ./mafia quick -p main/boris-service.hs
