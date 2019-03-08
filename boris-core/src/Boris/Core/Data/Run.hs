@@ -5,6 +5,8 @@ module Boris.Core.Data.Run (
   , runTypeToInt
   , runTypeFromInt
 
+  , RunState (..)
+
   , RunId (..)
   ) where
 
@@ -35,6 +37,14 @@ runTypeFromInt r =
     _ ->
       Nothing
 
+-- TODO this is for illustrative purposes at the moment
+--      should it be used explicitly?
+data RunState =
+    Queued
+  | Invisible
+  | Acknowledged
+  | Complete
+    deriving (Eq, Ord, Show)
 
 newtype RunId =
   RunId {

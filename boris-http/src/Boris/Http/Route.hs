@@ -119,7 +119,7 @@ route pool authentication mode = do
           Nothing -> do
             killSession
             Spock.setStatus HTTP.notFound404
-            Spock.html "TODO: 404 page."
+            View.renderUnauthenticated $ View.notFound
           Just code -> do
             session <- liftError (Session.renderAuthenticationError) $
               Session.authenticate pool manager client secret code
@@ -337,16 +337,15 @@ route pool authentication mode = do
 
 
   Spock.post ("discover" <//> Spock.var) $ \discoverId' ->
-    authenticated authentication pool $ \_ -> do
+    authenticated authentication pool $ \a -> do
       let
         discoverId = BuildId discoverId'
 
       withContentType $ \content ->
         case content of
           ContentTypeForm -> do
-            -- FIX 400?
             Spock.setStatus HTTP.notFound404
-            Spock.html "TODO: 404 page."
+            View.renderAuthenticated a $ View.notFound
           ContentTypeJSON -> do
             e <- Spock.jsonBody
             case e of
@@ -372,7 +371,7 @@ route pool authentication mode = do
           case build of
             Nothing -> do
               Spock.setStatus HTTP.notFound404
-              Spock.html "TODO: 404 page."
+              View.renderAuthenticated a $ View.notFound
             Just b ->
               View.renderAuthenticated a $ View.build b
         AcceptJSON ->
@@ -384,7 +383,7 @@ route pool authentication mode = do
               Spock.json $ ApiV1.GetBuild b
 
   Spock.delete ("build" <//> Spock.var) $ \buildId' ->
-    authenticated authentication pool $ \_ -> do
+    authenticated authentication pool $ \a -> do
       let
         buildId = BuildId buildId'
 
@@ -396,7 +395,7 @@ route pool authentication mode = do
           case result of
             Nothing -> do
               Spock.setStatus HTTP.notFound404
-              Spock.html "TODO: 404 page."
+              View.renderAuthenticated a $ View.notFound
             Just _ -> do
               Spock.redirect $ "/build/" <> renderBuildId buildId
         AcceptJSON ->
@@ -408,16 +407,15 @@ route pool authentication mode = do
               Spock.setStatus HTTP.noContent204
 
   Spock.post ("build" <//> Spock.var <//> "heartbeat") $ \buildId' ->
-    authenticated authentication pool $ \_ -> do
+    authenticated authentication pool $ \a -> do
       let
         buildId = BuildId buildId'
 
       withContentType $ \content ->
         case content of
           ContentTypeForm -> do
-            -- FIX 400?
             Spock.setStatus HTTP.notFound404
-            Spock.html "TODO: 404 page."
+            View.renderAuthenticated a $ View.notFound
           ContentTypeJSON -> do
             r <- transaction pool $
               Build.heartbeat buildId
@@ -425,7 +423,7 @@ route pool authentication mode = do
             Spock.json $ ApiV1.PostHeartbeatResponse r
 
   Spock.post ("build" <//> Spock.var <//> "acknowledge") $ \buildId' ->
-    authenticated authentication pool $ \_ -> do
+    authenticated authentication pool $ \a -> do
 
       let
         buildId = BuildId buildId'
@@ -433,17 +431,16 @@ route pool authentication mode = do
       withContentType $ \content ->
         case content of
           ContentTypeForm -> do
-            -- FIX 400?
             Spock.setStatus HTTP.notFound404
-            Spock.html "TODO: 404 page."
+            View.renderAuthenticated a $ View.notFound
           ContentTypeJSON -> do
-            a <- transaction pool $
+            ack <- transaction pool $
               Build.acknowledge buildId
             Spock.setHeader "Location" $ "/build/" <> renderBuildId buildId
-            Spock.json $ ApiV1.PostAcknowledgeResponse a
+            Spock.json $ ApiV1.PostAcknowledgeResponse ack
 
   Spock.post ("build" <//> Spock.var <//> "avow") $ \buildId' ->
-    authenticated authentication pool $ \_ -> do
+    authenticated authentication pool $ \a -> do
 
       let
         buildId = BuildId buildId'
@@ -451,9 +448,8 @@ route pool authentication mode = do
       withContentType $ \content ->
         case content of
           ContentTypeForm -> do
-            -- FIX 400?
             Spock.setStatus HTTP.notFound404
-            Spock.html "TODO: 404 page."
+            View.renderAuthenticated a $ View.notFound
           ContentTypeJSON -> do
             e <- Spock.jsonBody
             case e of
@@ -468,16 +464,15 @@ route pool authentication mode = do
                 Spock.json $ ApiV1.PostAvowResponse
 
   Spock.post ("build" <//> Spock.var <//> "complete") $ \buildId' ->
-    authenticated authentication pool $ \_ -> do
+    authenticated authentication pool $ \a -> do
       let
         buildId = BuildId buildId'
 
       withContentType $ \content ->
         case content of
           ContentTypeForm -> do
-            -- FIX 400?
             Spock.setStatus HTTP.notFound404
-            Spock.html "TODO: 404 page."
+            View.renderAuthenticated a $ View.notFound
           ContentTypeJSON -> do
             e <- Spock.jsonBody
             case e of
@@ -493,7 +488,7 @@ route pool authentication mode = do
 
 
   Spock.post ("build" <//> Spock.var <//> "cancel") $ \buildId' ->
-    authenticated authentication pool $ \_ -> do
+    authenticated authentication pool $ \a -> do
       let
         buildId = BuildId buildId'
 
@@ -506,7 +501,7 @@ route pool authentication mode = do
             case result of
               Nothing -> do
                 Spock.setStatus HTTP.notFound404
-                Spock.html "TODO: 404 page."
+                View.renderAuthenticated a $ View.notFound
               Just _ -> do
                 Spock.redirect $ "/build/" <> renderBuildId buildId
           ContentTypeJSON -> do
@@ -529,7 +524,7 @@ route pool authentication mode = do
 
 -- TODO   [("text/plain; charset=utf-8", r maxBound)] <> withVersion' r
   Spock.get ("log" <//> Spock.var) $ \buildId ->
-    authenticated authentication pool $ \_ -> do
+    authenticated authentication pool $ \a -> do
 
       log' <- liftDbError $
         Build.logOf pool (BuildId buildId)
@@ -537,8 +532,7 @@ route pool authentication mode = do
       withAccept $ \case
         AcceptHTML -> do
           Spock.setStatus HTTP.notFound404
-          Spock.html "TODO: 404 page."
-
+          View.renderAuthenticated a $ View.notFound
         AcceptJSON -> do
           case log' of
             Nothing -> do
