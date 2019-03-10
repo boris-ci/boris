@@ -53,6 +53,7 @@ library
     Boris.Client.Response
     Boris.Client.Serial.Decode
     Boris.Client.Serial.Encode
+    Boris.Client.Queue
 
 
 executable boris

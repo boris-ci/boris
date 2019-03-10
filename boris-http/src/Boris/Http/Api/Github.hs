@@ -4,10 +4,14 @@ module Boris.Http.Api.Github (
     importRepositories
   , ImportError (..)
   , renderImportError
+
+  , GitHubPushEvent (..)
   ) where
 
 
+import           Boris.Core.Data.Build
 import           Boris.Core.Data.Project
+import           Boris.Core.Data.Keyed
 import           Boris.Core.Data.Repository
 import           Boris.Http.Data
 import qualified Boris.Http.Db.Query as Query
@@ -29,7 +33,7 @@ import qualified GitHub.Endpoints.Repos as Github
 
 import           System.IO (IO)
 
-import           Traction.Control (DbPool, DbError)
+import           Traction.Control (Db, DbPool, DbError)
 import qualified Traction.Control as Traction
 
 
@@ -138,3 +142,13 @@ instance FromJSON PermissableUser where
         <*> (o .: "permissions" >>= withObject "Permissions" (\oo -> oo .: "pull"))
 
 --}
+
+data GitHubPushEvent =
+  GitHubPushEvent Ref Commit
+
+instance FromJSON GitHubPushEvent where
+  parseJSON =
+    withObject "GitHubEvent" $ \o ->
+      GitHubPushEvent
+        <$> (Ref <$> o .: "ref")
+        <*> (Commit <$> o .: "after")

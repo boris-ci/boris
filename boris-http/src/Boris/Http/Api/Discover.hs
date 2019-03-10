@@ -7,6 +7,7 @@ module Boris.Http.Api.Discover (
   , renderCompleteError
 
   , discover
+  , tryDiscover
   ) where
 
 
@@ -16,10 +17,14 @@ import           Boris.Core.Data.Build
 import           Boris.Core.Data.Discover
 import           Boris.Core.Data.Keyed
 import           Boris.Core.Data.Instance
+import           Boris.Core.Data.Run
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Tenant
 import           Boris.Http.Data
-import qualified Boris.Http.Db.Query as Query
+import qualified Boris.Http.Db.Run as RunDb
+import qualified Boris.Http.Db.Queue as QueueDb
+import qualified Boris.Http.Db.Discover as DiscoverDb
+import qualified Boris.Http.Db.Project as ProjectDb
 import           Boris.Prelude
 
 import           System.IO (IO)
@@ -58,19 +63,15 @@ complete pool buildid project discovers = do
 --          Query.register project build newId
 --}
 
-discover :: ProjectName -> Db (Maybe (Keyed DiscoverId Discover))
+discover :: Keyed ProjectId Project -> Db (Keyed DiscoverId Discover)
 discover project = do
-  error "todo"
-  {--
-  r <- firstT Traction.renderDbError $
-    pick pool tenant authenticated project
-  case r of
-    Nothing ->
-      pure Nothing
-    Just _repository -> do
-      i <- firstT Traction.renderDbError . Traction.runDb pool $
-        Query.tick
-      firstT Traction.renderDbError . Traction.runDb pool $
-        Query.discover i project
-      pure (Just i)
---}
+  run <- RunDb.insert IsDiscover (keyOf project)
+  QueueDb.insert run
+  i <- DiscoverDb.insert run
+  pure $ Keyed i (Discover project Nothing Nothing Nothing Nothing Nothing)
+
+tryDiscover :: ProjectName -> Db (Maybe (Keyed DiscoverId Discover))
+tryDiscover name = do
+  mproject <- ProjectDb.byName name
+  for mproject $ \project -> do
+    discover project

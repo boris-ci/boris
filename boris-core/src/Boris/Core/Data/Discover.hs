@@ -6,9 +6,13 @@ module Boris.Core.Data.Discover (
   , Discover (..)
   ) where
 
+import           Boris.Core.Data.Build
+import           Boris.Core.Data.Keyed
+import           Boris.Core.Data.Project
 import           Boris.Prelude
 
 import qualified Data.Text as Text
+import           Data.Time (UTCTime)
 
 
 newtype DiscoverId =
@@ -22,4 +26,10 @@ renderDiscoverId =
 
 data Discover =
   Discover {
+      discoverProject :: Keyed ProjectId Project
+    , discoverCancelled :: Maybe BuildCancelled
+    , discoverQueueTime :: Maybe UTCTime
+    , discoverStartTime :: Maybe UTCTime
+    , discoverEndTime :: Maybe UTCTime
+    , discoverHeartbeatTime :: Maybe UTCTime
     } deriving (Eq, Ord, Show)

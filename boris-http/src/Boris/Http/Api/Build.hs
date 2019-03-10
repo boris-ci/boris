@@ -36,6 +36,7 @@ import qualified Boris.Http.Api.Project as Project
 import           Boris.Http.Data
 import qualified Boris.Http.Db.Build as BuildDb
 import qualified Boris.Http.Db.Project as ProjectDb
+import qualified Boris.Http.Db.Queue as QueueDb
 import qualified Boris.Http.Db.Run as RunDb
 import qualified Boris.Http.Db.Query as Query
 import           Boris.Prelude
@@ -83,6 +84,7 @@ submit p build ref = do
       normalised = with ref $ \rr ->
         if Text.isPrefixOf "refs/" . renderRef $ rr then rr else Ref . ((<>) "refs/heads/") . renderRef $ rr
     run <- RunDb.insert IsBuild (keyOf project)
+    QueueDb.insert run
     i <- BuildDb.insert run build normalised
     pure $ Keyed i (Build project build ref Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
 
@@ -91,8 +93,11 @@ heartbeat buildId =
   BuildDb.heartbeat buildId
 
 acknowledge :: BuildId -> Db Acknowledge
-acknowledge buildId =
-  BuildDb.acknowledge buildId
+acknowledge b = do
+  ack <- QueueDb.acknowledge (RunId . getBuildId $ b)
+  when (ack == Accept) $
+    BuildDb.setStartTime b
+  pure ack
 
 cancel :: BuildId -> Db (Maybe ())
 cancel i = do

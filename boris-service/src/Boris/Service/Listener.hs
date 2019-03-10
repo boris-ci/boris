@@ -10,8 +10,8 @@ import           Boris.Core.Data.Build
 import           Boris.Core.Data.Workspace
 import           Boris.Client.Error
 import           Boris.Client.Config (Boris)
-import qualified Boris.Client.Build as Build
 import qualified Boris.Client.Network as Network
+import qualified Boris.Client.Queue as Queue
 import           Boris.Service.Boot
 import           Boris.Service.Build
 import           Boris.Service.Discover
@@ -30,12 +30,15 @@ data ListenerError =
 listen :: LogService -> BuildService -> DiscoverService -> Boris -> WorkspacePath -> EitherT ListenerError IO ()
 listen logs builds discovers boris w = do
   candidate <- firstT ListenerNetworkError . Network.runRequestT boris $
-    Build.next
+    Queue.next
 
   case candidate of
     Nothing ->
       liftIO $ IO.putStrLn "no builds found on queue."
-    Just build ->
+    Just (Left d) ->
+      firstT ListenerDiscoverError $
+        discover logs discovers w d
+    Just (Right build) ->
       firstT ListenerBuilderError $
         builder logs builds w build
 

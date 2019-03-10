@@ -13,6 +13,7 @@ import qualified Boris.Client.Network as Network
 import           Boris.Core.Data.Build
 import           Boris.Core.Data.Discover
 import           Boris.Core.Data.Instance
+import           Boris.Core.Data.Keyed
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Repository
 import           Boris.Core.Data.Workspace
@@ -30,8 +31,8 @@ data DiscoverError =
   | DiscoverLogError LogError
   | DiscoverHttpError BorisError
 
-discover :: LogService -> DiscoverService ->  WorkspacePath -> BuildId -> ProjectName -> Repository -> EitherT DiscoverError IO ()
-discover logs discovers w buildid project repository = do
+discover :: LogService -> DiscoverService ->  WorkspacePath -> (Keyed DiscoverId Discover) -> EitherT DiscoverError IO ()
+discover logs discovers w discover = do
   error "todo"
 
   {--

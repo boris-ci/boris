@@ -64,12 +64,16 @@ library
     Boris.Http.Api.Project
     Boris.Http.Api.Result
     Boris.Http.Api.Session
+    Boris.Http.Api.Queue
 
     Boris.Http.Boot
     Boris.Http.Data
 
     Boris.Http.Db.Schema
     Boris.Http.Db.Query
+    Boris.Http.Db.Build
+    Boris.Http.Db.Discover
+    Boris.Http.Db.Queue
 
     Boris.Http.Route
     Boris.Http.Spock

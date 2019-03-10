@@ -6,6 +6,7 @@ module Boris.Representation.ApiV1 (
   , GetBuilds (..)
   , GetBuild (..)
   , GetDiscover (..)
+  , GetNext (..)
   , PostBuildRequest (..)
   , PostDiscoverRequest (..)
   , PutBuildIgnore (..)
@@ -38,6 +39,7 @@ import           Boris.Core.Data.Repository
 import           Boris.Prelude
 
 import           Data.Aeson (FromJSON (..), ToJSON (..), Value, object, withObject, (.:), (.:?), (.=))
+import qualified Data.Text as Text
 
 
 data GetCommit =
@@ -152,6 +154,11 @@ newtype GetDiscover =
       getDiscover :: Keyed DiscoverId Discover
     } deriving (Eq, Ord, Show)
 
+newtype GetNext =
+  GetNext {
+      getNext :: Either (Keyed DiscoverId Discover) (Keyed BuildId Build)
+    } deriving (Eq, Ord, Show)
+
 newtype PostHeartbeatResponse =
   PostHeartbeatResponse {
       postHeartbeatCancelled :: BuildCancelled
@@ -263,6 +270,30 @@ instance ToJSON PostAcknowledgeResponse where
         "accept" .= case acknowledge of Accept -> True; AlreadyRunning -> False
       ]
 
+instance FromJSON GetNext where
+  parseJSON =
+    withObject "GetNext" $ \o ->
+      (o .: "type") >>= \t ->
+        case t of
+          ("discover" :: Text) ->
+            fmap (GetNext . Left . getDiscover) (o .: "definition")
+          ("build" :: Text) ->
+            fmap (GetNext . Right . getBuild) (o .: "definition")
+          _ ->
+            fail . mconcat $ ["Unknown queue type of: ", Text.unpack t]
+
+instance ToJSON GetNext where
+  toJSON (GetNext (Left d)) =
+    object [
+        "type" .= ("discover" :: Text)
+      , "definition" .= toJSON (GetDiscover d)
+      ]
+  toJSON (GetNext (Right b)) =
+    object [
+        "type" .= ("build" :: Text)
+      , "definition" .= toJSON (GetBuild b)
+      ]
+
 instance FromJSON GetBuild where
   parseJSON =
     withObject "GetBuild" $ \o ->
@@ -310,12 +341,30 @@ instance FromJSON GetDiscover where
       fmap GetDiscover $
         Keyed
           <$> (fmap DiscoverId $ o .: "discover_id")
-          <*> pure Discover
+          <*> (Discover
+            <$> (Keyed
+              <$> (fmap ProjectId $ o .: "project_id")
+              <*> (Project
+                <$> (fmap ProjectName $ o .: "project")
+                <*> (fmap Repository $ o .: "repository")))
+            <*> ((fmap . fmap) (bool BuildNotCancelled BuildCancelled) $ o .:? "cancelled")
+            <*> (o .:? "queued")
+            <*> (o .:? "started")
+            <*> (o .:? "completed")
+            <*> (o .:? "heartbeat"))
 
 instance ToJSON GetDiscover where
   toJSON (GetDiscover b) =
     object [
         "discover_id" .= (getDiscoverId . keyOf) b
+      , "project_id" .= (getProjectId . keyOf . discoverProject . valueOf) b
+      , "project" .= (renderProjectName . projectName . valueOf . discoverProject . valueOf) b
+      , "repository" .= (renderRepository . projectRepository . valueOf . discoverProject . valueOf) b
+      , "queued" .= (discoverQueueTime . valueOf) b
+      , "started" .= (discoverStartTime . valueOf) b
+      , "completed" .= (discoverEndTime . valueOf) b
+      , "heartbeat" .= (discoverHeartbeatTime . valueOf) b
+      , "cancelled" .= (flip fmap ((discoverCancelled . valueOf) b) $ \bb -> case bb of BuildCancelled -> True; BuildNotCancelled -> False)
       ]
 
 

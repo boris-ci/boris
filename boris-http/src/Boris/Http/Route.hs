@@ -18,6 +18,7 @@ import qualified Boris.Http.Api.Github as Github
 import qualified Boris.Http.Api.Project as Project
 import qualified Boris.Http.Api.Result as Result
 import qualified Boris.Http.Api.Session as Session
+import qualified Boris.Http.Api.Queue as Queue
 import           Boris.Http.Boot
 import           Boris.Http.Data
 import           Boris.Http.Spock
@@ -151,6 +152,42 @@ route pool authentication mode = do
       builds <- liftDbError . Traction.runDb pool $ Result.status
       View.renderAuthenticated a $ View.status builds
 
+  Spock.post ("project" <//> Spock.var <//> "hook") $ \n ->
+    authenticated authentication pool $ \a -> do
+      let name = ProjectName n
+      withContentType $ \content ->
+        case content of
+          ContentTypeForm -> do
+            Spock.setStatus HTTP.status404
+            View.renderAuthenticated a $ View.notFound
+          ContentTypeJSON -> do
+            mproject <- transaction pool $
+              Project.byName name
+            case mproject of
+              Nothing -> do
+                Spock.setStatus HTTP.status404
+                Spock.json $ ApiV1.ApiError "not-found" Nothing
+              Just project -> do
+                mevent <- Spock.header "X-GitHub-Event"
+                case mevent of
+                  Nothing -> do
+                    Spock.setStatus HTTP.status400
+                    Spock.json $ ApiV1.ApiError "missing-github-event" (Just "X-GitHub-Event must be specified.")
+                  Just "push" -> do
+                    e <- Spock.jsonBody
+                    case e of
+                      Nothing -> do
+                        Spock.setStatus HTTP.status400
+                        Spock.json $ ApiV1.ApiError "invalid-body" (Just "Could not parse create hook json.")
+                      Just (Github.GitHubPushEvent _ _) -> do
+                        void . transaction pool $
+                          Discover.discover project
+                        Spock.setStatus HTTP.status200
+                        Spock.json $ ()
+                  Just _ -> do
+                    Spock.setStatus HTTP.status200
+                    Spock.json $ ()
+
   Spock.get "project" $
     authenticated authentication pool $ \a -> do
       projects <- transaction pool $ Project.list
@@ -256,7 +293,7 @@ route pool authentication mode = do
                 Spock.json $ ApiV1.ApiError "invalid-body" (Just "Could not parse create discover submission json.")
               Just (ApiV1.PostDiscoverRequest project) -> do
                 i <- transaction pool $
-                  Discover.discover project
+                  Discover.tryDiscover project
                 case i of
                   Nothing -> do
                     Spock.setStatus HTTP.status404
@@ -311,14 +348,14 @@ route pool authentication mode = do
             View.renderAuthenticated a $ View.notFound
           ContentTypeJSON -> do
             i <- transaction pool $
-              Build.next
+              Queue.next
             case i of
               Nothing -> do
                 Spock.setStatus HTTP.status404
                 Spock.json $ ApiV1.ApiError "not-found" Nothing
               Just result -> do
                 Spock.setStatus HTTP.status200
-                Spock.json $ ApiV1.GetBuild result
+                Spock.json $ ApiV1.GetNext result
 
 ------ above here should be okish ---
   Spock.get ("project" <//> Spock.var <//> "commit" <//> Spock.var) $ \project' commit' ->

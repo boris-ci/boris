@@ -11,10 +11,11 @@ module Boris.Http.Db.Build (
   , isQueued
   , next
   , heartbeat
-  , acknowledge
+  , setStartTime
   , cancel
   , complete
   , index
+  , toBuild
   ) where
 
 
@@ -158,13 +159,12 @@ heartbeat buildid =
        RETURNING cancelled
     |] (Traction.Only $ getBuildId buildid)
 
-acknowledge :: MonadDb m => BuildId -> m Acknowledge
-acknowledge buildId =
-  fmap (bool Accept AlreadyRunning . (==) (0 :: Int64)) $ Traction.execute [sql|
+setStartTime :: MonadDb m => BuildId -> m ()
+setStartTime buildId =
+  void $ Traction.execute [sql|
           UPDATE run
              SET start_time = now()
            WHERE id = ?
-             AND start_time IS NULL
     |] (Traction.Only $ getBuildId buildId)
 
 cancel :: MonadDb m => BuildId -> m Bool

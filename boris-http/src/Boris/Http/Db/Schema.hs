@@ -51,6 +51,14 @@ schema = [
         )
     |]
 
+  , Migration "create-queue" [sql|
+      CREATE TABLE queue (
+          id BIGINT PRIMARY KEY REFERENCES run(id)
+        , run_type INT NOT NULL
+        , last_read TIMESTAMP WITH TIME ZONE
+        )
+    |]
+
       -- FIX build_result -> run result?
   , Migration "create-build" [sql|
       CREATE TABLE build (
@@ -85,4 +93,5 @@ schema = [
         , log_payload TEXT NOT NULL
         )
     |]
+
   ]

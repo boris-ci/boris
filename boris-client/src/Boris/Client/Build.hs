@@ -2,7 +2,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Boris.Client.Build (
     trigger
-  , next
   , cancel
   , fetch
   , list
@@ -25,6 +24,7 @@ import qualified Boris.Client.Request as Request
 import qualified Boris.Client.Serial.Encode as Encode
 import qualified Boris.Client.Serial.Decode as Decode
 import           Boris.Core.Data.Build
+import           Boris.Core.Data.Discover
 import           Boris.Core.Data.Keyed
 import           Boris.Core.Data.Project
 import           Boris.Prelude
@@ -45,12 +45,6 @@ trigger p b r =
 {--  fmap getBuild $
     H.post  ()
 --}
-
-next :: Request (Maybe (Keyed BuildId Build))
-next =
-  Request HTTP.POST "queue"
-    (Response.option . Response.json 200 $ Decode.wrapper getBuild)
-    (Request.json . Encode.auto $ ())
 
 fetch :: BuildId -> Request (Maybe BuildData)
 fetch i =
