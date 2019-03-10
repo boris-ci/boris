@@ -84,7 +84,7 @@ submit p build ref = do
       normalised = with ref $ \rr ->
         if Text.isPrefixOf "refs/" . renderRef $ rr then rr else Ref . ((<>) "refs/heads/") . renderRef $ rr
     run <- RunDb.insert IsBuild (keyOf project)
-    QueueDb.insert run
+    QueueDb.insert run IsBuild
     i <- BuildDb.insert run build normalised
     pure $ Keyed i (Build project build ref Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
 

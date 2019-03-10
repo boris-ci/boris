@@ -66,7 +66,7 @@ complete pool buildid project discovers = do
 discover :: Keyed ProjectId Project -> Db (Keyed DiscoverId Discover)
 discover project = do
   run <- RunDb.insert IsDiscover (keyOf project)
-  QueueDb.insert run
+  QueueDb.insert run IsDiscover
   i <- DiscoverDb.insert run
   pure $ Keyed i (Discover project Nothing Nothing Nothing Nothing Nothing)
 

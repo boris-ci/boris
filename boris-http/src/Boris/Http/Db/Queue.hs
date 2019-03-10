@@ -25,12 +25,12 @@ import qualified Traction.Control as Traction
 import           Traction.QQ (sql)
 import qualified Traction.Sql as Traction
 
-insert :: MonadDb m => RunId -> m ()
-insert r =
+insert :: MonadDb m => RunId -> RunType -> m ()
+insert r t =
   void $ Traction.execute [sql|
       INSERT INTO queue (id)
            VALUES (?)
-    |] (Traction.Only $ getRunId r)
+    |] (getRunId r, runTypeToInt t)
 
 next :: MonadDb m => m (Maybe (Either (Keyed DiscoverId Discover) (Keyed BuildId Build)))
 next = do
