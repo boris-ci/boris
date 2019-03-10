@@ -33,29 +33,31 @@ data DiscoverError =
 
 discover :: LogService -> DiscoverService ->  WorkspacePath -> (Keyed DiscoverId Discover) -> EitherT DiscoverError IO ()
 discover logs discovers w discover = do
-  error "todo"
+  mapEitherT (fmap join) . firstT DiscoverLogError . withLogger logs $ \out -> runEitherT $
+    withWorkspace w (BuildId . getDiscoverId . keyOf $ discover) $ \workspace -> do
+      let
+        discoverId = keyOf discover
+        project = projectName . valueOf . discoverProject . valueOf $ discover
+        repository = projectRepository . valueOf . discoverProject . valueOf $ discover
 
-  {--
-  joinEitherE join . newEitherT . firstT DiscoverLogError . withLogger logs $ \out -> runEitherT $
-    withWorkspace w buildid $ \workspace -> do
       X.xPutStrLn out . mconcat $ ["[boris:discover] ", renderProjectName project]
 
       discovered <- bimapEitherT DiscoverInitialiseError id $
         discovering out out workspace repository
 
       case discovers of
-        PushDiscover config -> do
+        PushDiscover http -> do
           firstT DiscoverHttpError $
-            Discover.complete config buildid project discovered
+            Network.runRequestT http $
+              Discover.complete discoverId project discovered
         LogDiscover -> do
            X.xPutStrLn out . mconcat $ ["project = ", renderProjectName project]
            X.xPutStrLn out . mconcat $ ["repository = ", renderRepository repository]
            for_ discovered $ \(DiscoverInstance b r c) -> do
-             X.xPutStrLn out . mconcat $ ["  build = ", renderBuild b]
+             X.xPutStrLn out . mconcat $ ["  build = ", renderBuildName b]
              X.xPutStrLn out . mconcat $ ["  ref = ", renderRef r]
              X.xPutStrLn out . mconcat $ ["  commit = ", renderCommit c]
              X.xPutStrLn out . mconcat $ [""]
---}
 
 renderDiscoverError :: DiscoverError -> Text
 renderDiscoverError err =

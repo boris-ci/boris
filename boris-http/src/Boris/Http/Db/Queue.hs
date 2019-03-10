@@ -28,8 +28,8 @@ import qualified Traction.Sql as Traction
 insert :: MonadDb m => RunId -> RunType -> m ()
 insert r t =
   void $ Traction.execute [sql|
-      INSERT INTO queue (id)
-           VALUES (?)
+      INSERT INTO queue (id, run_type)
+           VALUES (?, ?)
     |] (getRunId r, runTypeToInt t)
 
 next :: MonadDb m => m (Maybe (Either (Keyed DiscoverId Discover) (Keyed BuildId Build)))

@@ -396,6 +396,30 @@ route pool authentication mode = do
                 Spock.setStatus HTTP.ok200
                 Spock.json ()
 
+  Spock.post ("discover" <//> Spock.var <//> "complete") $ \discoverId' ->
+    authenticated authentication pool $ \a -> do
+      let
+        discoverId = DiscoverId discoverId'
+
+      withContentType $ \content ->
+        case content of
+          ContentTypeForm -> do
+            Spock.setStatus HTTP.notFound404
+            View.renderAuthenticated a $ View.notFound
+          ContentTypeJSON -> do
+            e <- Spock.jsonBody
+            case e of
+              Nothing -> do
+                -- FIX unhax
+                Spock.setStatus HTTP.status400
+                Spock.json $ object ["error" .= ("could not parse ref." :: Text)]
+              Just (ApiV1.PostCompleteRequest result) -> do
+                transaction pool $
+                  Discover.complete discover result
+                Spock.setHeader "Location" $ "/discover/" <> renderDiscoverId discoverId
+                Spock.json $ ApiV1.PostCompleteResponse
+
+
   Spock.get ("build" <//> Spock.var) $ \buildId' ->
     authenticated authentication pool $ \a -> do
       let

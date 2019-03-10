@@ -16,8 +16,8 @@ module Boris.Client.Build (
 
 
 import           Data.Aeson ((.=))
-
 import qualified Data.Aeson as Aeson
+
 import qualified Boris.Client.Response as Response
 import           Boris.Client.Request (Request (..))
 import qualified Boris.Client.Request as Request
