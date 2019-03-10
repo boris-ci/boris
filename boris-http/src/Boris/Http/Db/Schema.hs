@@ -54,7 +54,6 @@ schema = [
   , Migration "create-queue" [sql|
       CREATE TABLE queue (
           id BIGINT PRIMARY KEY REFERENCES run(id)
-        , run_type INT NOT NULL
         , last_read TIMESTAMP WITH TIME ZONE
         )
     |]
