@@ -3,6 +3,7 @@
 module Boris.Client.Discover (
     complete
   , acknowledge
+  , heartbeat
   ) where
 
 import           Data.Aeson ((.=))
@@ -36,3 +37,9 @@ complete i ds = do
   Request HTTP.POST (Text.intercalate "/" ["discover", renderDiscoverId i, "complete"])
     (Response.json 200 $ Decode.wrapper (\PostCompleteResponse -> ()))
     (Request.json . Encode.auto $ PostDiscover ds)
+
+heartbeat :: DiscoverId -> Request BuildCancelled
+heartbeat i =
+  Request HTTP.POST (Text.intercalate "/" ["discover", renderDiscoverId i, "heartbeat"])
+    (Response.json 200 $ Decode.wrapper postHeartbeatCancelled)
+    (Request.json . Encode.auto $ ())

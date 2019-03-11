@@ -388,6 +388,21 @@ route pool authentication mode = do
           Spock.json $ ApiV1.GetCommit project builds
 
 
+  Spock.post ("discover" <//> Spock.var <//> "heartbeat") $ \discoverId' ->
+    authenticated authentication pool $ \a -> do
+      let
+        discoverId = DiscoverId discoverId'
+
+      withContentType $ \content ->
+        case content of
+          ContentTypeForm -> do
+            Spock.setStatus HTTP.notFound404
+            View.renderAuthenticated a $ View.notFound
+          ContentTypeJSON -> do
+            r <- transaction pool $
+              Discover.heartbeat discoverId
+            Spock.json $ ApiV1.PostHeartbeatResponse r
+
   Spock.post ("discover" <//> Spock.var <//> "complete") $ \discoverId' ->
     authenticated authentication pool $ \a -> do
       let
@@ -446,17 +461,17 @@ route pool authentication mode = do
       withAccept $ \case
         AcceptHTML -> do
           case result of
-            Nothing -> do
+            False -> do
               Spock.setStatus HTTP.notFound404
               View.renderAuthenticated a $ View.notFound
-            Just _ -> do
+            True -> do
               Spock.redirect $ "/build/" <> renderBuildId buildId
         AcceptJSON ->
           case result of
-            Nothing -> do
+            False -> do
               Spock.setStatus HTTP.notFound404
               Spock.json ()
-            Just _ -> do
+            True -> do
               Spock.setStatus HTTP.noContent204
 
   Spock.post ("build" <//> Spock.var <//> "heartbeat") $ \buildId' ->
@@ -535,17 +550,17 @@ route pool authentication mode = do
         case content of
           ContentTypeForm -> do
             case result of
-              Nothing -> do
+              False -> do
                 Spock.setStatus HTTP.notFound404
                 View.renderAuthenticated a $ View.notFound
-              Just _ -> do
+              True -> do
                 Spock.redirect $ "/build/" <> renderBuildId buildId
           ContentTypeJSON -> do
             case result of
-              Nothing -> do
+              False -> do
                 Spock.setStatus HTTP.notFound404
                 Spock.json ()
-              Just _ -> do
+              True -> do
                 Spock.setStatus HTTP.noContent204
 
   Spock.get "scoreboard" $

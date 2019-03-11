@@ -8,6 +8,9 @@ module Boris.Http.Api.Discover (
 
   , discover
   , tryDiscover
+
+  , cancel
+  , heartbeat
   ) where
 
 
@@ -71,3 +74,11 @@ tryDiscover name = do
   mproject <- ProjectDb.byName name
   for mproject $ \project -> do
     discover project
+
+heartbeat :: DiscoverId -> Db BuildCancelled
+heartbeat d =
+  RunDb.heartbeat (RunId . getDiscoverId $ d)
+
+cancel :: DiscoverId -> Db Bool
+cancel d = do
+  RunDb.cancel (RunId . getDiscoverId $ d)

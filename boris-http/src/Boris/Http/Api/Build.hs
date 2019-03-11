@@ -8,14 +8,13 @@ module Boris.Http.Api.Build (
   , next
   , submit
   , submitWith
-  , heartbeat
-
-  , cancel
   , byCommit
   , byProject
   , logOf
   , avow
   , complete
+  , cancel
+  , heartbeat
   , BuildError (..)
   , renderBuildError
   ) where
@@ -93,12 +92,12 @@ submitWith project build ref = do
   pure $ Keyed i (Build project build ref Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
 
 heartbeat :: BuildId -> Db BuildCancelled
-heartbeat buildId =
-  BuildDb.heartbeat buildId
+heartbeat b =
+  RunDb.heartbeat (RunId . getBuildId $ b)
 
-cancel :: BuildId -> Db (Maybe ())
-cancel i = do
-  bool Nothing (Just ()) <$> BuildDb.cancel i
+cancel :: BuildId -> Db Bool
+cancel b = do
+  RunDb.cancel (RunId . getBuildId $ b)
 
 byCommit :: DbPool -> ProjectName -> Commit -> EitherT DbError IO [BuildId]
 byCommit pool project commit =

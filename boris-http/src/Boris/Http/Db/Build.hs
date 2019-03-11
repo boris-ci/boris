@@ -10,8 +10,6 @@ module Boris.Http.Db.Build (
   , refTree
   , isQueued
   , next
-  , heartbeat
-  , cancel
   , complete
   , index
   , built
@@ -148,33 +146,7 @@ refTree project build = do
            AND b.ref = ?
       |] (runTypeToInt IsBuild, renderProjectName project, renderBuildName build, renderRef ref)
 
--- TODO All of this stuff should be on Run
 
-heartbeat :: MonadDb m => BuildId -> m BuildCancelled
-heartbeat buildid =
-  fmap (fromMaybe BuildNotCancelled) . (fmap . fmap) (bool BuildNotCancelled BuildCancelled) . fmap join . Traction.values $ Traction.unique [sql|
-          UPDATE run
-             SET heartbeat_time = now()
-           WHERE id = ?
-       RETURNING cancelled
-    |] (Traction.Only $ getBuildId buildid)
-
-cancel :: MonadDb m => BuildId -> m Bool
-cancel buildid = do
-  cancelled <- fmap (> 0) $ Traction.execute [sql|
-      UPDATE run
-         SET cancelled = true,
-             end_time = now()
-       WHERE id = ?
-         AND cancelled IS NULL
-    |] (Traction.Only . getBuildId $ buildid)
-  when cancelled $
-    void $ Traction.execute [sql|
-        UPDATE build
-           SET build_result = false
-         WHERE id = ?
-      |] (Traction.Only . getBuildId $ buildid)
-  pure cancelled
 
 complete :: MonadDb m => BuildId -> BuildResult -> m Bool
 complete buildid result = do

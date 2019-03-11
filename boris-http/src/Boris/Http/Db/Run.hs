@@ -5,9 +5,12 @@
 module Boris.Http.Db.Run (
     insert
   , setStartTime
+  , heartbeat
+  , cancel
   ) where
 
 
+import           Boris.Core.Data.Build
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Run
 import           Boris.Prelude
@@ -36,3 +39,31 @@ setStartTime run =
              SET start_time = now()
            WHERE id = ?
     |] (Traction.Only $ getRunId run)
+
+
+-- TODO BuildCancelled -> RunCancelled
+heartbeat :: MonadDb m => RunId -> m BuildCancelled
+heartbeat run =
+  fmap (fromMaybe BuildNotCancelled) . (fmap . fmap) (bool BuildNotCancelled BuildCancelled) . fmap join . Traction.values $ Traction.unique [sql|
+          UPDATE run
+             SET heartbeat_time = now()
+           WHERE id = ?
+       RETURNING cancelled
+    |] (Traction.Only $ getRunId run)
+
+cancel :: MonadDb m => RunId -> m Bool
+cancel run = do
+  cancelled <- fmap (> 0) $ Traction.execute [sql|
+      UPDATE run
+         SET cancelled = true,
+             end_time = now()
+       WHERE id = ?
+         AND cancelled IS NULL
+    |] (Traction.Only . getRunId $ run)
+  when cancelled $
+    void $ Traction.execute [sql|
+        UPDATE build
+           SET build_result = false
+         WHERE id = ?
+      |] (Traction.Only . getRunId $ run)
+  pure cancelled
