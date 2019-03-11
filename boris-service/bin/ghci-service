@@ -6,5 +6,6 @@ export BORIS_WORK_THREADS=1
 export BORIS_ENDPOINT=http://localhost:9999
 export BORIS_BUILD_SERVICE_NOTIFICATION=http
 export BORIS_DISCOVER_SERVICE_NOTIFICATION=http
+export BORIS_LOG_SERVICE=http
 
 ./mafia quick -p main/boris-service.hs

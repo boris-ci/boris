@@ -24,6 +24,7 @@ import           System.IO (IO)
 
 data LogService =
     Std
+  | PushLog Config.Boris
 
 data DiscoverService =
     PushDiscover Config.Boris
@@ -40,6 +41,7 @@ boot :: MonadIO m => IO Config.Boris -> Parser m Boot
 boot mkHttp = do
   logs <- join $ Nest.setting "BORIS_LOG_SERVICE" (Map.fromList [
       ("std", std)
+    , ("http", PushLog <$> liftIO mkHttp)
     ]) `Nest.withDefault` std
 
   discover <- join $ Nest.setting "BORIS_DISCOVER_SERVICE_NOTIFICATION" (Map.fromList [
