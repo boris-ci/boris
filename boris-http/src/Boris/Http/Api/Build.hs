@@ -10,7 +10,6 @@ module Boris.Http.Api.Build (
   , submitWith
   , heartbeat
 
-  , acknowledge
   , cancel
   , byCommit
   , byProject
@@ -96,13 +95,6 @@ submitWith project build ref = do
 heartbeat :: BuildId -> Db BuildCancelled
 heartbeat buildId =
   BuildDb.heartbeat buildId
-
-acknowledge :: BuildId -> Db Acknowledge
-acknowledge b = do
-  ack <- QueueDb.acknowledge (RunId . getBuildId $ b)
-  when (ack == Accept) $
-    BuildDb.setStartTime b
-  pure ack
 
 cancel :: BuildId -> Db (Maybe ())
 cancel i = do

@@ -11,7 +11,6 @@ module Boris.Http.Db.Build (
   , isQueued
   , next
   , heartbeat
-  , setStartTime
   , cancel
   , complete
   , index
@@ -159,14 +158,6 @@ heartbeat buildid =
            WHERE id = ?
        RETURNING cancelled
     |] (Traction.Only $ getBuildId buildid)
-
-setStartTime :: MonadDb m => BuildId -> m ()
-setStartTime buildId =
-  void $ Traction.execute [sql|
-          UPDATE run
-             SET start_time = now()
-           WHERE id = ?
-    |] (Traction.Only $ getBuildId buildId)
 
 cancel :: MonadDb m => BuildId -> m Bool
 cancel buildid = do

@@ -12,6 +12,7 @@ import           Boris.Core.Data.Discover
 import           Boris.Core.Data.Keyed
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Repository
+import           Boris.Core.Data.Run
 import qualified Boris.Http.Api.Build as Build
 import qualified Boris.Http.Api.Discover as Discover
 import qualified Boris.Http.Api.Github as Github
@@ -357,6 +358,20 @@ route pool authentication mode = do
                 Spock.setStatus HTTP.status200
                 Spock.json $ ApiV1.GetNext result
 
+  Spock.post ("queue" <//> Spock.var) $ \run ->
+    authenticated authentication pool $ \a -> do
+      withContentType $ \content ->
+        case content of
+          ContentTypeForm -> do
+            Spock.setStatus HTTP.notFound404
+            View.renderAuthenticated a $ View.notFound
+          ContentTypeJSON -> do
+            Spock.setStatus HTTP.status200
+            ack <- transaction pool $
+              Queue.acknowledge (RunId run)
+            Spock.json $ ApiV1.PostAcknowledgeResponse ack
+
+
 ------ above here should be okish ---
   Spock.get ("project" <//> Spock.var <//> "commit" <//> Spock.var) $ \project' commit' ->
     authenticated authentication pool $ \a -> do
@@ -459,23 +474,6 @@ route pool authentication mode = do
               Build.heartbeat buildId
             Spock.setHeader "Location" $ "/build/" <> renderBuildId buildId
             Spock.json $ ApiV1.PostHeartbeatResponse r
-
-  Spock.post ("build" <//> Spock.var <//> "acknowledge") $ \buildId' ->
-    authenticated authentication pool $ \a -> do
-
-      let
-        buildId = BuildId buildId'
-
-      withContentType $ \content ->
-        case content of
-          ContentTypeForm -> do
-            Spock.setStatus HTTP.notFound404
-            View.renderAuthenticated a $ View.notFound
-          ContentTypeJSON -> do
-            ack <- transaction pool $
-              Build.acknowledge buildId
-            Spock.setHeader "Location" $ "/build/" <> renderBuildId buildId
-            Spock.json $ ApiV1.PostAcknowledgeResponse ack
 
   Spock.post ("build" <//> Spock.var <//> "avow") $ \buildId' ->
     authenticated authentication pool $ \a -> do

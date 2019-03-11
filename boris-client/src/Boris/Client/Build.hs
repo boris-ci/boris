@@ -81,7 +81,7 @@ heartbeat i =
 
 acknowledge :: BuildId -> Request Acknowledge
 acknowledge i =
-  Request HTTP.POST (Text.intercalate "/" ["build", renderBuildId i, "acknowledge"])
+  Request HTTP.POST (Text.intercalate "/" ["queue", renderBuildId i])
     (Response.json 200 $ Decode.wrapper postAcknowledge)
     (Request.json . Encode.auto $ PostAcknowledgeRequest)
 

@@ -4,6 +4,7 @@
 {-# LANGUAGE TypeOperators #-}
 module Boris.Http.Db.Run (
     insert
+  , setStartTime
   ) where
 
 
@@ -27,3 +28,11 @@ insert r p =
            VALUES (?, ?)
         RETURNING id
     |] (runTypeToInt r, getProjectId p)
+
+setStartTime :: MonadDb m => RunId -> m ()
+setStartTime run =
+  void $ Traction.execute [sql|
+          UPDATE run
+             SET start_time = now()
+           WHERE id = ?
+    |] (Traction.Only $ getRunId run)

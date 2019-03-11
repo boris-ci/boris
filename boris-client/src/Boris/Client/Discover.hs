@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Boris.Client.Discover (
     complete
+  , acknowledge
   ) where
 
 import           Data.Aeson ((.=))
@@ -23,6 +24,12 @@ import qualified Data.Text as Text
 
 import qualified Network.HTTP.Types as HTTP
 
+
+acknowledge :: DiscoverId -> Request Acknowledge
+acknowledge i =
+  Request HTTP.POST (Text.intercalate "/" ["queue", renderDiscoverId i])
+    (Response.json 200 $ Decode.wrapper postAcknowledge)
+    (Request.json . Encode.auto $ PostAcknowledgeRequest)
 
 complete :: DiscoverId -> [DiscoverInstance] -> Request ()
 complete i ds = do
