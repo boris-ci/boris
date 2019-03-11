@@ -24,8 +24,8 @@ import qualified Data.Text as Text
 import qualified Network.HTTP.Types as HTTP
 
 
-complete :: DiscoverId -> ProjectName -> [DiscoverInstance] -> Request ()
-complete i p ds = do
-  Request HTTP.POST (Text.intercalate "/" ["discover", renderBuildId i, "complete"])
+complete :: DiscoverId -> [DiscoverInstance] -> Request ()
+complete i ds = do
+  Request HTTP.POST (Text.intercalate "/" ["discover", renderDiscoverId i, "complete"])
     (Response.json 200 $ Decode.wrapper (\PostCompleteResponse -> ()))
-    (Request.json . Encode.auto $ error "todo")
+    (Request.json . Encode.auto $ PostDiscover ds)

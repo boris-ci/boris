@@ -7,6 +7,7 @@ module Boris.Http.Api.Build (
   , queued
   , next
   , submit
+  , submitWith
   , heartbeat
 
   , acknowledge
@@ -79,14 +80,18 @@ next =
 submit :: ProjectName -> BuildName -> Maybe Ref -> Db (Maybe (Keyed BuildId Build))
 submit p build ref = do
   mproject <- ProjectDb.byName p
-  for mproject $ \project -> do
-    let
-      normalised = with ref $ \rr ->
-        if Text.isPrefixOf "refs/" . renderRef $ rr then rr else Ref . ((<>) "refs/heads/") . renderRef $ rr
-    run <- RunDb.insert IsBuild (keyOf project)
-    QueueDb.insert run IsBuild
-    i <- BuildDb.insert run build normalised
-    pure $ Keyed i (Build project build ref Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
+  for mproject $ \project ->
+    submitWith project build ref
+
+submitWith :: (Keyed ProjectId Project) -> BuildName -> Maybe Ref -> Db (Keyed BuildId Build)
+submitWith project build ref = do
+  let
+    normalised = with ref $ \rr ->
+      if Text.isPrefixOf "refs/" . renderRef $ rr then rr else Ref . ((<>) "refs/heads/") . renderRef $ rr
+  run <- RunDb.insert IsBuild (keyOf project)
+  QueueDb.insert run IsBuild
+  i <- BuildDb.insert run build normalised
+  pure $ Keyed i (Build project build ref Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
 
 heartbeat :: BuildId -> Db BuildCancelled
 heartbeat buildId =

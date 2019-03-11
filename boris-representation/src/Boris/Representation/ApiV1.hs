@@ -480,16 +480,14 @@ fromResult r =
 
 data PostDiscover =
   PostDiscover {
-      postDiscoverProject :: ProjectName
-    , postDiscoverGuts :: [DiscoverInstance]
+      postDiscoverGuts :: [DiscoverInstance]
     } deriving (Eq, Ord, Show)
 
 instance FromJSON PostDiscover where
   parseJSON =
     withObject "PostDiscover" $ \o ->
       PostDiscover
-        <$> (ProjectName <$> o .: "project")
-        <*> (o .: "discover" >>= mapM (withObject "DiscoverInstance" $ \oo ->
+        <$> (o .: "discover" >>= mapM (withObject "DiscoverInstance" $ \oo ->
           DiscoverInstance
             <$> (BuildName <$> oo .: "build")
             <*> (Ref <$> oo .: "ref")
@@ -498,8 +496,7 @@ instance FromJSON PostDiscover where
 instance ToJSON PostDiscover where
   toJSON x =
     object [
-        "project" .= (renderProjectName . postDiscoverProject $ x)
-      , "discover" .= (with (postDiscoverGuts x) $ \(DiscoverInstance build ref commit) -> object [
+        "discover" .= (with (postDiscoverGuts x) $ \(DiscoverInstance build ref commit) -> object [
           "build" .= renderBuildName build
         , "ref" .= renderRef ref
         , "commit" .= renderCommit commit

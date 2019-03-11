@@ -15,6 +15,7 @@ module Boris.Http.Db.Build (
   , cancel
   , complete
   , index
+  , built
   , toBuild
   ) where
 
@@ -209,6 +210,17 @@ index buildid ref commit =
              commit = ?
        WHERE id = ?
     |] (renderRef ref, renderCommit commit, getBuildId buildid)
+
+built :: MonadDb m => ProjectId -> Commit -> m [BuildName]
+built project commit =
+  Traction.valuesWith BuildName $ Traction.query [sql|
+      SELECT DISTINCT b.build
+        FROM build b
+        JOIN run r
+          on r.id = b.id
+       WHERE r.project = ?
+         AND b.commit = ?
+    |] (getProjectId project, renderCommit commit)
 
 toBuild :: ((Int64, Text, Text) :. (Int64, Text, Maybe Text, Maybe Text, Maybe Bool, Maybe Bool, Maybe UTCTime, Maybe UTCTime, Maybe UTCTime, Maybe UTCTime)) -> Keyed BuildId Build
 toBuild (project :. (key, name, ref, commit, result, cancelled, queued, start, end, heartbeatx)) =

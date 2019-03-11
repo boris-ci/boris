@@ -49,7 +49,7 @@ discover logs discovers w discover = do
         PushDiscover http -> do
           firstT DiscoverHttpError $
             Network.runRequestT http $
-              Discover.complete discoverId project discovered
+              Discover.complete discoverId discovered
         LogDiscover -> do
            X.xPutStrLn out . mconcat $ ["project = ", renderProjectName project]
            X.xPutStrLn out . mconcat $ ["repository = ", renderRepository repository]
