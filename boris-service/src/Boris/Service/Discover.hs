@@ -33,12 +33,29 @@ data DiscoverError =
 
 discover :: LogService -> DiscoverService ->  WorkspacePath -> (Keyed DiscoverId Discover) -> EitherT DiscoverError IO ()
 discover logs discovers w discover = do
-  mapEitherT (fmap join) . firstT DiscoverLogError . withLogger logs $ \out -> runEitherT $
+  mapEitherT (fmap join) . firstT DiscoverLogError . withLogger logs $ \out -> runEitherT $ do
+    initial <- case discovers of
+      PushDiscover http -> do
+        firstT DiscoverHttpError $
+          Network.runRequestT http $
+            Discover.heartbeat (keyOf discover)
+      LogDiscover ->
+        pure BuildNotCancelled
+
+    ack <- case discovers of
+      PushDiscover http -> do
+        firstT DiscoverHttpError $
+          Network.runRequestT http $
+            Discover.acknowledge (keyOf discover)
+      LogDiscover ->
+        pure Accept
+
     withWorkspace w (BuildId . getDiscoverId . keyOf $ discover) $ \workspace -> do
       let
         discoverId = keyOf discover
         project = projectName . valueOf . discoverProject . valueOf $ discover
         repository = projectRepository . valueOf . discoverProject . valueOf $ discover
+
 
       X.xPutStrLn out . mconcat $ ["[boris:discover] ", renderProjectName project]
 
