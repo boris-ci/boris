@@ -536,20 +536,77 @@ instance ToJSON PostCompleteResponse where
 
 newtype GetLogs =
   GetLogs {
-      getLogs :: LogData
+      getLogs :: [Log]
     } deriving (Eq, Ord, Show)
 
 instance ToJSON GetLogs where
-  toJSON (GetLogs (DBLog ls)) =
+  toJSON (GetLogs logs) =
     object [
-      "result" .= renderDBLogs ls
+      "logs" .= (with logs $ \log ->
+           case log of
+             LogEvent time chunk ->
+               object [
+                   "time" .= time
+                 , "chunk" .= chunk
+                 ]
+             LogEOF ->
+               object [
+                   "eof" .= True
+                 ]
+         )
     ]
 
 instance FromJSON GetLogs where
   parseJSON =
-    -- FIXME
-    withObject "GetLogs" $ \_ ->
-      pure . GetLogs $ DBLog []
+    withObject "GetLogs" $ \o ->
+      fmap GetLogs $
+        (o .: "logs") >>= mapM (withObject "Log" $ \oo ->
+          o .:? "eof" >>= \x -> case x of
+            Nothing ->
+              LogEvent
+                <$> oo .: "time"
+                <*> oo .: "chunk"
+            Just True ->
+              pure LogEOF
+            Just False ->
+              fail "Invalid EOF marker.")
+
+newtype PostLogs =
+  PostLogs {
+      postLogs :: [Log]
+    } deriving (Eq, Ord, Show)
+
+instance ToJSON PostLogs where
+  toJSON (PostLogs logs) =
+    object [
+      "logs" .= (with logs $ \log ->
+           case log of
+             LogEvent time chunk ->
+               object [
+                   "time" .= time
+                 , "chunk" .= chunk
+                 ]
+             LogEOF ->
+               object [
+                   "eof" .= True
+                 ]
+         )
+    ]
+
+instance FromJSON PostLogs where
+  parseJSON =
+    withObject "PostLogs" $ \o ->
+      fmap PostLogs $
+        (o .: "logs") >>= mapM (withObject "Log" $ \oo ->
+          o .:? "eof" >>= \x -> case x of
+            Nothing ->
+              LogEvent
+                <$> oo .: "time"
+                <*> oo .: "chunk"
+            Just True ->
+              pure LogEOF
+            Just False ->
+              fail "Invalid EOF marker.")
 
 data ApiError =
   ApiError {

@@ -13,6 +13,7 @@ import           Boris.Core.Data.Instance
 import           Boris.Core.Data.Keyed
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Repository
+import           Boris.Core.Data.Run
 import           Boris.Core.Data.Workspace
 import           Boris.Service.Boot
 import           Boris.Service.Git
@@ -63,7 +64,7 @@ data LifecycleError =
 --
 builder :: LogService -> BuildService -> WorkspacePath -> Keyed BuildId Build -> EitherT BuilderError IO ()
 builder logs builds w build = do
-  mapEitherT (fmap join) . firstT BuildLogError . withLogger logs $ \out -> runEitherT $ do
+  mapEitherT (fmap join) . firstT BuildLogError . withLogger logs (RunId . getBuildId . keyOf $ build) $ \out -> runEitherT $ do
     let
       mref = buildRef . valueOf $ build
       buildId = keyOf build

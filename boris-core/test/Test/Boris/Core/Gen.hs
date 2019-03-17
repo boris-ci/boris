@@ -148,16 +148,6 @@ genBuildPattern =
     <$> genBuildNamePattern
     <*> genPattern
 
-genLogData :: Gen LogData
-genLogData =
-  fmap DBLog $ Gen.list (Range.linear 1 100) genDBLogData
-
-genDBLogData :: Gen DBLogData
-genDBLogData =
-  DBLogData
-    <$> genUTCTime
-    <*> (Text.pack <$> Gen.string (Range.linear 0 100) Gen.unicode)
-
 genBuildCancelled :: Gen BuildCancelled
 genBuildCancelled =
   Gen.enumBounded

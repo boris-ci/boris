@@ -16,6 +16,7 @@ import           Boris.Core.Data.Instance
 import           Boris.Core.Data.Keyed
 import           Boris.Core.Data.Project
 import           Boris.Core.Data.Repository
+import           Boris.Core.Data.Run
 import           Boris.Core.Data.Workspace
 import qualified Boris.Git.X as X
 import           Boris.Service.Boot
@@ -33,7 +34,7 @@ data DiscoverError =
 
 discover :: LogService -> DiscoverService ->  WorkspacePath -> (Keyed DiscoverId Discover) -> EitherT DiscoverError IO ()
 discover logs discovers w discover = do
-  mapEitherT (fmap join) . firstT DiscoverLogError . withLogger logs $ \out -> runEitherT $ do
+  mapEitherT (fmap join) . firstT DiscoverLogError . withLogger logs (RunId . getDiscoverId . keyOf $ discover) $ \out -> runEitherT $ do
     initial <- case discovers of
       PushDiscover http -> do
         firstT DiscoverHttpError $
